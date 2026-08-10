@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "retrieval_id": "aic2026_retrieval_v2_stage00_stage01",
+  "retrieval_id": "aic2026_retrieval_v2_stage00_stage02",
   "retrieval_frozen": false,
   "source_stage1": {
     "config_path": "configs/stage1_evaluation.json",
@@ -298,15 +298,97 @@
   },
   "selection": {
     "reference_method": "L0_query_tfidf",
-    "provisional_default": null,
+    "provisional_default": "L2_bm25_preserving",
     "bootstrap_samples": 2000,
     "bootstrap_confidence": 0.9,
     "bootstrap_seed": 20260810,
-    "policy": "manual_review_after_paired_query_summary"
+    "policy": "manual_review_after_paired_query_summary",
+    "retained_alternative": null,
+    "stage01_decision": {
+      "status": "frozen_after_review",
+      "lexical_default": "L2_bm25_preserving",
+      "retained_alternative": null,
+      "rejected_methods": [
+        "L3_bm25_folded",
+        "L4_bm25_rrf"
+      ],
+      "note": "L2 is the only lexical method carried forward; L0 remains a control and L1 a methodological comparison."
+    }
   },
   "paths": {
     "artifact_root_env": "AIC_RETRIEVAL_ARTIFACT_ROOT",
     "reports_root": "reports/retrieval_v2",
     "cache_root": "cache/retrieval_v2"
+  },
+  "stage02_dense": {
+    "query_set": "development20",
+    "corpus": "all50",
+    "dense_reference": "D0_e5_small",
+    "system_reference": "baseline_v1",
+    "lexical_reference": "L2_bm25_preserving",
+    "backends": {
+      "D0_e5_small": {
+        "type": "sentence_transformer",
+        "model_name": "intfloat/multilingual-e5-small",
+        "revision": "614241f622f53c4eeff9890bdc4f31cfecc418b3",
+        "query_prefix": "query: ",
+        "document_prefix": "passage: ",
+        "query_prompt_name": null,
+        "document_prompt_name": null,
+        "normalize_embeddings": true,
+        "preferred_batch_size": 64,
+        "minimum_batch_size": 1
+      },
+      "D1_qwen3_embedding_0_6b": {
+        "type": "sentence_transformer",
+        "model_name": "Qwen/Qwen3-Embedding-0.6B",
+        "revision": "97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3",
+        "query_prefix": "",
+        "document_prefix": "",
+        "query_prompt_name": "query",
+        "document_prompt_name": null,
+        "normalize_embeddings": true,
+        "preferred_batch_size": 16,
+        "minimum_batch_size": 1,
+        "minimum_transformers_version": "4.51.0",
+        "minimum_sentence_transformers_version": "2.7.0"
+      },
+      "D2_bge_m3_dense": {
+        "type": "sentence_transformer",
+        "model_name": "BAAI/bge-m3",
+        "revision": "5617a9f61b028005a4858fdac845db406aefb181",
+        "query_prefix": "",
+        "document_prefix": "",
+        "query_prompt_name": null,
+        "document_prompt_name": null,
+        "normalize_embeddings": true,
+        "preferred_batch_size": 16,
+        "minimum_batch_size": 1
+      }
+    },
+    "score": {
+      "similarity": "cosine",
+      "score_clip": null,
+      "invalid_document_policy": "finite_below_cosine_floor",
+      "invalid_document_score": -2.0
+    },
+    "cache": {
+      "reuse_embeddings": true,
+      "embeddings_subdir": "stage02_dense/embeddings"
+    },
+    "diagnostics": {
+      "top_k_windows": [
+        5,
+        20
+      ]
+    },
+    "selection": {
+      "provisional_default": null,
+      "retained_alternative": null,
+      "policy": "manual_review_after_paired_query_summary",
+      "bootstrap_samples": 2000,
+      "bootstrap_confidence": 0.9,
+      "bootstrap_seed": 20260810
+    }
   }
 }

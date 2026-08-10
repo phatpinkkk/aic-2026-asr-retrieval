@@ -1,5 +1,5 @@
 # Relative path: src/retrieval_v2.py
-# Purpose: Pure Retrieval v2 score production for TF-IDF, BM25, RRF, and Baseline v1 E5 compatibility.
+# Purpose: Pure Retrieval v2 score production for lexical methods, Baseline v1 E5 compatibility, and dense cosine retrieval.
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from postprocess import accent_fold, normalize_for_matching
 
 
-RETRIEVAL_V2_VERSION = "1.0.0"
+RETRIEVAL_V2_VERSION = "1.1.0"
 
 
 @dataclass
@@ -681,3 +681,34 @@ def weighted_score_bundle(
             ),
         },
     )
+
+
+
+def score_dense_embeddings(
+    query_ids : Sequence[str],
+    documents : ChannelDocuments,
+    query_embeddings : np.ndarray,
+    document_embeddings : np.ndarray,
+    method_id : str,
+    invalid_document_score : float = -2.0,
+    metadata : dict[str, Any] | None = None,
+) -> ScoreBundle :
+    queries = _query_ids(query_ids, len(query_embeddings))
+    query_matrix = np.asarray(query_embeddings, dtype = np.float32)
+    document_matrix = np.asarray(document_embeddings, dtype = np.float32)
+    valid_indices = documents.eligible_indices
+
+    if (query_matrix.ndim != 2 or document_matrix.ndim != 2) : raise ValueError("Dense query/document embeddings must be two-dimensional")
+    if (query_matrix.shape[1] != document_matrix.shape[1]) : raise ValueError("Dense query/document embedding dimensions differ")
+    if (document_matrix.shape[0] != len(valid_indices)) : raise ValueError("Dense document embedding rows must match eligible documents")
+    if (not np.isfinite(query_matrix).all() or not np.isfinite(document_matrix).all()) : raise ValueError("Dense embeddings contain NaN or infinite values")
+    if (not math.isfinite(float(invalid_document_score)) or invalid_document_score >= -1.0) : raise ValueError("invalid_document_score must be finite and below the cosine floor -1")
+
+    valid_scores = query_matrix @ document_matrix.T
+    if (not np.isfinite(valid_scores).all()) : raise ValueError("Dense cosine scoring produced NaN or infinite values")
+    if ((valid_scores < -1.0005).any() or (valid_scores > 1.0005).any()) : raise ValueError("Dense cosine scores fall outside the expected normalized range")
+
+    scores = np.full((len(queries), len(documents.window_ids)), np.float32(invalid_document_score), dtype = np.float32)
+    if (valid_indices) : scores[:, valid_indices] = valid_scores.astype(np.float32, copy = False)
+
+    return ScoreBundle(method_id = method_id, model_id = documents.model_id, view = documents.view, query_ids = queries, window_ids = documents.window_ids, scores = scores, eligibility_mask = documents.eligibility_mask, metadata = {"similarity" : "cosine", "score_clip" : None, "invalid_document_policy" : "finite_below_cosine_floor", "invalid_document_score" : float(invalid_document_score), **(metadata or {})})
