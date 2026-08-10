@@ -336,10 +336,24 @@
         "query_prompt_name": null,
         "document_prompt_name": null,
         "normalize_embeddings": true,
+        "normalization_policy": "explicit_l2_float32_v1",
         "preferred_batch_size": 64,
         "minimum_batch_size": 1
       },
-      "D1_qwen3_embedding_0_6b": {
+      "D1_e5_large_instruct": {
+        "type": "sentence_transformer",
+        "model_name": "intfloat/multilingual-e5-large-instruct",
+        "revision": "274baa43b0e13e37fafa6428dbc7938e62e5c439",
+        "query_prefix": "Instruct: Given a detailed description of a target video moment, retrieve transcript passages that are relevant to the described event.\nQuery: ",
+        "document_prefix": "",
+        "query_prompt_name": null,
+        "document_prompt_name": null,
+        "normalize_embeddings": true,
+        "normalization_policy": "explicit_l2_float32_v1",
+        "preferred_batch_size": 16,
+        "minimum_batch_size": 1
+      },
+      "D2_qwen3_embedding_0_6b": {
         "type": "sentence_transformer",
         "model_name": "Qwen/Qwen3-Embedding-0.6B",
         "revision": "97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3",
@@ -348,12 +362,13 @@
         "query_prompt_name": "query",
         "document_prompt_name": null,
         "normalize_embeddings": true,
+        "normalization_policy": "explicit_l2_float32_v1",
         "preferred_batch_size": 16,
         "minimum_batch_size": 1,
         "minimum_transformers_version": "4.51.0",
         "minimum_sentence_transformers_version": "2.7.0"
       },
-      "D2_bge_m3_dense": {
+      "D3_bge_m3_dense": {
         "type": "sentence_transformer",
         "model_name": "BAAI/bge-m3",
         "revision": "5617a9f61b028005a4858fdac845db406aefb181",
@@ -362,6 +377,7 @@
         "query_prompt_name": null,
         "document_prompt_name": null,
         "normalize_embeddings": true,
+        "normalization_policy": "explicit_l2_float32_v1",
         "preferred_batch_size": 16,
         "minimum_batch_size": 1
       }
@@ -374,7 +390,9 @@
     },
     "cache": {
       "reuse_embeddings": true,
-      "embeddings_subdir": "stage02_dense/embeddings"
+      "embeddings_subdir": "stage02_dense/embeddings",
+      "embedding_cache_version": "2.0",
+      "normalization_policy": "explicit_l2_float32_v1"
     },
     "diagnostics": {
       "top_k_windows": [
@@ -388,7 +406,18 @@
       "policy": "manual_review_after_paired_query_summary",
       "bootstrap_samples": 2000,
       "bootstrap_confidence": 0.9,
-      "bootstrap_seed": 20260810
+      "bootstrap_seed": 20260810,
+      "note": "Review D1/D2/D3 against D0 using retrieval quality, paired query behavior, ASR gaps, and warm online latency before selecting a dense default."
+    },
+    "runtime": {
+      "measure_offline_encoding": true,
+      "measure_online_latency": true,
+      "warmup_query_count": 1,
+      "single_query_batch_size": 1,
+      "latency_percentiles": [
+        50,
+        90
+      ]
     }
   }
 }

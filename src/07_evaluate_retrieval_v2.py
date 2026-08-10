@@ -1198,14 +1198,16 @@ def _write_embedding_cache(npz_path : Path, json_path : Path, bundle : DenseEmbe
     return {"npz_path" : str(npz_path), "json_path" : str(json_path), "npz_sha256" : record["npz_sha256"], "json_sha256" : sha256_file(json_path), "identity_hash" : record["identity_hash"]}
 
 
-def _query_embedding_identity(specification : DenseBackendSpec, query_set : str, query_ids : list[str], query_texts : list[str]) -> dict[str, Any] :
-    return {"kind" : "queries", "backend" : specification.identity(), "query_set" : query_set, "ordered_query_ids" : query_ids, "query_text_hash" : canonical_json_hash(query_texts), "input_policy_hash" : canonical_json_hash({"prefix" : specification.query_prefix, "prompt_name" : specification.query_prompt_name, "normalize_embeddings" : specification.normalize_embeddings})}
+def _query_embedding_identity(stage_config : dict[str, Any], specification : DenseBackendSpec, query_set : str, query_ids : list[str], query_texts : list[str]) -> dict[str, Any] :
+    cache = stage_config["cache"]
+    return {"kind" : "queries", "dense_backends_version" : retrieval_backends.DENSE_BACKENDS_VERSION, "embedding_cache_version" : cache["embedding_cache_version"], "normalization_policy" : cache["normalization_policy"], "backend" : specification.identity(), "query_set" : query_set, "ordered_query_ids" : query_ids, "query_text_hash" : canonical_json_hash(query_texts), "input_policy_hash" : canonical_json_hash({"prefix" : specification.query_prefix, "prompt_name" : specification.query_prompt_name, "normalize_embeddings" : specification.normalize_embeddings, "normalization_policy" : specification.normalization_policy})}
 
 
-def _document_embedding_identity(specification : DenseBackendSpec, channel_id : str, documents : ChannelDocuments) -> dict[str, Any] :
+def _document_embedding_identity(stage_config : dict[str, Any], specification : DenseBackendSpec, channel_id : str, documents : ChannelDocuments) -> dict[str, Any] :
+    cache          = stage_config["cache"]
     eligible_ids   = [documents.window_ids[index] for index in documents.eligible_indices]
     eligible_texts = [documents.texts[index] for index in documents.eligible_indices]
-    return {"kind" : "documents", "backend" : specification.identity(), "channel_id" : channel_id, "ordered_physical_window_ids_hash" : canonical_json_hash(documents.window_ids), "ordered_eligible_window_ids" : eligible_ids, "eligibility_mask_hash" : canonical_json_hash(documents.eligibility_mask.astype(int).tolist()), "selected_text_hash" : canonical_json_hash(eligible_texts), "input_policy_hash" : canonical_json_hash({"prefix" : specification.document_prefix, "prompt_name" : specification.document_prompt_name, "normalize_embeddings" : specification.normalize_embeddings})}
+    return {"kind" : "documents", "dense_backends_version" : retrieval_backends.DENSE_BACKENDS_VERSION, "embedding_cache_version" : cache["embedding_cache_version"], "normalization_policy" : cache["normalization_policy"], "backend" : specification.identity(), "channel_id" : channel_id, "ordered_physical_window_ids_hash" : canonical_json_hash(documents.window_ids), "ordered_eligible_window_ids" : eligible_ids, "eligibility_mask_hash" : canonical_json_hash(documents.eligibility_mask.astype(int).tolist()), "selected_text_hash" : canonical_json_hash(eligible_texts), "input_policy_hash" : canonical_json_hash({"prefix" : specification.document_prefix, "prompt_name" : specification.document_prompt_name, "normalize_embeddings" : specification.normalize_embeddings, "normalization_policy" : specification.normalization_policy})}
 
 
 def _gpu_memory_snapshot() -> dict[str, Any] :
@@ -1315,7 +1317,63 @@ def _system_reference_summary(metrics : pd.DataFrame, fixture : dict[str, Any]) 
     return pd.DataFrame(rows)
 
 
-def run_stage02(config : dict[str, Any], query_frames : dict[str, pd.DataFrame], stage_frames : dict[tuple[str, str], pd.DataFrame], cache_root : Path, fixture : dict[str, Any]) -> tuple[list[ScoreBundle], pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, list[dict[str, Any]], list[dict[str, Any]]] :
+def _dense_search_once(query_embedding : np.ndarray, runtime_data : dict[str, Any], invalid_document_score : float) -> tuple[float, float] :
+    started = time.perf_counter()
+    valid_scores = np.asarray(query_embedding @ runtime_data["document_embeddings"].T, dtype = np.float32)
+    similarity_ms = (time.perf_counter() - started) * 1000.0
+
+    started = time.perf_counter()
+    scores = np.full(runtime_data["physical_window_count"], np.float32(invalid_document_score), dtype = np.float32)
+    scores[runtime_data["eligible_indices"]] = valid_scores
+    window_order = np.argsort(-scores, kind = "stable")
+    video_scores = np.full(runtime_data["video_count"], np.float32(invalid_document_score), dtype = np.float32)
+    np.maximum.at(video_scores, runtime_data["video_indices"], scores)
+    video_order = np.argsort(-video_scores, kind = "stable")
+    _ = int(window_order[0]), int(video_order[0])
+    rank_aggregate_ms = (time.perf_counter() - started) * 1000.0
+    return similarity_ms, rank_aggregate_ms
+
+
+def _measure_dense_latency(backend_id : str, backend : SentenceTransformerDenseBackend, query_ids : list[str], query_texts : list[str], channel_runtime_data : dict[str, dict[str, Any]], runtime_config : dict[str, Any], invalid_document_score : float) -> pd.DataFrame :
+    if (not runtime_config.get("measure_online_latency", True)) : return pd.DataFrame()
+    warmup_count = min(int(runtime_config.get("warmup_query_count", 1)), len(query_ids))
+    batch_size   = int(runtime_config.get("single_query_batch_size", 1))
+    log_detail(f"{backend_id}: measuring warm single-query latency over {len(query_ids)} queries")
+
+    for index in range(warmup_count) :
+        warmup = backend.encode_queries([query_ids[index]], [query_texts[index]], batch_size = batch_size, show_progress_bar = False, emit_progress = False)
+        for runtime_data in channel_runtime_data.values() : _dense_search_once(warmup.embeddings[0], runtime_data, invalid_document_score)
+
+    rows = []
+    for query_id, query_text in zip(query_ids, query_texts) :
+        started = time.perf_counter()
+        encoded = backend.encode_queries([query_id], [query_text], batch_size = batch_size, show_progress_bar = False, emit_progress = False)
+        query_encode_ms = (time.perf_counter() - started) * 1000.0
+        query_embedding = encoded.embeddings[0]
+        for channel_id, runtime_data in channel_runtime_data.items() :
+            similarity_ms, rank_aggregate_ms = _dense_search_once(query_embedding, runtime_data, invalid_document_score)
+            retrieval_ms = similarity_ms + rank_aggregate_ms
+            rows.append({"backend_id" : backend_id, "channel_id" : channel_id, "query_id" : query_id, "query_encode_ms" : query_encode_ms, "similarity_ms" : similarity_ms, "rank_aggregate_ms" : rank_aggregate_ms, "retrieval_ms" : retrieval_ms, "end_to_end_ms" : query_encode_ms + retrieval_ms})
+
+    return pd.DataFrame(rows)
+
+
+def _latency_summary(query_latency : pd.DataFrame, percentiles : list[int]) -> pd.DataFrame :
+    if (query_latency.empty) : return pd.DataFrame()
+    metrics = ["query_encode_ms", "similarity_ms", "rank_aggregate_ms", "retrieval_ms", "end_to_end_ms"]
+    rows = []
+    for (backend_id, channel_id), group in query_latency.groupby(["backend_id", "channel_id"], sort = True) :
+        row = {"backend_id" : backend_id, "channel_id" : channel_id, "query_count" : len(group)}
+        for metric in metrics :
+            values = group[metric].to_numpy(dtype = float)
+            row[f"{metric.removesuffix('_ms')}_mean_ms"] = float(values.mean())
+            for percentile in percentiles : row[f"{metric.removesuffix('_ms')}_p{int(percentile)}_ms"] = float(np.percentile(values, percentile))
+        row["warm_qps"] = float(1000.0 / row["end_to_end_mean_ms"]) if row["end_to_end_mean_ms"] > 0 else None
+        rows.append(row)
+    return pd.DataFrame(rows)
+
+
+def run_stage02(config : dict[str, Any], query_frames : dict[str, pd.DataFrame], stage_frames : dict[tuple[str, str], pd.DataFrame], cache_root : Path, fixture : dict[str, Any]) -> tuple[list[ScoreBundle], pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, list[dict[str, Any]], list[dict[str, Any]]] :
     stage_config = config["stage02_dense"]
     query_set    = stage_config["query_set"]
     corpus_id    = stage_config["corpus"]
@@ -1323,14 +1381,15 @@ def run_stage02(config : dict[str, Any], query_frames : dict[str, pd.DataFrame],
     query_ids    = query_frame["query_id"].astype(str).tolist()
     query_texts  = query_frame["query_text"].astype(str).tolist()
     top_k_values = [int(value) for value in stage_config["diagnostics"]["top_k_windows"]]
-    bundles, result_frames, evidence_frames, diagnostic_frames = [], [], [], []
+    runtime_config = stage_config.get("runtime", {})
+    bundles, result_frames, evidence_frames, diagnostic_frames, latency_frames = [], [], [], [], []
     backend_records, embedding_cache_records = [], []
 
     for backend_id, backend_config in stage_config["backends"].items() :
         specification = DenseBackendSpec.from_config(backend_id, backend_config)
         backend       = SentenceTransformerDenseBackend(specification, progress_callback = log_detail)
         _reset_gpu_peak_memory()
-        query_identity = _query_embedding_identity(specification, query_set, query_ids, query_texts)
+        query_identity = _query_embedding_identity(stage_config, specification, query_set, query_ids, query_texts)
         query_npz, query_json = _embedding_cache_paths(cache_root, stage_config, backend_id, "queries", query_set)
         query_bundle = _load_embedding_cache(query_npz, query_json, query_ids, query_identity) if stage_config["cache"]["reuse_embeddings"] else None
         query_cache_hit = query_bundle is not None
@@ -1343,14 +1402,17 @@ def run_stage02(config : dict[str, Any], query_frames : dict[str, pd.DataFrame],
             cache_record = _write_embedding_cache(query_npz, query_json, query_bundle, query_identity)
             embedding_cache_records.append({"backend_id" : backend_id, "kind" : "queries", "item_id" : query_set, "cache_hit" : False, **cache_record})
 
-        document_cache_hits, document_cache_misses, document_runtime_s = 0, 0, 0.0
+        document_cache_hits, document_cache_misses, document_runtime_s, document_count_encoded, total_eligible_documents = 0, 0, 0.0, 0, 0
         dimensions = {query_bundle.dimension}
+        channel_runtime_data = {}
+
         for channel_id, channel_spec in config["channels"].items() :
             windows   = model_corpus_windows(stage_frames, channel_spec["model_id"], corpus_id)
             documents = channel_documents(windows, channel_spec)
             eligible_ids   = [documents.window_ids[index] for index in documents.eligible_indices]
             eligible_texts = [documents.texts[index] for index in documents.eligible_indices]
-            document_identity = _document_embedding_identity(specification, channel_id, documents)
+            total_eligible_documents += len(eligible_ids)
+            document_identity = _document_embedding_identity(stage_config, specification, channel_id, documents)
             document_npz, document_json = _embedding_cache_paths(cache_root, stage_config, backend_id, "documents", channel_id)
             document_bundle = _load_embedding_cache(document_npz, document_json, eligible_ids, document_identity) if stage_config["cache"]["reuse_embeddings"] else None
             document_cache_hit = document_bundle is not None
@@ -1363,8 +1425,10 @@ def run_stage02(config : dict[str, Any], query_frames : dict[str, pd.DataFrame],
                 log_detail(f"{backend_id}/{channel_id}: document cache MISS ({len(eligible_ids)} eligible)")
                 document_bundle = backend.encode_documents(eligible_ids, eligible_texts)
                 document_runtime_s += float(document_bundle.metadata.get("runtime_s", 0.0))
+                document_count_encoded += len(eligible_ids)
                 cache_record = _write_embedding_cache(document_npz, document_json, document_bundle, document_identity)
                 embedding_cache_records.append({"backend_id" : backend_id, "kind" : "documents", "item_id" : channel_id, "cache_hit" : False, **cache_record})
+
             dimensions.add(document_bundle.dimension)
             if (len(dimensions) != 1) : raise ValueError(f"{backend_id}: inconsistent embedding dimensions across query/document caches")
             bundle = score_dense_embeddings(query_ids = query_ids, documents = documents, query_embeddings = query_bundle.embeddings, document_embeddings = document_bundle.embeddings, method_id = backend_id, invalid_document_score = float(stage_config["score"]["invalid_document_score"]), metadata = {"query_set" : query_set, "corpus_id" : corpus_id, "channel_id" : channel_id, "backend" : specification.identity(), "embedding_dimension" : query_bundle.dimension, "query_cache_hit" : query_cache_hit, "document_cache_hit" : document_cache_hit})
@@ -1374,13 +1438,22 @@ def run_stage02(config : dict[str, Any], query_frames : dict[str, pd.DataFrame],
             evidence_frames.append(evidence)
             diagnostic_frames.append(_dense_query_diagnostics(bundle, query_frame, windows, documents, channel_id, top_k_values))
 
+            unique_videos = sorted(windows["video_id"].astype(str).unique().tolist())
+            video_lookup  = {video_id : index for index, video_id in enumerate(unique_videos)}
+            channel_runtime_data[channel_id] = {"document_embeddings" : document_bundle.embeddings, "eligible_indices" : np.asarray(documents.eligible_indices, dtype = np.int64), "physical_window_count" : len(documents.window_ids), "video_indices" : np.asarray([video_lookup[video_id] for video_id in windows["video_id"].astype(str).tolist()], dtype = np.int64), "video_count" : len(unique_videos)}
+
+        latency_frame = _measure_dense_latency(backend_id, backend, query_ids, query_texts, channel_runtime_data, runtime_config, float(stage_config["score"]["invalid_document_score"]))
+        if (not latency_frame.empty) : latency_frames.append(latency_frame)
+
         backend_metadata = backend.metadata()
-        backend_records.append({"backend_id" : backend_id, "model_name" : specification.model_name, "configured_revision" : specification.revision, "resolved_revision" : backend_metadata.get("resolved_revision"), "device" : backend_metadata.get("device"), "embedding_dimension" : next(iter(dimensions)), "query_cache_hit" : query_cache_hit, "document_cache_hit_count" : document_cache_hits, "document_cache_miss_count" : document_cache_misses, "query_encoding_runtime_s" : float(query_bundle.metadata.get("runtime_s", 0.0)) if not query_cache_hit else 0.0, "document_encoding_runtime_s" : document_runtime_s, "model_load_runtime_s" : float(backend_metadata.get("load_runtime_s", 0.0)), "last_effective_batch_size" : backend_metadata.get("last_batch_size"), **_gpu_memory_snapshot()})
+        backend_records.append({"backend_id" : backend_id, "model_name" : specification.model_name, "configured_revision" : specification.revision, "resolved_revision" : backend_metadata.get("resolved_revision"), "device" : backend_metadata.get("device"), "embedding_dimension" : next(iter(dimensions)), "normalization_policy" : specification.normalization_policy, "query_cache_hit" : query_cache_hit, "document_cache_hit_count" : document_cache_hits, "document_cache_miss_count" : document_cache_misses, "batched_query_encoding_runtime_s_this_run" : float(query_bundle.metadata.get("runtime_s", 0.0)) if not query_cache_hit else 0.0, "batched_query_items_per_second" : float(query_bundle.metadata.get("items_per_second")) if not query_cache_hit and query_bundle.metadata.get("items_per_second") is not None else None, "document_encoding_runtime_s_this_run" : document_runtime_s, "documents_encoded_this_run" : document_count_encoded, "documents_per_second_this_run" : float(document_count_encoded / document_runtime_s) if document_runtime_s > 0 else None, "total_eligible_documents" : total_eligible_documents, "model_load_runtime_s" : float(backend_metadata.get("load_runtime_s", 0.0)), "last_effective_batch_size" : backend_metadata.get("last_batch_size"), "online_latency_measured" : not latency_frame.empty, **_gpu_memory_snapshot()})
         backend.release()
 
     query_results = pd.concat(result_frames, ignore_index = True)
     top_evidence  = pd.concat(evidence_frames, ignore_index = True)
     diagnostics   = pd.concat(diagnostic_frames, ignore_index = True)
+    query_latency = pd.concat(latency_frames, ignore_index = True) if latency_frames else pd.DataFrame()
+    latency_summary = _latency_summary(query_latency, [int(value) for value in runtime_config.get("latency_percentiles", [50, 90])])
     metrics       = summarize_retrieval_metrics(query_results)
     comparisons   = compare_methods(query_results, reference_method = stage_config["dense_reference"])
     selection     = stage_config["selection"]
@@ -1388,7 +1461,7 @@ def run_stage02(config : dict[str, Any], query_frames : dict[str, pd.DataFrame],
     asr_gap       = _asr_gap_summary(metrics)
     system_reference = _system_reference_summary(metrics, fixture)
     diagnostics = diagnostics.merge(query_results[["query_set", "method_id", "model_id", "view", "query_id", "first_relevant_rank", "video_rank", "correct_video_score", "best_wrong_video_score", "video_score_margin", "story_score_margin"]], on = ["query_set", "method_id", "model_id", "view", "query_id"], how = "left")
-    return bundles, query_results, top_evidence, comparisons, diagnostics, method_summary, asr_gap, system_reference, backend_records, embedding_cache_records
+    return bundles, query_results, top_evidence, comparisons, diagnostics, method_summary, asr_gap, system_reference, query_latency, latency_summary, backend_records, embedding_cache_records
 
 
 def save_score_cache(
@@ -1750,6 +1823,8 @@ def main() -> None :
     asr_gap_queries = pd.DataFrame()
     system_reference = pd.DataFrame()
     backend_summary = pd.DataFrame()
+    query_latency = pd.DataFrame()
+    latency_summary = pd.DataFrame()
     embedding_cache_records = []
     stage02_environment = None
 
@@ -1763,7 +1838,7 @@ def main() -> None :
         stage01_prerequisite(config, artifacts)
         stage02_environment = validate_stage02_environment(config)
         if (not stage02_environment["passed"]) : raise RuntimeError(f"Stage 2 environment validation failed: {stage02_environment['errors']}")
-        bundles, query_results, top_evidence, comparisons, dense_diagnostics, method_summary, asr_gap_summary, system_reference, backend_records, embedding_cache_records = run_stage02(config, query_frames, stage_frames, cache_root, fixture)
+        bundles, query_results, top_evidence, comparisons, dense_diagnostics, method_summary, asr_gap_summary, system_reference, query_latency, latency_summary, backend_records, embedding_cache_records = run_stage02(config, query_frames, stage_frames, cache_root, fixture)
         backend_summary = pd.DataFrame(backend_records)
         asr_gap_queries = _asr_gap_queries(query_results)
 
@@ -1783,7 +1858,7 @@ def main() -> None :
     if (args.stage == "stage00_baseline" and not regression["passed"]) : log_detail("Stage 0 regression: FAIL")
     elif (args.stage == "stage00_baseline") : log_detail("Stage 0 aggregate + strict per-query regression: PASS")
     elif (args.stage == "stage01_lexical") : log_detail("Stage 1 paired comparison tables built")
-    else : log_detail("Stage 2 dense comparisons, ASR gaps, and diagnostics built")
+    else : log_detail("Stage 2 dense comparisons, ASR gaps, latency, and diagnostics built")
     log_done(start)
 
     start = log_stage(6, total_stages, "Writing reports and window-score cache...")
@@ -1809,6 +1884,8 @@ def main() -> None :
         write_csv(reports_root / "asr_gap_summary.csv", asr_gap_summary)
         write_csv(reports_root / "asr_gap_queries.csv", asr_gap_queries)
         write_csv(reports_root / "system_reference_comparison.csv", system_reference)
+        write_csv(reports_root / "query_latency.csv", query_latency)
+        write_csv(reports_root / "latency_summary.csv", latency_summary)
         write_csv(reports_root / "top_evidence.csv", top_evidence)
 
     log_done(start)
@@ -1872,11 +1949,14 @@ def main() -> None :
     elif (args.stage == "stage02_dense") :
         summary["method_summary"] = method_summary.to_dict(orient = "records")
         summary["backend_summary"] = backend_summary.to_dict(orient = "records")
+        summary["latency_summary"] = latency_summary.to_dict(orient = "records")
         summary["stage02_environment"] = stage02_environment
         summary["provisional_default"] = config["stage02_dense"]["selection"]["provisional_default"]
         summary["retained_alternative"] = config["stage02_dense"]["selection"]["retained_alternative"]
         summary["decision_required"] = True
-        summary["decision_note"] = "Review D0/D1/D2 paired query evidence before selecting a dense default. No dense backend is selected automatically."
+        reference = config["stage02_dense"]["dense_reference"]
+        candidates = [backend_id for backend_id in config["stage02_dense"]["backends"] if backend_id != reference]
+        summary["decision_note"] = f"Review {', '.join(candidates)} against {reference} using paired query evidence, ASR gaps, and warm online latency. No dense backend is selected automatically."
 
     write_json(reports_root / "stage_summary.json", summary)
     log_done(start)

@@ -11,7 +11,7 @@ from typing import Any, Callable, Sequence
 import numpy as np
 
 
-DENSE_BACKENDS_VERSION = "1.0.0"
+DENSE_BACKENDS_VERSION = "1.1.0"
 ProgressCallback = Callable[[str], None]
 
 
@@ -25,6 +25,7 @@ class DenseBackendSpec :
     query_prompt_name : str | None = None
     document_prompt_name : str | None = None
     normalize_embeddings : bool = True
+    normalization_policy : str = "explicit_l2_float32_v1"
     preferred_batch_size : int = 16
     minimum_batch_size : int = 1
 
@@ -32,15 +33,16 @@ class DenseBackendSpec :
         if (not self.backend_id.strip()) : raise ValueError("Dense backend_id must be nonempty")
         if (not self.model_name.strip()) : raise ValueError("Dense model_name must be nonempty")
         if (not self.revision.strip()) : raise ValueError("Dense revision must be pinned")
+        if (self.normalize_embeddings and self.normalization_policy != "explicit_l2_float32_v1") : raise ValueError(f"Unsupported dense normalization policy: {self.normalization_policy!r}")
         if (self.preferred_batch_size <= 0) : raise ValueError("preferred_batch_size must be positive")
         if (self.minimum_batch_size <= 0 or self.minimum_batch_size > self.preferred_batch_size) : raise ValueError("minimum_batch_size must be within [1, preferred_batch_size]")
 
     @classmethod
     def from_config(cls, backend_id : str, config : dict[str, Any]) -> "DenseBackendSpec" :
-        return cls(backend_id = backend_id, model_name = str(config["model_name"]), revision = str(config["revision"]), query_prefix = str(config.get("query_prefix", "")), document_prefix = str(config.get("document_prefix", "")), query_prompt_name = config.get("query_prompt_name"), document_prompt_name = config.get("document_prompt_name"), normalize_embeddings = bool(config.get("normalize_embeddings", True)), preferred_batch_size = int(config.get("preferred_batch_size", 16)), minimum_batch_size = int(config.get("minimum_batch_size", 1)))
+        return cls(backend_id = backend_id, model_name = str(config["model_name"]), revision = str(config["revision"]), query_prefix = str(config.get("query_prefix", "")), document_prefix = str(config.get("document_prefix", "")), query_prompt_name = config.get("query_prompt_name"), document_prompt_name = config.get("document_prompt_name"), normalize_embeddings = bool(config.get("normalize_embeddings", True)), normalization_policy = str(config.get("normalization_policy", "explicit_l2_float32_v1")), preferred_batch_size = int(config.get("preferred_batch_size", 16)), minimum_batch_size = int(config.get("minimum_batch_size", 1)))
 
     def identity(self) -> dict[str, Any] :
-        return {"backend_id" : self.backend_id, "model_name" : self.model_name, "revision" : self.revision, "query_prefix" : self.query_prefix, "document_prefix" : self.document_prefix, "query_prompt_name" : self.query_prompt_name, "document_prompt_name" : self.document_prompt_name, "normalize_embeddings" : self.normalize_embeddings}
+        return {"backend_id" : self.backend_id, "model_name" : self.model_name, "revision" : self.revision, "query_prefix" : self.query_prefix, "document_prefix" : self.document_prefix, "query_prompt_name" : self.query_prompt_name, "document_prompt_name" : self.document_prompt_name, "normalize_embeddings" : self.normalize_embeddings, "normalization_policy" : self.normalization_policy}
 
 
 @dataclass
@@ -122,50 +124,63 @@ class SentenceTransformerDenseBackend :
         except Exception :
             pass
 
+    @staticmethod
+    def _explicit_l2_normalize(embeddings : np.ndarray, backend_id : str, label : str) -> np.ndarray :
+        values = np.asarray(embeddings, dtype = np.float32)
+        if (not np.isfinite(values).all()) : raise ValueError(f"{backend_id}: non-finite {label} embeddings")
+        norms = np.linalg.norm(values, axis = 1, keepdims = True)
+        if (np.any(~np.isfinite(norms)) or np.any(norms <= 1e-12)) : raise ValueError(f"{backend_id}: zero or non-finite {label} embedding norm")
+        values = np.asarray(values / norms, dtype = np.float32)
+        normalized_norms = np.linalg.norm(values, axis = 1)
+        if (not np.allclose(normalized_norms, 1.0, atol = 1e-5, rtol = 1e-5)) : raise ValueError(f"{backend_id}: explicit L2 normalization failed for {label}")
+        return values
+
     def _prepare_texts(self, texts : Sequence[str], prefix : str) -> list[str] :
         return [prefix + str(text or "") for text in texts]
 
-    def _encode(self, texts : Sequence[str], prefix : str, prompt_name : str | None, label : str) -> DenseEmbeddingBundle :
+    def _encode(self, texts : Sequence[str], prefix : str, prompt_name : str | None, label : str, batch_size : int | None = None, show_progress_bar : bool = True, emit_progress : bool = True) -> DenseEmbeddingBundle :
         values = self._prepare_texts(texts, prefix)
         if (not values) : raise ValueError(f"{self.specification.backend_id}: cannot encode an empty {label} collection")
         self._load()
-        batch_size = self.specification.preferred_batch_size
+        effective_batch_size = int(batch_size or self.specification.preferred_batch_size)
+        if (effective_batch_size < self.specification.minimum_batch_size) : raise ValueError(f"{self.specification.backend_id}: batch size is below minimum_batch_size")
         while True :
             try :
-                self._emit(f"{self.specification.backend_id}: encoding {len(values)} {label} with batch={batch_size}")
+                if (emit_progress) : self._emit(f"{self.specification.backend_id}: encoding {len(values)} {label} with batch={effective_batch_size}")
                 started = time.perf_counter()
-                kwargs = {"batch_size" : batch_size, "show_progress_bar" : True, "convert_to_numpy" : True, "normalize_embeddings" : self.specification.normalize_embeddings}
+                kwargs = {"batch_size" : effective_batch_size, "show_progress_bar" : show_progress_bar, "convert_to_numpy" : True, "normalize_embeddings" : False}
                 if (prompt_name is not None) : kwargs["prompt_name"] = prompt_name
                 embeddings = np.asarray(self.encoder.encode(values, **kwargs), dtype = np.float32)
-                runtime_s  = time.perf_counter() - started
-                self.last_batch_size = batch_size
-                if (not np.isfinite(embeddings).all()) : raise ValueError(f"{self.specification.backend_id}: non-finite {label} embeddings")
-                if (self.specification.normalize_embeddings) :
-                    norms = np.linalg.norm(embeddings, axis = 1)
-                    if (not np.allclose(norms, 1.0, atol = 2e-4, rtol = 2e-4)) : raise ValueError(f"{self.specification.backend_id}: normalized embeddings do not have unit norm")
-                return DenseEmbeddingBundle(ids = [str(index) for index in range(len(values))], embeddings = embeddings, metadata = {"runtime_s" : runtime_s, "effective_batch_size" : batch_size, "dimension" : int(embeddings.shape[1])})
+                if (self.specification.normalize_embeddings) : embeddings = self._explicit_l2_normalize(embeddings, self.specification.backend_id, label)
+                elif (not np.isfinite(embeddings).all()) : raise ValueError(f"{self.specification.backend_id}: non-finite {label} embeddings")
+                runtime_s = time.perf_counter() - started
+                self.last_batch_size = effective_batch_size
+                return DenseEmbeddingBundle(ids = [str(index) for index in range(len(values))], embeddings = embeddings, metadata = {"runtime_s" : runtime_s, "item_count" : len(values), "items_per_second" : float(len(values) / runtime_s) if runtime_s > 0 else None, "effective_batch_size" : effective_batch_size, "dimension" : int(embeddings.shape[1]), "normalization_policy" : self.specification.normalization_policy if self.specification.normalize_embeddings else "none"})
             except RuntimeError as error :
-                if (not self._is_oom(error) or batch_size <= self.specification.minimum_batch_size) : raise
-                next_batch = max(self.specification.minimum_batch_size, batch_size // 2)
-                self._emit(f"{self.specification.backend_id}: OOM at batch={batch_size}; retrying with batch={next_batch}")
-                batch_size = next_batch
+                if (not self._is_oom(error) or effective_batch_size <= self.specification.minimum_batch_size) : raise
+                next_batch = max(self.specification.minimum_batch_size, effective_batch_size // 2)
+                if (emit_progress) : self._emit(f"{self.specification.backend_id}: OOM at batch={effective_batch_size}; retrying with batch={next_batch}")
+                effective_batch_size = next_batch
                 self._clear_cuda()
 
-    def encode_queries(self, query_ids : Sequence[str], texts : Sequence[str]) -> DenseEmbeddingBundle :
+    def encode_queries(self, query_ids : Sequence[str], texts : Sequence[str], batch_size : int | None = None, show_progress_bar : bool = True, emit_progress : bool = True) -> DenseEmbeddingBundle :
         if (len(query_ids) != len(texts)) : raise ValueError("Query IDs and texts have different lengths")
-        encoded = self._encode(texts, self.specification.query_prefix, self.specification.query_prompt_name, "queries")
+        encoded = self._encode(texts, self.specification.query_prefix, self.specification.query_prompt_name, "queries", batch_size = batch_size, show_progress_bar = show_progress_bar, emit_progress = emit_progress)
         return DenseEmbeddingBundle(ids = [str(value) for value in query_ids], embeddings = encoded.embeddings, metadata = encoded.metadata)
 
-    def encode_documents(self, document_ids : Sequence[str], texts : Sequence[str]) -> DenseEmbeddingBundle :
+    def encode_documents(self, document_ids : Sequence[str], texts : Sequence[str], batch_size : int | None = None, show_progress_bar : bool = True, emit_progress : bool = True) -> DenseEmbeddingBundle :
         if (len(document_ids) != len(texts)) : raise ValueError("Document IDs and texts have different lengths")
-        encoded = self._encode(texts, self.specification.document_prefix, self.specification.document_prompt_name, "documents")
+        encoded = self._encode(texts, self.specification.document_prefix, self.specification.document_prompt_name, "documents", batch_size = batch_size, show_progress_bar = show_progress_bar, emit_progress = emit_progress)
         return DenseEmbeddingBundle(ids = [str(value) for value in document_ids], embeddings = encoded.embeddings, metadata = encoded.metadata)
 
     def metadata(self) -> dict[str, Any] :
         dimension = None
         if (self.encoder is not None) :
-            try : dimension = int(self.encoder.get_sentence_embedding_dimension())
-            except Exception : dimension = None
+            try :
+                getter    = getattr(self.encoder, "get_embedding_dimension", None) or getattr(self.encoder, "get_sentence_embedding_dimension")
+                dimension = int(getter())
+            except Exception :
+                dimension = None
         return {**self.specification.identity(), "resolved_revision" : self._resolve_revision(), "device" : self.device, "embedding_dimension" : dimension, "load_runtime_s" : self.load_runtime_s, "last_batch_size" : self.last_batch_size}
 
     def release(self) -> None :
