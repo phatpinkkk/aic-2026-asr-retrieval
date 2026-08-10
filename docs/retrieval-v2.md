@@ -57,20 +57,20 @@ Every development query is retrieved against the complete All50 corpus. This avo
 
 `development20` is used for retrieval architecture, model, and policy selection.
 
-`holdout20` remains closed during development and is evaluated only after the final retrieval configuration has been frozen.
+`holdout20` was kept closed through Stage 5 and was evaluated once only after the Stage 1–5 ASR-text subsystem had been frozen. That evaluation is valid evidence for the frozen Stage 1–5 subsystem.
 
-No holdout result should influence:
+Because the holdout results have now been observed, `holdout20` is considered exposed. It must not be used for further model, architecture, or hyperparameter selection in later Retrieval v2 stages.
 
-- lexical-retriever selection
-- dense-model selection
-- video aggregation
-- sparse+dense fusion
-- ASR selection
-- transcript-view selection
+In particular, the observed holdout results must not influence:
+
 - hierarchical retrieval
 - reranking
 - query representation
+- transcript representation
 - multimodal integration
+- fusion weights or candidate thresholds
+
+Later stages continue to use `development20` for controlled development. Final evaluation of the broader retrieval system must use an independent evaluation source rather than treating `holdout20` as untouched.
 
 ### 2.3 Transcript windows
 
@@ -175,10 +175,10 @@ ASR + visual + OCR
 |---|---|---|
 | Lexical retriever | L2 BM25 preserving Vietnamese accents | Selected |
 | Dense retriever | D1 multilingual-e5-large-instruct | Selected |
-| Video aggregation | Maximum window | Temporary baseline |
-| Hybrid policy | Not selected | Stage 4 |
-| ASR | Not selected | Stage 5 |
-| Transcript view | Not selected | Stage 5 |
+| Video aggregation | Maximum window | Selected |
+| Hybrid policy | 25% normalized BM25 + 75% normalized E5 | Selected |
+| ASR | Parakeet CTC 0.6B Vietnamese | Selected |
+| Transcript view | Processed | Selected |
 | Hierarchical retrieval | Not selected | Stage 6 |
 | Reranker | Not selected | Stage 7 |
 | Query representation | Original query | Stage 8 |
@@ -186,17 +186,29 @@ ASR + visual + OCR
 
 ### 3.3 Current score sources
 
-The two score sources carried into Stage 3 are:
+The frozen Stage 1–5 ASR-text subsystem uses:
 
 ```text
-Lexical:
-L2_bm25_preserving
+ASR:
+Parakeet CTC 0.6B Vietnamese
 
-Dense:
-D1_e5_large_instruct
+Transcript view:
+processed
+
+Lexical retrieval:
+accent-preserving BM25
+
+Dense retrieval:
+multilingual-e5-large-instruct
+
+Score fusion:
+25% normalized BM25 + 75% normalized E5
+
+Video aggregation:
+maximum window score
 ```
 
-Detailed metrics and current progress are maintained separately in `docs/results/retrieval-v2-progress.md`.
+Detailed metrics, holdout validation, and current progress are maintained separately in `docs/results/retrieval-v2-progress.md`.
 
 ---
 
@@ -575,15 +587,17 @@ A cheaper ASR may replace a stronger one if downstream retrieval becomes suffici
 
 The exact engineering thresholds should be frozen in configuration before the final Stage 5 comparison.
 
-#### Output
+#### Decision
+
+The selected Stage 1–5 transcript pipeline is:
 
 ```text
-one ASR
+Parakeet CTC 0.6B Vietnamese
 +
-one primary transcript view
+processed transcript view
 ```
 
-Everything downstream should use that single transcript pipeline.
+Everything downstream should use that single transcript pipeline unless a later reviewed decision explicitly replaces it.
 
 ---
 
@@ -832,24 +846,30 @@ Freeze the final multimodal retrieval architecture.
 
 ---
 
-### 5.10 Stage 10 – Freeze and Holdout
+### 5.10 Stage 10 – Freeze and Final Evaluation
 
 #### Goal
 
-Produce one frozen retrieval system and evaluate generalization once.
+Produce one frozen broader retrieval system and evaluate generalization using an independent evaluation source.
 
-#### Freeze before holdout
+#### Holdout status
+
+`holdout20` has already been evaluated once after the Stage 1–5 ASR-text subsystem was frozen. It is now exposed and cannot serve as an untouched final test set for later Retrieval v2 stages.
+
+Later Stage 6–9 development must not use the observed `holdout20` results for tuning, candidate selection, threshold selection, or architecture changes.
+
+#### Freeze before final evaluation
 
 Freeze:
 
 ```text
+ASR
+transcript view
 lexical retriever
 dense retriever
 video aggregation
 hybrid policy
-ASR
-transcript view
-hierarchical candidate K
+hierarchical candidate policy
 reranker
 query representation
 multimodal policy
@@ -858,9 +878,7 @@ source hashes
 configs
 ```
 
-Only after this freeze should `holdout20` be evaluated.
-
-The system must not be modified based on holdout performance.
+Only after this broader system is frozen should it be evaluated on an independent final evaluation source.
 
 #### Final outputs
 
@@ -868,13 +886,13 @@ Produce:
 
 ```text
 final development metrics
-holdout metrics
+Stage 1–5 holdout20 validation record
+independent final evaluation metrics
 final ablation
 runtime summary
 failure analysis
 frozen reproducibility manifest
 ```
-
 ---
 
 ## 6. Artifacts and Reproducibility
@@ -912,14 +930,17 @@ This allows results to be reproduced without placing large generated artifacts i
 
 ### 6.3 Human-readable documentation
 
-The repository uses two human-facing documents:
+The repository uses three main human-facing documents:
 
 ```text
 docs/retrieval-v2.md
 Stable protocol, architecture, decisions, and roadmap.
 
+docs/asr-retrieval-system.md
+Implementation reference for the frozen ASR-text retrieval subsystem.
+
 docs/results/retrieval-v2-progress.md
-Current dated metrics, findings, selected components, failures, and next steps.
+Current dated metrics, findings, selected components, failures, validation results, and next steps.
 ```
 
 Detailed experiment tables, per-query outputs, hashes, and runtime manifests remain in generated reports rather than being duplicated in this document.

@@ -36,7 +36,7 @@ ranked videos + supporting transcript windows
 
 On `development20` against the 50-video corpus, the current ASR-text system reaches:
 
-| Metric | Result |
+| Metric | Development20 |
 |---|---:|
 | Video R@1 | **0.75** |
 | Video R@5 | **0.85** |
@@ -45,7 +45,18 @@ On `development20` against the 50-video corpus, the current ASR-text system reac
 | Story R@1 | **0.80** |
 | Story MRR | **0.8583** |
 
-These are development results. `holdout20` remains closed until the broader retrieval architecture is frozen.
+After the Stage 1–5 ASR-text subsystem was frozen, it was evaluated once on `holdout20`:
+
+| Metric | Holdout20 |
+|---|---:|
+| Video R@1 | **0.70** |
+| Video R@5 | **0.95** |
+| Video R@10 | **0.95** |
+| Video MRR | **0.8119** |
+| Story R@1 | **0.90** |
+| Story MRR | **0.9500** |
+
+The holdout result validates the frozen Stage 1–5 ASR-text subsystem. Because `holdout20` has now been exposed, it must not be used for further architecture or hyperparameter selection.
 
 ## Retrieval Research
 
@@ -59,7 +70,7 @@ Retrieval v2 improved the text-retrieval subsystem in several steps:
 
 The resulting ASR-text subsystem uses accent-preserving BM25 as a lexical signal and `intfloat/multilingual-e5-large-instruct` as the main semantic signal. Dense retrieval carries most of the weight, while BM25 provides a smaller lexical correction.
 
-The next research stages focus on hierarchical retrieval, reranking, query and transcript representation, visual/OCR evidence, and final holdout evaluation.
+The next research stages focus on hierarchical retrieval, reranking, query and transcript representation, visual/OCR evidence, and an independent final evaluation after the broader architecture is frozen.
 
 ## Repository Structure
 
@@ -93,7 +104,7 @@ Architecture selection is performed using `development20` against the full 50-vi
 
 `core10` is used for regression and reproducibility checks.
 
-`holdout20` remains closed until the retrieval architecture and selection policy are frozen. Development channels are evaluated independently and are not fused unless an experiment explicitly defines such a method.
+`holdout20` was evaluated once after the Stage 1–5 ASR-text subsystem was frozen. It is now considered exposed and must not be used for further architecture or hyperparameter selection. Development channels are evaluated independently and are not fused unless an experiment explicitly defines such a method.
 
 ## Data and Artifacts
 
@@ -129,4 +140,4 @@ The current ASR-text subsystem covers:
 - global video ranking; and
 - supporting transcript-window retrieval.
 
-The broader AIC retrieval system is still under development. Hierarchical retrieval, reranking, alternative query/transcript representations, visual retrieval, OCR retrieval, multimodal fusion, and final holdout evaluation are handled in later stages.
+The broader AIC retrieval system is still under development. Hierarchical retrieval, reranking, alternative query/transcript representations, visual retrieval, OCR retrieval, multimodal fusion, and an independent final evaluation are handled in later stages.

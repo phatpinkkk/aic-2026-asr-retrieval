@@ -365,6 +365,12 @@ The broader video-search pipeline may later add:
 - visual retrieval;
 - OCR retrieval;
 - multimodal fusion; and
-- final holdout evaluation.
+- independent final evaluation of the broader retrieval system.
 
 Those later components can extend this subsystem, but the ASR-text pipeline described here is the current retrieval baseline they should start from.
+
+### 6.4 Holdout validation
+
+After the ASR-text subsystem was frozen, it was evaluated once on `holdout20`. The frozen system achieved **Video R@1 = 0.70**, **Video R@5 = 0.95**, **Video R@10 = 0.95**, **Video MRR = 0.8119**, **Story R@1 = 0.90**, and **Story MRR = 0.9500**.
+
+These results are validation evidence for the frozen subsystem, not a new tuning signal. `holdout20` is now considered exposed and must not be used to modify the ASR model, transcript representation, retrieval weights, or other Stage 1–5 settings. Detailed comparisons and failure analysis are maintained in `docs/results/retrieval-v2-progress.md`.

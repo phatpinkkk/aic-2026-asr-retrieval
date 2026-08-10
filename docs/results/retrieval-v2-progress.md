@@ -5,7 +5,7 @@
 > **Selected transcript view:** Processed  
 > **Selected retriever:** 25% BM25 + 75% E5-large-instruct  
 > **Selected video aggregation:** Max window  
-> **Holdout:** Not evaluated
+> **Holdout20:** Evaluated once on the frozen Stage 1–5 ASR-text subsystem
 
 ## 1. Overview
 
@@ -23,7 +23,7 @@ Retrieval v2 develops the ASR-based text retrieval component of the AIC 2026 vid
 | Stage 4 | Sparse+dense hybrid | Complete | `H3_norm_25_75` |
 | Stage 5 | ASR and text view | Complete | Parakeet processed |
 | Stage 6 | Hierarchical retrieval | Next | Not evaluated |
-| Stage 7–10 | Reranking, representation, multimodal retrieval, holdout | Pending | Not evaluated |
+| Stage 7–10 | Reranking, representation, multimodal retrieval, final evaluation | Pending | Not evaluated |
 
 ### 1.3 Current selected ASR retrieval pipeline
 
@@ -71,9 +71,9 @@ The final Stage 1–5 ASR retrieval baseline therefore improves global video ret
 | Window length | 60 s |
 | Window stride | 45 s |
 | Window overlap | 15 s |
-| Holdout queries | 20, kept closed |
+| Holdout queries | 20, evaluated once after the Stage 1–5 freeze |
 
-All architecture decisions reported here use **development20** against the full **All50** corpus. Holdout20 has not been used for model, weight, view, or architecture selection.
+All Stage 1–5 architecture decisions reported here were made using **development20** against the full **All50** corpus. `holdout20` remained closed throughout those decisions and was evaluated once only after the ASR-text subsystem had been frozen. It is now considered exposed and must not be used for further architecture or hyperparameter selection.
 
 ### 2.2 Metrics
 
@@ -253,6 +253,36 @@ Stage 5 closes the four-channel diagnostic phase. Stage 6 onward should use only
 
 Implementation details for this frozen Stage 1–5 subsystem are documented separately in `docs/asr-retrieval-system.md`.
 
+### 4.3 Holdout20 validation
+
+After the Stage 1–5 ASR-text subsystem was frozen, it was evaluated once on `holdout20` against the same All50 retrieval corpus.
+
+| Metric | Development20 | Holdout20 | Δ |
+|---|---:|---:|---:|
+| Video R@1 | 0.75 | 0.70 | -0.05 |
+| Video R@5 | 0.85 | 0.95 | +0.10 |
+| Video R@10 | 0.90 | 0.95 | +0.05 |
+| Video MRR | 0.8102 | 0.8119 | +0.0017 |
+| Story R@1 | 0.80 | 0.90 | +0.10 |
+| Story R@5 | 0.95 | 1.00 | +0.05 |
+| Story R@10 | 1.00 | 1.00 | 0.00 |
+| Story MRR | 0.8583 | 0.9500 | +0.0917 |
+
+The global ranking quality generalizes closely: Video MRR is effectively unchanged, while Video R@1 decreases by one query. The broader rank distribution is strong:
+
+```text
+Video rank 1:   14 / 20
+Video rank ≤ 3: 19 / 20
+Video rank ≤ 20: 20 / 20
+
+Story rank 1:   18 / 20
+Story rank ≤ 2: 20 / 20
+```
+
+The main holdout failure is `R2-15`, where the correct video is ranked 14th even though the relevant Story window is ranked first inside the correct video. This is a clear global cross-video discrimination failure rather than a temporal-localization failure and should be retained as a diagnostic example.
+
+The frozen Stage 1–5 subsystem should **not** be retuned using these holdout results. `holdout20` is now exposed and is no longer an untouched final evaluation set for later Retrieval v2 stages.
+
 ---
 
 ## 5. Efficiency and Operational Results
@@ -286,6 +316,7 @@ The current system is therefore dominated by dense query encoding rather than sc
 4. **Fixed temporal adjacency is not semantic event continuity.** Neighboring overlapping ASR windows do not reliably represent one coherent event.
 5. **Retrieval architecture changed the ASR conclusion.** Parakeet was behind Whisper under dense-only retrieval but became the strongest video channel after sparse+dense fusion.
 6. **Global video discrimination remains the main ASR-text bottleneck.** Temporal localization is often strong even when the correct video is ranked poorly.
+7. **The frozen Stage 1–5 subsystem generalizes well to holdout20.** Video MRR remains essentially unchanged at 0.8119, while 19 of 20 holdout queries retrieve the correct video within the top three.
 
 ### 6.2 Remaining limitations
 
@@ -294,7 +325,7 @@ The current system is therefore dominated by dense query encoding rather than sc
 - `R2-8` remains difficult across multiple retrieval configurations.
 - Queries that depend mainly on visual appearance, scene text, or OCR cannot be solved reliably by ASR text alone.
 - Current architecture decisions are based on development20.
-- Holdout20 remains closed.
+- `holdout20` has been evaluated once after the Stage 1–5 freeze and is now exposed; it must not be used for further tuning.
 
 ---
 
@@ -306,7 +337,7 @@ The current system is therefore dominated by dense query encoding rather than sc
 | Stage 7 | Can a second-stage reranker correct difficult text-ranking errors? |
 | Stage 8 | Can better query or transcript representations improve retrieval? |
 | Stage 9 | Which remaining failures require visual and OCR evidence? |
-| Stage 10 | Does the fully frozen system generalize to holdout20? |
+| Stage 10 | Does the fully frozen broader retrieval system generalize on an independent final evaluation source? |
 
 Stages 6–10 start from one frozen ASR retrieval baseline:
 
@@ -324,4 +355,4 @@ P0 max video aggregation
 
 Large per-query outputs, cache identities, source hashes, runtime details, and reproducibility metadata remain in the stage-specific artifacts under `reports/retrieval_v2/` and `cache/retrieval_v2/`.
 
-**Holdout20 remains closed until the full retrieval architecture is frozen.**
+`holdout20` was evaluated once after the Stage 1–5 ASR-text subsystem was frozen. It is now exposed and should be retained only as a validation record for that frozen subsystem, not as a tuning set or untouched final test set for later stages.
