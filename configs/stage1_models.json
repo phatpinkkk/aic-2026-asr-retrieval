@@ -1,0 +1,216 @@
+{
+  "stage_id": "stage1_10_video",
+  "benchmark_manifest": "data/benchmark_manifest.json",
+  "reference_manifest": "data/references/whisper_large_v3/reference_manifest.json",
+  "run_policy": {
+    "one_model_per_clean_runtime": true,
+    "use_same_frozen_windows": true,
+    "query_access_during_asr": false,
+    "pin_huggingface_revision_after_smoke_test": true
+  },
+  "smoke_test": {
+    "window_ids": [
+      "L21_V015_0000",
+      "L21_V015_0019",
+      "K01_V009_0008"
+    ],
+    "output_directory": "reports/stage1/smoke_test"
+  },
+  "models": [
+    {
+      "model_id": "whisper_large_v3",
+      "enabled": true,
+      "completed": true,
+      "adapter": "whisper",
+      "model_name": "large-v3",
+      "revision": "openai-whisper-20250625",
+      "role": "quality_baseline_and_reference",
+      "dependency_group": "whisper",
+      "language": "vi",
+      "device": "cuda",
+      "dtype": "float16",
+      "cache_dir": "/content/drive/MyDrive/aic26/asr_model_comparison/model_cache/whisper",
+      "condition_on_previous_text": false,
+      "word_timestamps": false,
+      "temperature": 0.0,
+      "selected_for_stage1_full_run": true,
+      "selection_status": "selected"
+    },
+    {
+      "model_id": "whisper_small",
+      "enabled": true,
+      "completed": false,
+      "adapter": "whisper",
+      "model_name": "small",
+      "revision": "openai-whisper-20250625",
+      "role": "smaller_whisper_speed_baseline",
+      "dependency_group": "whisper",
+      "language": "vi",
+      "device": "cuda",
+      "dtype": "float16",
+      "cache_dir": "/content/drive/MyDrive/aic26/asr_model_comparison/model_cache/whisper",
+      "condition_on_previous_text": false,
+      "word_timestamps": false,
+      "temperature": 0.0,
+      "selected_for_stage1_full_run": true,
+      "selection_status": "selected"
+    },
+    {
+      "model_id": "pho_whisper_large",
+      "enabled": true,
+      "completed": false,
+      "adapter": "hf_pipeline",
+      "model_name": "vinai/PhoWhisper-large",
+      "revision": "b9136a44b5f2ca664bd0b8f74baecf1715f6eeeb",
+      "role": "vietnamese_quality_candidate",
+      "dependency_group": "transformers_whisper",
+      "language": "vi",
+      "device": "cuda",
+      "dtype": "float16",
+      "trust_remote_code": false,
+      "return_timestamps": true,
+      "generate_kwargs": {
+        "language": "vi",
+        "task": "transcribe"
+      },
+      "selected_for_stage1_full_run": true,
+      "selection_status": "selected"
+    },
+    {
+      "model_id": "parakeet_ctc_0_6b_vietnamese",
+      "enabled": true,
+      "completed": false,
+      "adapter": "nemo_parakeet_ctc",
+      "model_name": "nvidia/parakeet-ctc-0.6b-Vietnamese",
+      "model_filename": "parakeet-ctc-0.6b-vi.nemo",
+      "revision": "b0493142b49458810324e3db8be9e8e07b4ebc17",
+      "role": "vietnamese_fast_ctc_candidate",
+      "dependency_group": "nemo_asr",
+      "language": "vi",
+      "device": "cuda",
+      "dtype": "float32",
+      "timestamps": true,
+      "decoder": "greedy_ctc",
+      "install": [
+        "Cython",
+        "packaging",
+        "nemo_toolkit[asr]==2.7.3",
+        "huggingface_hub",
+        "soundfile",
+        "scipy"
+      ],
+      "selected_for_stage1_full_run": true,
+      "selection_status": "promoted_after_round2_smoke",
+      "install_dependencies_in_full_run": false,
+      "validated_environment": {
+        "torch": "2.11.0+cu128",
+        "nemo_toolkit": "2.7.3",
+        "numba": "0.66.0",
+        "numba_cuda": "0.30.4"
+      }
+    },
+    {
+      "model_id": "chunkformer_ctc_large_vie",
+      "enabled": false,
+      "completed": false,
+      "adapter": "chunkformer",
+      "model_name": "khanhld/chunkformer-ctc-large-vie",
+      "revision": null,
+      "role": "vietnamese_speed_longform_candidate",
+      "dependency_group": "chunkformer",
+      "language": "vi",
+      "device": "cuda",
+      "dtype": "float32",
+      "trust_remote_code": true,
+      "install": [
+        "chunkformer",
+        "huggingface_hub",
+        "soundfile",
+        "scipy"
+      ],
+      "chunk_size": 64,
+      "left_context_size": 128,
+      "right_context_size": 128,
+      "total_batch_duration": 1800,
+      "return_timestamps": true,
+      "selected_for_stage1_full_run": false,
+      "selection_status": "excluded_after_smoke_test"
+    },
+    {
+      "model_id": "mms_1b_all_vie",
+      "enabled": false,
+      "completed": false,
+      "adapter": "mms_ctc",
+      "model_name": "facebook/mms-1b-all",
+      "revision": "3d33597edbdaaba14a8e858e2c8caa76e3cec0cd",
+      "role": "multilingual_ctc_candidate",
+      "dependency_group": "transformers_ctc",
+      "language": "vi",
+      "target_lang": "vie",
+      "device": "cuda",
+      "dtype": "float32",
+      "selected_for_stage1_full_run": false,
+      "selection_status": "excluded_after_smoke_test"
+    },
+    {
+      "model_id": "seamless_m4t_medium_vie",
+      "enabled": false,
+      "completed": false,
+      "adapter": "seamless_m4t",
+      "model_name": "facebook/hf-seamless-m4t-medium",
+      "revision": "ecf60d4df63baaac3f82ae6a7ad7adcb19dcb26c",
+      "role": "multilingual_sequence_candidate",
+      "dependency_group": "transformers_seamless",
+      "language": "vi",
+      "target_lang": "vie",
+      "device": "cuda",
+      "dtype": "float32",
+      "num_beams": 1,
+      "selected_for_stage1_full_run": false,
+      "selection_status": "excluded_after_smoke_test"
+    }
+  ],
+  "stage1_full_run": {
+    "benchmark": "10_videos_219_windows",
+    "selected_model_ids": [
+      "whisper_large_v3",
+      "whisper_small",
+      "pho_whisper_large",
+      "parakeet_ctc_0_6b_vietnamese"
+    ],
+    "reference_model_id": "whisper_large_v3",
+    "models_to_infer": [
+      "whisper_small",
+      "pho_whisper_large",
+      "parakeet_ctc_0_6b_vietnamese"
+    ],
+    "reuse_existing_outputs": [
+      "whisper_large_v3"
+    ],
+    "excluded_model_ids": [
+      "chunkformer_ctc_large_vie",
+      "mms_1b_all_vie",
+      "seamless_m4t_medium_vie"
+    ],
+    "benchmark_manifest": "data/benchmark_manifest.json",
+    "output_namespace_for_new_additions": "stage1_core10_additions"
+  },
+  "stage1_extension40_run": {
+    "benchmark": "40_videos_expected_775_windows",
+    "benchmark_manifest": "data/stage1_extension40/benchmark_manifest.json",
+    "output_namespace": "stage1_extension40",
+    "selected_model_ids": [
+      "whisper_large_v3",
+      "whisper_small",
+      "pho_whisper_large",
+      "parakeet_ctc_0_6b_vietnamese"
+    ],
+    "reference_model_id": "whisper_large_v3",
+    "models_to_infer": [
+      "whisper_large_v3",
+      "whisper_small",
+      "pho_whisper_large",
+      "parakeet_ctc_0_6b_vietnamese"
+    ]
+  }
+}

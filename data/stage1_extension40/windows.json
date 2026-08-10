@@ -1,0 +1,7761 @@
+{
+  "window_policy": {
+    "sample_rate": 16000,
+    "window_seconds": 60.0,
+    "stride_seconds": 45.0,
+    "minimum_tail_seconds": 15.0
+  },
+  "window_policy_hash": "02f41c37cc9024a1b11fc04e35d9656df3357928355f33f1ebe48d2fd0aa5d29",
+  "windows": [
+    {
+      "window_id": "L21_V029_0000",
+      "video_id": "L21_V029",
+      "window_index": 0,
+      "start_s": 0.0,
+      "end_s": 60.0,
+      "sample_start": 0,
+      "sample_end": 960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V029_0001",
+      "video_id": "L21_V029",
+      "window_index": 1,
+      "start_s": 45.0,
+      "end_s": 105.0,
+      "sample_start": 720000,
+      "sample_end": 1680000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V029_0002",
+      "video_id": "L21_V029",
+      "window_index": 2,
+      "start_s": 90.0,
+      "end_s": 150.0,
+      "sample_start": 1440000,
+      "sample_end": 2400000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V029_0003",
+      "video_id": "L21_V029",
+      "window_index": 3,
+      "start_s": 135.0,
+      "end_s": 195.0,
+      "sample_start": 2160000,
+      "sample_end": 3120000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V029_0004",
+      "video_id": "L21_V029",
+      "window_index": 4,
+      "start_s": 180.0,
+      "end_s": 240.0,
+      "sample_start": 2880000,
+      "sample_end": 3840000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V029_0005",
+      "video_id": "L21_V029",
+      "window_index": 5,
+      "start_s": 225.0,
+      "end_s": 285.0,
+      "sample_start": 3600000,
+      "sample_end": 4560000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V029_0006",
+      "video_id": "L21_V029",
+      "window_index": 6,
+      "start_s": 270.0,
+      "end_s": 330.0,
+      "sample_start": 4320000,
+      "sample_end": 5280000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V029_0007",
+      "video_id": "L21_V029",
+      "window_index": 7,
+      "start_s": 315.0,
+      "end_s": 375.0,
+      "sample_start": 5040000,
+      "sample_end": 6000000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V029_0008",
+      "video_id": "L21_V029",
+      "window_index": 8,
+      "start_s": 360.0,
+      "end_s": 420.0,
+      "sample_start": 5760000,
+      "sample_end": 6720000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V029_0009",
+      "video_id": "L21_V029",
+      "window_index": 9,
+      "start_s": 405.0,
+      "end_s": 465.0,
+      "sample_start": 6480000,
+      "sample_end": 7440000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V029_0010",
+      "video_id": "L21_V029",
+      "window_index": 10,
+      "start_s": 450.0,
+      "end_s": 510.0,
+      "sample_start": 7200000,
+      "sample_end": 8160000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V029_0011",
+      "video_id": "L21_V029",
+      "window_index": 11,
+      "start_s": 495.0,
+      "end_s": 555.0,
+      "sample_start": 7920000,
+      "sample_end": 8880000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V029_0012",
+      "video_id": "L21_V029",
+      "window_index": 12,
+      "start_s": 540.0,
+      "end_s": 600.0,
+      "sample_start": 8640000,
+      "sample_end": 9600000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V029_0013",
+      "video_id": "L21_V029",
+      "window_index": 13,
+      "start_s": 585.0,
+      "end_s": 645.0,
+      "sample_start": 9360000,
+      "sample_end": 10320000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V029_0014",
+      "video_id": "L21_V029",
+      "window_index": 14,
+      "start_s": 630.0,
+      "end_s": 690.0,
+      "sample_start": 10080000,
+      "sample_end": 11040000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V029_0015",
+      "video_id": "L21_V029",
+      "window_index": 15,
+      "start_s": 675.0,
+      "end_s": 735.0,
+      "sample_start": 10800000,
+      "sample_end": 11760000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V029_0016",
+      "video_id": "L21_V029",
+      "window_index": 16,
+      "start_s": 720.0,
+      "end_s": 780.0,
+      "sample_start": 11520000,
+      "sample_end": 12480000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V029_0017",
+      "video_id": "L21_V029",
+      "window_index": 17,
+      "start_s": 765.0,
+      "end_s": 825.0,
+      "sample_start": 12240000,
+      "sample_end": 13200000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V029_0018",
+      "video_id": "L21_V029",
+      "window_index": 18,
+      "start_s": 810.0,
+      "end_s": 870.0,
+      "sample_start": 12960000,
+      "sample_end": 13920000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V029_0019",
+      "video_id": "L21_V029",
+      "window_index": 19,
+      "start_s": 855.0,
+      "end_s": 915.0,
+      "sample_start": 13680000,
+      "sample_end": 14640000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V029_0020",
+      "video_id": "L21_V029",
+      "window_index": 20,
+      "start_s": 900.0,
+      "end_s": 960.0,
+      "sample_start": 14400000,
+      "sample_end": 15360000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V029_0021",
+      "video_id": "L21_V029",
+      "window_index": 21,
+      "start_s": 945.0,
+      "end_s": 1005.0,
+      "sample_start": 15120000,
+      "sample_end": 16080000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V029_0022",
+      "video_id": "L21_V029",
+      "window_index": 22,
+      "start_s": 990.0,
+      "end_s": 1050.0,
+      "sample_start": 15840000,
+      "sample_end": 16800000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V029_0023",
+      "video_id": "L21_V029",
+      "window_index": 23,
+      "start_s": 1035.0,
+      "end_s": 1095.0,
+      "sample_start": 16560000,
+      "sample_end": 17520000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V029_0024",
+      "video_id": "L21_V029",
+      "window_index": 24,
+      "start_s": 1080.0,
+      "end_s": 1140.0,
+      "sample_start": 17280000,
+      "sample_end": 18240000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V029_0025",
+      "video_id": "L21_V029",
+      "window_index": 25,
+      "start_s": 1125.0,
+      "end_s": 1156.377,
+      "sample_start": 18000000,
+      "sample_end": 18502032,
+      "duration_samples": 502032
+    },
+    {
+      "window_id": "L27_V013_0000",
+      "video_id": "L27_V013",
+      "window_index": 0,
+      "start_s": 0.0,
+      "end_s": 60.0,
+      "sample_start": 0,
+      "sample_end": 960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L27_V013_0001",
+      "video_id": "L27_V013",
+      "window_index": 1,
+      "start_s": 45.0,
+      "end_s": 105.0,
+      "sample_start": 720000,
+      "sample_end": 1680000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L27_V013_0002",
+      "video_id": "L27_V013",
+      "window_index": 2,
+      "start_s": 90.0,
+      "end_s": 150.0,
+      "sample_start": 1440000,
+      "sample_end": 2400000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L27_V013_0003",
+      "video_id": "L27_V013",
+      "window_index": 3,
+      "start_s": 135.0,
+      "end_s": 195.0,
+      "sample_start": 2160000,
+      "sample_end": 3120000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L27_V013_0004",
+      "video_id": "L27_V013",
+      "window_index": 4,
+      "start_s": 180.0,
+      "end_s": 240.0,
+      "sample_start": 2880000,
+      "sample_end": 3840000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L27_V013_0005",
+      "video_id": "L27_V013",
+      "window_index": 5,
+      "start_s": 225.0,
+      "end_s": 285.0,
+      "sample_start": 3600000,
+      "sample_end": 4560000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L27_V013_0006",
+      "video_id": "L27_V013",
+      "window_index": 6,
+      "start_s": 270.0,
+      "end_s": 330.0,
+      "sample_start": 4320000,
+      "sample_end": 5280000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L27_V013_0007",
+      "video_id": "L27_V013",
+      "window_index": 7,
+      "start_s": 315.0,
+      "end_s": 375.0,
+      "sample_start": 5040000,
+      "sample_end": 6000000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L27_V013_0008",
+      "video_id": "L27_V013",
+      "window_index": 8,
+      "start_s": 360.0,
+      "end_s": 420.0,
+      "sample_start": 5760000,
+      "sample_end": 6720000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L27_V013_0009",
+      "video_id": "L27_V013",
+      "window_index": 9,
+      "start_s": 405.0,
+      "end_s": 465.0,
+      "sample_start": 6480000,
+      "sample_end": 7440000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L27_V013_0010",
+      "video_id": "L27_V013",
+      "window_index": 10,
+      "start_s": 450.0,
+      "end_s": 510.0,
+      "sample_start": 7200000,
+      "sample_end": 8160000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L27_V013_0011",
+      "video_id": "L27_V013",
+      "window_index": 11,
+      "start_s": 495.0,
+      "end_s": 555.0,
+      "sample_start": 7920000,
+      "sample_end": 8880000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L27_V013_0012",
+      "video_id": "L27_V013",
+      "window_index": 12,
+      "start_s": 540.0,
+      "end_s": 571.8610625,
+      "sample_start": 8640000,
+      "sample_end": 9149777,
+      "duration_samples": 509777
+    },
+    {
+      "window_id": "L30_V095_0000",
+      "video_id": "L30_V095",
+      "window_index": 0,
+      "start_s": 0.0,
+      "end_s": 60.0,
+      "sample_start": 0,
+      "sample_end": 960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L30_V095_0001",
+      "video_id": "L30_V095",
+      "window_index": 1,
+      "start_s": 45.0,
+      "end_s": 105.0,
+      "sample_start": 720000,
+      "sample_end": 1680000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L30_V095_0002",
+      "video_id": "L30_V095",
+      "window_index": 2,
+      "start_s": 90.0,
+      "end_s": 150.0,
+      "sample_start": 1440000,
+      "sample_end": 2400000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L30_V095_0003",
+      "video_id": "L30_V095",
+      "window_index": 3,
+      "start_s": 135.0,
+      "end_s": 195.0,
+      "sample_start": 2160000,
+      "sample_end": 3120000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L30_V095_0004",
+      "video_id": "L30_V095",
+      "window_index": 4,
+      "start_s": 180.0,
+      "end_s": 240.0,
+      "sample_start": 2880000,
+      "sample_end": 3840000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L30_V095_0005",
+      "video_id": "L30_V095",
+      "window_index": 5,
+      "start_s": 225.0,
+      "end_s": 285.0,
+      "sample_start": 3600000,
+      "sample_end": 4560000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L30_V095_0006",
+      "video_id": "L30_V095",
+      "window_index": 6,
+      "start_s": 270.0,
+      "end_s": 309.614875,
+      "sample_start": 4320000,
+      "sample_end": 4953838,
+      "duration_samples": 633838
+    },
+    {
+      "window_id": "L30_V072_0000",
+      "video_id": "L30_V072",
+      "window_index": 0,
+      "start_s": 0.0,
+      "end_s": 60.0,
+      "sample_start": 0,
+      "sample_end": 960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L30_V072_0001",
+      "video_id": "L30_V072",
+      "window_index": 1,
+      "start_s": 45.0,
+      "end_s": 86.773,
+      "sample_start": 720000,
+      "sample_end": 1388368,
+      "duration_samples": 668368
+    },
+    {
+      "window_id": "L30_V092_0000",
+      "video_id": "L30_V092",
+      "window_index": 0,
+      "start_s": 0.0,
+      "end_s": 60.0,
+      "sample_start": 0,
+      "sample_end": 960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L30_V092_0001",
+      "video_id": "L30_V092",
+      "window_index": 1,
+      "start_s": 45.0,
+      "end_s": 105.0,
+      "sample_start": 720000,
+      "sample_end": 1680000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L30_V092_0002",
+      "video_id": "L30_V092",
+      "window_index": 2,
+      "start_s": 90.0,
+      "end_s": 150.0,
+      "sample_start": 1440000,
+      "sample_end": 2400000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L30_V092_0003",
+      "video_id": "L30_V092",
+      "window_index": 3,
+      "start_s": 135.0,
+      "end_s": 173.406625,
+      "sample_start": 2160000,
+      "sample_end": 2774506,
+      "duration_samples": 614506
+    },
+    {
+      "window_id": "L26_V178_0000",
+      "video_id": "L26_V178",
+      "window_index": 0,
+      "start_s": 0.0,
+      "end_s": 60.0,
+      "sample_start": 0,
+      "sample_end": 960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L26_V178_0001",
+      "video_id": "L26_V178",
+      "window_index": 1,
+      "start_s": 45.0,
+      "end_s": 105.0,
+      "sample_start": 720000,
+      "sample_end": 1680000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L26_V178_0002",
+      "video_id": "L26_V178",
+      "window_index": 2,
+      "start_s": 90.0,
+      "end_s": 150.0,
+      "sample_start": 1440000,
+      "sample_end": 2400000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L26_V178_0003",
+      "video_id": "L26_V178",
+      "window_index": 3,
+      "start_s": 135.0,
+      "end_s": 195.0,
+      "sample_start": 2160000,
+      "sample_end": 3120000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L26_V178_0004",
+      "video_id": "L26_V178",
+      "window_index": 4,
+      "start_s": 180.0,
+      "end_s": 240.0,
+      "sample_start": 2880000,
+      "sample_end": 3840000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L26_V178_0005",
+      "video_id": "L26_V178",
+      "window_index": 5,
+      "start_s": 225.0,
+      "end_s": 285.0,
+      "sample_start": 3600000,
+      "sample_end": 4560000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L26_V178_0006",
+      "video_id": "L26_V178",
+      "window_index": 6,
+      "start_s": 270.0,
+      "end_s": 330.0,
+      "sample_start": 4320000,
+      "sample_end": 5280000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L26_V178_0007",
+      "video_id": "L26_V178",
+      "window_index": 7,
+      "start_s": 315.0,
+      "end_s": 330.76825,
+      "sample_start": 5040000,
+      "sample_end": 5292292,
+      "duration_samples": 252292
+    },
+    {
+      "window_id": "L22_V022_0000",
+      "video_id": "L22_V022",
+      "window_index": 0,
+      "start_s": 0.0,
+      "end_s": 60.0,
+      "sample_start": 0,
+      "sample_end": 960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L22_V022_0001",
+      "video_id": "L22_V022",
+      "window_index": 1,
+      "start_s": 45.0,
+      "end_s": 105.0,
+      "sample_start": 720000,
+      "sample_end": 1680000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L22_V022_0002",
+      "video_id": "L22_V022",
+      "window_index": 2,
+      "start_s": 90.0,
+      "end_s": 150.0,
+      "sample_start": 1440000,
+      "sample_end": 2400000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L22_V022_0003",
+      "video_id": "L22_V022",
+      "window_index": 3,
+      "start_s": 135.0,
+      "end_s": 195.0,
+      "sample_start": 2160000,
+      "sample_end": 3120000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L22_V022_0004",
+      "video_id": "L22_V022",
+      "window_index": 4,
+      "start_s": 180.0,
+      "end_s": 240.0,
+      "sample_start": 2880000,
+      "sample_end": 3840000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L22_V022_0005",
+      "video_id": "L22_V022",
+      "window_index": 5,
+      "start_s": 225.0,
+      "end_s": 285.0,
+      "sample_start": 3600000,
+      "sample_end": 4560000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L22_V022_0006",
+      "video_id": "L22_V022",
+      "window_index": 6,
+      "start_s": 270.0,
+      "end_s": 330.0,
+      "sample_start": 4320000,
+      "sample_end": 5280000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L22_V022_0007",
+      "video_id": "L22_V022",
+      "window_index": 7,
+      "start_s": 315.0,
+      "end_s": 375.0,
+      "sample_start": 5040000,
+      "sample_end": 6000000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L22_V022_0008",
+      "video_id": "L22_V022",
+      "window_index": 8,
+      "start_s": 360.0,
+      "end_s": 420.0,
+      "sample_start": 5760000,
+      "sample_end": 6720000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L22_V022_0009",
+      "video_id": "L22_V022",
+      "window_index": 9,
+      "start_s": 405.0,
+      "end_s": 465.0,
+      "sample_start": 6480000,
+      "sample_end": 7440000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L22_V022_0010",
+      "video_id": "L22_V022",
+      "window_index": 10,
+      "start_s": 450.0,
+      "end_s": 510.0,
+      "sample_start": 7200000,
+      "sample_end": 8160000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L22_V022_0011",
+      "video_id": "L22_V022",
+      "window_index": 11,
+      "start_s": 495.0,
+      "end_s": 555.0,
+      "sample_start": 7920000,
+      "sample_end": 8880000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L22_V022_0012",
+      "video_id": "L22_V022",
+      "window_index": 12,
+      "start_s": 540.0,
+      "end_s": 600.0,
+      "sample_start": 8640000,
+      "sample_end": 9600000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L22_V022_0013",
+      "video_id": "L22_V022",
+      "window_index": 13,
+      "start_s": 585.0,
+      "end_s": 645.0,
+      "sample_start": 9360000,
+      "sample_end": 10320000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L22_V022_0014",
+      "video_id": "L22_V022",
+      "window_index": 14,
+      "start_s": 630.0,
+      "end_s": 690.0,
+      "sample_start": 10080000,
+      "sample_end": 11040000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L22_V022_0015",
+      "video_id": "L22_V022",
+      "window_index": 15,
+      "start_s": 675.0,
+      "end_s": 735.0,
+      "sample_start": 10800000,
+      "sample_end": 11760000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L22_V022_0016",
+      "video_id": "L22_V022",
+      "window_index": 16,
+      "start_s": 720.0,
+      "end_s": 780.0,
+      "sample_start": 11520000,
+      "sample_end": 12480000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L22_V022_0017",
+      "video_id": "L22_V022",
+      "window_index": 17,
+      "start_s": 765.0,
+      "end_s": 825.0,
+      "sample_start": 12240000,
+      "sample_end": 13200000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L22_V022_0018",
+      "video_id": "L22_V022",
+      "window_index": 18,
+      "start_s": 810.0,
+      "end_s": 870.0,
+      "sample_start": 12960000,
+      "sample_end": 13920000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L22_V022_0019",
+      "video_id": "L22_V022",
+      "window_index": 19,
+      "start_s": 855.0,
+      "end_s": 915.0,
+      "sample_start": 13680000,
+      "sample_end": 14640000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L22_V022_0020",
+      "video_id": "L22_V022",
+      "window_index": 20,
+      "start_s": 900.0,
+      "end_s": 960.0,
+      "sample_start": 14400000,
+      "sample_end": 15360000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L22_V022_0021",
+      "video_id": "L22_V022",
+      "window_index": 21,
+      "start_s": 945.0,
+      "end_s": 1005.0,
+      "sample_start": 15120000,
+      "sample_end": 16080000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L22_V022_0022",
+      "video_id": "L22_V022",
+      "window_index": 22,
+      "start_s": 990.0,
+      "end_s": 1050.0,
+      "sample_start": 15840000,
+      "sample_end": 16800000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L22_V022_0023",
+      "video_id": "L22_V022",
+      "window_index": 23,
+      "start_s": 1035.0,
+      "end_s": 1095.0,
+      "sample_start": 16560000,
+      "sample_end": 17520000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L22_V022_0024",
+      "video_id": "L22_V022",
+      "window_index": 24,
+      "start_s": 1080.0,
+      "end_s": 1138.3815,
+      "sample_start": 17280000,
+      "sample_end": 18214104,
+      "duration_samples": 934104
+    },
+    {
+      "window_id": "L30_V014_0000",
+      "video_id": "L30_V014",
+      "window_index": 0,
+      "start_s": 0.0,
+      "end_s": 60.0,
+      "sample_start": 0,
+      "sample_end": 960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L30_V014_0001",
+      "video_id": "L30_V014",
+      "window_index": 1,
+      "start_s": 45.0,
+      "end_s": 105.0,
+      "sample_start": 720000,
+      "sample_end": 1680000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L30_V014_0002",
+      "video_id": "L30_V014",
+      "window_index": 2,
+      "start_s": 90.0,
+      "end_s": 114.3350625,
+      "sample_start": 1440000,
+      "sample_end": 1829361,
+      "duration_samples": 389361
+    },
+    {
+      "window_id": "L29_V020_0000",
+      "video_id": "L29_V020",
+      "window_index": 0,
+      "start_s": 0.0,
+      "end_s": 60.0,
+      "sample_start": 0,
+      "sample_end": 960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L29_V020_0001",
+      "video_id": "L29_V020",
+      "window_index": 1,
+      "start_s": 45.0,
+      "end_s": 105.0,
+      "sample_start": 720000,
+      "sample_end": 1680000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L29_V020_0002",
+      "video_id": "L29_V020",
+      "window_index": 2,
+      "start_s": 90.0,
+      "end_s": 150.0,
+      "sample_start": 1440000,
+      "sample_end": 2400000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L29_V020_0003",
+      "video_id": "L29_V020",
+      "window_index": 3,
+      "start_s": 135.0,
+      "end_s": 195.0,
+      "sample_start": 2160000,
+      "sample_end": 3120000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L29_V020_0004",
+      "video_id": "L29_V020",
+      "window_index": 4,
+      "start_s": 180.0,
+      "end_s": 240.0,
+      "sample_start": 2880000,
+      "sample_end": 3840000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L29_V020_0005",
+      "video_id": "L29_V020",
+      "window_index": 5,
+      "start_s": 225.0,
+      "end_s": 285.0,
+      "sample_start": 3600000,
+      "sample_end": 4560000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L29_V020_0006",
+      "video_id": "L29_V020",
+      "window_index": 6,
+      "start_s": 270.0,
+      "end_s": 330.0,
+      "sample_start": 4320000,
+      "sample_end": 5280000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L29_V020_0007",
+      "video_id": "L29_V020",
+      "window_index": 7,
+      "start_s": 315.0,
+      "end_s": 375.0,
+      "sample_start": 5040000,
+      "sample_end": 6000000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L29_V020_0008",
+      "video_id": "L29_V020",
+      "window_index": 8,
+      "start_s": 360.0,
+      "end_s": 420.0,
+      "sample_start": 5760000,
+      "sample_end": 6720000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L29_V020_0009",
+      "video_id": "L29_V020",
+      "window_index": 9,
+      "start_s": 405.0,
+      "end_s": 465.0,
+      "sample_start": 6480000,
+      "sample_end": 7440000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L29_V020_0010",
+      "video_id": "L29_V020",
+      "window_index": 10,
+      "start_s": 450.0,
+      "end_s": 510.0,
+      "sample_start": 7200000,
+      "sample_end": 8160000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L29_V020_0011",
+      "video_id": "L29_V020",
+      "window_index": 11,
+      "start_s": 495.0,
+      "end_s": 555.0,
+      "sample_start": 7920000,
+      "sample_end": 8880000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L29_V020_0012",
+      "video_id": "L29_V020",
+      "window_index": 12,
+      "start_s": 540.0,
+      "end_s": 600.0,
+      "sample_start": 8640000,
+      "sample_end": 9600000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L29_V020_0013",
+      "video_id": "L29_V020",
+      "window_index": 13,
+      "start_s": 585.0,
+      "end_s": 645.0,
+      "sample_start": 9360000,
+      "sample_end": 10320000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L29_V020_0014",
+      "video_id": "L29_V020",
+      "window_index": 14,
+      "start_s": 630.0,
+      "end_s": 690.0,
+      "sample_start": 10080000,
+      "sample_end": 11040000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L29_V020_0015",
+      "video_id": "L29_V020",
+      "window_index": 15,
+      "start_s": 675.0,
+      "end_s": 735.0,
+      "sample_start": 10800000,
+      "sample_end": 11760000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L29_V020_0016",
+      "video_id": "L29_V020",
+      "window_index": 16,
+      "start_s": 720.0,
+      "end_s": 780.0,
+      "sample_start": 11520000,
+      "sample_end": 12480000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L29_V020_0017",
+      "video_id": "L29_V020",
+      "window_index": 17,
+      "start_s": 765.0,
+      "end_s": 825.0,
+      "sample_start": 12240000,
+      "sample_end": 13200000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L29_V020_0018",
+      "video_id": "L29_V020",
+      "window_index": 18,
+      "start_s": 810.0,
+      "end_s": 870.0,
+      "sample_start": 12960000,
+      "sample_end": 13920000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L29_V020_0019",
+      "video_id": "L29_V020",
+      "window_index": 19,
+      "start_s": 855.0,
+      "end_s": 915.0,
+      "sample_start": 13680000,
+      "sample_end": 14640000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L29_V020_0020",
+      "video_id": "L29_V020",
+      "window_index": 20,
+      "start_s": 900.0,
+      "end_s": 960.0,
+      "sample_start": 14400000,
+      "sample_end": 15360000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L29_V020_0021",
+      "video_id": "L29_V020",
+      "window_index": 21,
+      "start_s": 945.0,
+      "end_s": 1005.0,
+      "sample_start": 15120000,
+      "sample_end": 16080000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L29_V020_0022",
+      "video_id": "L29_V020",
+      "window_index": 22,
+      "start_s": 990.0,
+      "end_s": 1050.0,
+      "sample_start": 15840000,
+      "sample_end": 16800000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L29_V020_0023",
+      "video_id": "L29_V020",
+      "window_index": 23,
+      "start_s": 1035.0,
+      "end_s": 1088.7836875,
+      "sample_start": 16560000,
+      "sample_end": 17420539,
+      "duration_samples": 860539
+    },
+    {
+      "window_id": "L26_V222_0000",
+      "video_id": "L26_V222",
+      "window_index": 0,
+      "start_s": 0.0,
+      "end_s": 60.0,
+      "sample_start": 0,
+      "sample_end": 960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L26_V222_0001",
+      "video_id": "L26_V222",
+      "window_index": 1,
+      "start_s": 45.0,
+      "end_s": 105.0,
+      "sample_start": 720000,
+      "sample_end": 1680000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L26_V222_0002",
+      "video_id": "L26_V222",
+      "window_index": 2,
+      "start_s": 90.0,
+      "end_s": 150.0,
+      "sample_start": 1440000,
+      "sample_end": 2400000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L26_V222_0003",
+      "video_id": "L26_V222",
+      "window_index": 3,
+      "start_s": 135.0,
+      "end_s": 195.0,
+      "sample_start": 2160000,
+      "sample_end": 3120000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L26_V222_0004",
+      "video_id": "L26_V222",
+      "window_index": 4,
+      "start_s": 180.0,
+      "end_s": 240.0,
+      "sample_start": 2880000,
+      "sample_end": 3840000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L26_V222_0005",
+      "video_id": "L26_V222",
+      "window_index": 5,
+      "start_s": 225.0,
+      "end_s": 285.0,
+      "sample_start": 3600000,
+      "sample_end": 4560000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L26_V222_0006",
+      "video_id": "L26_V222",
+      "window_index": 6,
+      "start_s": 270.0,
+      "end_s": 315.628875,
+      "sample_start": 4320000,
+      "sample_end": 5050062,
+      "duration_samples": 730062
+    },
+    {
+      "window_id": "K03_V019_0000",
+      "video_id": "K03_V019",
+      "window_index": 0,
+      "start_s": 0.0,
+      "end_s": 60.0,
+      "sample_start": 0,
+      "sample_end": 960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K03_V019_0001",
+      "video_id": "K03_V019",
+      "window_index": 1,
+      "start_s": 45.0,
+      "end_s": 105.0,
+      "sample_start": 720000,
+      "sample_end": 1680000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K03_V019_0002",
+      "video_id": "K03_V019",
+      "window_index": 2,
+      "start_s": 90.0,
+      "end_s": 150.0,
+      "sample_start": 1440000,
+      "sample_end": 2400000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K03_V019_0003",
+      "video_id": "K03_V019",
+      "window_index": 3,
+      "start_s": 135.0,
+      "end_s": 195.0,
+      "sample_start": 2160000,
+      "sample_end": 3120000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K03_V019_0004",
+      "video_id": "K03_V019",
+      "window_index": 4,
+      "start_s": 180.0,
+      "end_s": 240.0,
+      "sample_start": 2880000,
+      "sample_end": 3840000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K03_V019_0005",
+      "video_id": "K03_V019",
+      "window_index": 5,
+      "start_s": 225.0,
+      "end_s": 285.0,
+      "sample_start": 3600000,
+      "sample_end": 4560000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K03_V019_0006",
+      "video_id": "K03_V019",
+      "window_index": 6,
+      "start_s": 270.0,
+      "end_s": 330.0,
+      "sample_start": 4320000,
+      "sample_end": 5280000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K03_V019_0007",
+      "video_id": "K03_V019",
+      "window_index": 7,
+      "start_s": 315.0,
+      "end_s": 375.0,
+      "sample_start": 5040000,
+      "sample_end": 6000000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K03_V019_0008",
+      "video_id": "K03_V019",
+      "window_index": 8,
+      "start_s": 360.0,
+      "end_s": 420.0,
+      "sample_start": 5760000,
+      "sample_end": 6720000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K03_V019_0009",
+      "video_id": "K03_V019",
+      "window_index": 9,
+      "start_s": 405.0,
+      "end_s": 465.0,
+      "sample_start": 6480000,
+      "sample_end": 7440000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K03_V019_0010",
+      "video_id": "K03_V019",
+      "window_index": 10,
+      "start_s": 450.0,
+      "end_s": 510.0,
+      "sample_start": 7200000,
+      "sample_end": 8160000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K03_V019_0011",
+      "video_id": "K03_V019",
+      "window_index": 11,
+      "start_s": 495.0,
+      "end_s": 555.0,
+      "sample_start": 7920000,
+      "sample_end": 8880000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K03_V019_0012",
+      "video_id": "K03_V019",
+      "window_index": 12,
+      "start_s": 540.0,
+      "end_s": 600.0,
+      "sample_start": 8640000,
+      "sample_end": 9600000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K03_V019_0013",
+      "video_id": "K03_V019",
+      "window_index": 13,
+      "start_s": 585.0,
+      "end_s": 645.0,
+      "sample_start": 9360000,
+      "sample_end": 10320000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K03_V019_0014",
+      "video_id": "K03_V019",
+      "window_index": 14,
+      "start_s": 630.0,
+      "end_s": 690.0,
+      "sample_start": 10080000,
+      "sample_end": 11040000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K03_V019_0015",
+      "video_id": "K03_V019",
+      "window_index": 15,
+      "start_s": 675.0,
+      "end_s": 735.0,
+      "sample_start": 10800000,
+      "sample_end": 11760000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K03_V019_0016",
+      "video_id": "K03_V019",
+      "window_index": 16,
+      "start_s": 720.0,
+      "end_s": 780.0,
+      "sample_start": 11520000,
+      "sample_end": 12480000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K03_V019_0017",
+      "video_id": "K03_V019",
+      "window_index": 17,
+      "start_s": 765.0,
+      "end_s": 825.0,
+      "sample_start": 12240000,
+      "sample_end": 13200000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K03_V019_0018",
+      "video_id": "K03_V019",
+      "window_index": 18,
+      "start_s": 810.0,
+      "end_s": 870.0,
+      "sample_start": 12960000,
+      "sample_end": 13920000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K03_V019_0019",
+      "video_id": "K03_V019",
+      "window_index": 19,
+      "start_s": 855.0,
+      "end_s": 915.0,
+      "sample_start": 13680000,
+      "sample_end": 14640000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K03_V019_0020",
+      "video_id": "K03_V019",
+      "window_index": 20,
+      "start_s": 900.0,
+      "end_s": 960.0,
+      "sample_start": 14400000,
+      "sample_end": 15360000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K03_V019_0021",
+      "video_id": "K03_V019",
+      "window_index": 21,
+      "start_s": 945.0,
+      "end_s": 1005.0,
+      "sample_start": 15120000,
+      "sample_end": 16080000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K03_V019_0022",
+      "video_id": "K03_V019",
+      "window_index": 22,
+      "start_s": 990.0,
+      "end_s": 1049.3561875,
+      "sample_start": 15840000,
+      "sample_end": 16789699,
+      "duration_samples": 949699
+    },
+    {
+      "window_id": "K17_V003_0000",
+      "video_id": "K17_V003",
+      "window_index": 0,
+      "start_s": 0.0,
+      "end_s": 60.0,
+      "sample_start": 0,
+      "sample_end": 960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K17_V003_0001",
+      "video_id": "K17_V003",
+      "window_index": 1,
+      "start_s": 45.0,
+      "end_s": 105.0,
+      "sample_start": 720000,
+      "sample_end": 1680000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K17_V003_0002",
+      "video_id": "K17_V003",
+      "window_index": 2,
+      "start_s": 90.0,
+      "end_s": 150.0,
+      "sample_start": 1440000,
+      "sample_end": 2400000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K17_V003_0003",
+      "video_id": "K17_V003",
+      "window_index": 3,
+      "start_s": 135.0,
+      "end_s": 195.0,
+      "sample_start": 2160000,
+      "sample_end": 3120000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K17_V003_0004",
+      "video_id": "K17_V003",
+      "window_index": 4,
+      "start_s": 180.0,
+      "end_s": 240.0,
+      "sample_start": 2880000,
+      "sample_end": 3840000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K17_V003_0005",
+      "video_id": "K17_V003",
+      "window_index": 5,
+      "start_s": 225.0,
+      "end_s": 285.0,
+      "sample_start": 3600000,
+      "sample_end": 4560000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K17_V003_0006",
+      "video_id": "K17_V003",
+      "window_index": 6,
+      "start_s": 270.0,
+      "end_s": 330.0,
+      "sample_start": 4320000,
+      "sample_end": 5280000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K17_V003_0007",
+      "video_id": "K17_V003",
+      "window_index": 7,
+      "start_s": 315.0,
+      "end_s": 375.0,
+      "sample_start": 5040000,
+      "sample_end": 6000000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K17_V003_0008",
+      "video_id": "K17_V003",
+      "window_index": 8,
+      "start_s": 360.0,
+      "end_s": 420.0,
+      "sample_start": 5760000,
+      "sample_end": 6720000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K17_V003_0009",
+      "video_id": "K17_V003",
+      "window_index": 9,
+      "start_s": 405.0,
+      "end_s": 465.0,
+      "sample_start": 6480000,
+      "sample_end": 7440000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K17_V003_0010",
+      "video_id": "K17_V003",
+      "window_index": 10,
+      "start_s": 450.0,
+      "end_s": 510.0,
+      "sample_start": 7200000,
+      "sample_end": 8160000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K17_V003_0011",
+      "video_id": "K17_V003",
+      "window_index": 11,
+      "start_s": 495.0,
+      "end_s": 555.0,
+      "sample_start": 7920000,
+      "sample_end": 8880000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K17_V003_0012",
+      "video_id": "K17_V003",
+      "window_index": 12,
+      "start_s": 540.0,
+      "end_s": 600.0,
+      "sample_start": 8640000,
+      "sample_end": 9600000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K17_V003_0013",
+      "video_id": "K17_V003",
+      "window_index": 13,
+      "start_s": 585.0,
+      "end_s": 645.0,
+      "sample_start": 9360000,
+      "sample_end": 10320000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K17_V003_0014",
+      "video_id": "K17_V003",
+      "window_index": 14,
+      "start_s": 630.0,
+      "end_s": 690.0,
+      "sample_start": 10080000,
+      "sample_end": 11040000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K17_V003_0015",
+      "video_id": "K17_V003",
+      "window_index": 15,
+      "start_s": 675.0,
+      "end_s": 735.0,
+      "sample_start": 10800000,
+      "sample_end": 11760000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K17_V003_0016",
+      "video_id": "K17_V003",
+      "window_index": 16,
+      "start_s": 720.0,
+      "end_s": 780.0,
+      "sample_start": 11520000,
+      "sample_end": 12480000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K17_V003_0017",
+      "video_id": "K17_V003",
+      "window_index": 17,
+      "start_s": 765.0,
+      "end_s": 825.0,
+      "sample_start": 12240000,
+      "sample_end": 13200000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K17_V003_0018",
+      "video_id": "K17_V003",
+      "window_index": 18,
+      "start_s": 810.0,
+      "end_s": 870.0,
+      "sample_start": 12960000,
+      "sample_end": 13920000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K17_V003_0019",
+      "video_id": "K17_V003",
+      "window_index": 19,
+      "start_s": 855.0,
+      "end_s": 915.0,
+      "sample_start": 13680000,
+      "sample_end": 14640000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K17_V003_0020",
+      "video_id": "K17_V003",
+      "window_index": 20,
+      "start_s": 900.0,
+      "end_s": 960.0,
+      "sample_start": 14400000,
+      "sample_end": 15360000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K17_V003_0021",
+      "video_id": "K17_V003",
+      "window_index": 21,
+      "start_s": 945.0,
+      "end_s": 1005.0,
+      "sample_start": 15120000,
+      "sample_end": 16080000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K17_V003_0022",
+      "video_id": "K17_V003",
+      "window_index": 22,
+      "start_s": 990.0,
+      "end_s": 1050.0,
+      "sample_start": 15840000,
+      "sample_end": 16800000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K17_V003_0023",
+      "video_id": "K17_V003",
+      "window_index": 23,
+      "start_s": 1035.0,
+      "end_s": 1095.0,
+      "sample_start": 16560000,
+      "sample_end": 17520000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K17_V003_0024",
+      "video_id": "K17_V003",
+      "window_index": 24,
+      "start_s": 1080.0,
+      "end_s": 1140.0,
+      "sample_start": 17280000,
+      "sample_end": 18240000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K17_V003_0025",
+      "video_id": "K17_V003",
+      "window_index": 25,
+      "start_s": 1125.0,
+      "end_s": 1185.0,
+      "sample_start": 18000000,
+      "sample_end": 18960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K17_V003_0026",
+      "video_id": "K17_V003",
+      "window_index": 26,
+      "start_s": 1170.0,
+      "end_s": 1230.0,
+      "sample_start": 18720000,
+      "sample_end": 19680000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K17_V003_0027",
+      "video_id": "K17_V003",
+      "window_index": 27,
+      "start_s": 1215.0,
+      "end_s": 1268.5525625,
+      "sample_start": 19440000,
+      "sample_end": 20296841,
+      "duration_samples": 856841
+    },
+    {
+      "window_id": "K02_V005_0000",
+      "video_id": "K02_V005",
+      "window_index": 0,
+      "start_s": 0.0,
+      "end_s": 60.0,
+      "sample_start": 0,
+      "sample_end": 960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V005_0001",
+      "video_id": "K02_V005",
+      "window_index": 1,
+      "start_s": 45.0,
+      "end_s": 105.0,
+      "sample_start": 720000,
+      "sample_end": 1680000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V005_0002",
+      "video_id": "K02_V005",
+      "window_index": 2,
+      "start_s": 90.0,
+      "end_s": 150.0,
+      "sample_start": 1440000,
+      "sample_end": 2400000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V005_0003",
+      "video_id": "K02_V005",
+      "window_index": 3,
+      "start_s": 135.0,
+      "end_s": 195.0,
+      "sample_start": 2160000,
+      "sample_end": 3120000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V005_0004",
+      "video_id": "K02_V005",
+      "window_index": 4,
+      "start_s": 180.0,
+      "end_s": 240.0,
+      "sample_start": 2880000,
+      "sample_end": 3840000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V005_0005",
+      "video_id": "K02_V005",
+      "window_index": 5,
+      "start_s": 225.0,
+      "end_s": 285.0,
+      "sample_start": 3600000,
+      "sample_end": 4560000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V005_0006",
+      "video_id": "K02_V005",
+      "window_index": 6,
+      "start_s": 270.0,
+      "end_s": 330.0,
+      "sample_start": 4320000,
+      "sample_end": 5280000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V005_0007",
+      "video_id": "K02_V005",
+      "window_index": 7,
+      "start_s": 315.0,
+      "end_s": 375.0,
+      "sample_start": 5040000,
+      "sample_end": 6000000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V005_0008",
+      "video_id": "K02_V005",
+      "window_index": 8,
+      "start_s": 360.0,
+      "end_s": 420.0,
+      "sample_start": 5760000,
+      "sample_end": 6720000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V005_0009",
+      "video_id": "K02_V005",
+      "window_index": 9,
+      "start_s": 405.0,
+      "end_s": 465.0,
+      "sample_start": 6480000,
+      "sample_end": 7440000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V005_0010",
+      "video_id": "K02_V005",
+      "window_index": 10,
+      "start_s": 450.0,
+      "end_s": 510.0,
+      "sample_start": 7200000,
+      "sample_end": 8160000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V005_0011",
+      "video_id": "K02_V005",
+      "window_index": 11,
+      "start_s": 495.0,
+      "end_s": 555.0,
+      "sample_start": 7920000,
+      "sample_end": 8880000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V005_0012",
+      "video_id": "K02_V005",
+      "window_index": 12,
+      "start_s": 540.0,
+      "end_s": 600.0,
+      "sample_start": 8640000,
+      "sample_end": 9600000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V005_0013",
+      "video_id": "K02_V005",
+      "window_index": 13,
+      "start_s": 585.0,
+      "end_s": 645.0,
+      "sample_start": 9360000,
+      "sample_end": 10320000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V005_0014",
+      "video_id": "K02_V005",
+      "window_index": 14,
+      "start_s": 630.0,
+      "end_s": 690.0,
+      "sample_start": 10080000,
+      "sample_end": 11040000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V005_0015",
+      "video_id": "K02_V005",
+      "window_index": 15,
+      "start_s": 675.0,
+      "end_s": 735.0,
+      "sample_start": 10800000,
+      "sample_end": 11760000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V005_0016",
+      "video_id": "K02_V005",
+      "window_index": 16,
+      "start_s": 720.0,
+      "end_s": 780.0,
+      "sample_start": 11520000,
+      "sample_end": 12480000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V005_0017",
+      "video_id": "K02_V005",
+      "window_index": 17,
+      "start_s": 765.0,
+      "end_s": 825.0,
+      "sample_start": 12240000,
+      "sample_end": 13200000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V005_0018",
+      "video_id": "K02_V005",
+      "window_index": 18,
+      "start_s": 810.0,
+      "end_s": 870.0,
+      "sample_start": 12960000,
+      "sample_end": 13920000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V005_0019",
+      "video_id": "K02_V005",
+      "window_index": 19,
+      "start_s": 855.0,
+      "end_s": 915.0,
+      "sample_start": 13680000,
+      "sample_end": 14640000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V005_0020",
+      "video_id": "K02_V005",
+      "window_index": 20,
+      "start_s": 900.0,
+      "end_s": 960.0,
+      "sample_start": 14400000,
+      "sample_end": 15360000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V005_0021",
+      "video_id": "K02_V005",
+      "window_index": 21,
+      "start_s": 945.0,
+      "end_s": 1005.0,
+      "sample_start": 15120000,
+      "sample_end": 16080000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V005_0022",
+      "video_id": "K02_V005",
+      "window_index": 22,
+      "start_s": 990.0,
+      "end_s": 1050.0,
+      "sample_start": 15840000,
+      "sample_end": 16800000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V005_0023",
+      "video_id": "K02_V005",
+      "window_index": 23,
+      "start_s": 1035.0,
+      "end_s": 1095.0,
+      "sample_start": 16560000,
+      "sample_end": 17520000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V005_0024",
+      "video_id": "K02_V005",
+      "window_index": 24,
+      "start_s": 1080.0,
+      "end_s": 1100.9045,
+      "sample_start": 17280000,
+      "sample_end": 17614472,
+      "duration_samples": 334472
+    },
+    {
+      "window_id": "K05_V025_0000",
+      "video_id": "K05_V025",
+      "window_index": 0,
+      "start_s": 0.0,
+      "end_s": 60.0,
+      "sample_start": 0,
+      "sample_end": 960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V025_0001",
+      "video_id": "K05_V025",
+      "window_index": 1,
+      "start_s": 45.0,
+      "end_s": 105.0,
+      "sample_start": 720000,
+      "sample_end": 1680000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V025_0002",
+      "video_id": "K05_V025",
+      "window_index": 2,
+      "start_s": 90.0,
+      "end_s": 150.0,
+      "sample_start": 1440000,
+      "sample_end": 2400000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V025_0003",
+      "video_id": "K05_V025",
+      "window_index": 3,
+      "start_s": 135.0,
+      "end_s": 195.0,
+      "sample_start": 2160000,
+      "sample_end": 3120000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V025_0004",
+      "video_id": "K05_V025",
+      "window_index": 4,
+      "start_s": 180.0,
+      "end_s": 240.0,
+      "sample_start": 2880000,
+      "sample_end": 3840000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V025_0005",
+      "video_id": "K05_V025",
+      "window_index": 5,
+      "start_s": 225.0,
+      "end_s": 285.0,
+      "sample_start": 3600000,
+      "sample_end": 4560000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V025_0006",
+      "video_id": "K05_V025",
+      "window_index": 6,
+      "start_s": 270.0,
+      "end_s": 330.0,
+      "sample_start": 4320000,
+      "sample_end": 5280000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V025_0007",
+      "video_id": "K05_V025",
+      "window_index": 7,
+      "start_s": 315.0,
+      "end_s": 375.0,
+      "sample_start": 5040000,
+      "sample_end": 6000000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V025_0008",
+      "video_id": "K05_V025",
+      "window_index": 8,
+      "start_s": 360.0,
+      "end_s": 420.0,
+      "sample_start": 5760000,
+      "sample_end": 6720000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V025_0009",
+      "video_id": "K05_V025",
+      "window_index": 9,
+      "start_s": 405.0,
+      "end_s": 465.0,
+      "sample_start": 6480000,
+      "sample_end": 7440000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V025_0010",
+      "video_id": "K05_V025",
+      "window_index": 10,
+      "start_s": 450.0,
+      "end_s": 510.0,
+      "sample_start": 7200000,
+      "sample_end": 8160000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V025_0011",
+      "video_id": "K05_V025",
+      "window_index": 11,
+      "start_s": 495.0,
+      "end_s": 555.0,
+      "sample_start": 7920000,
+      "sample_end": 8880000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V025_0012",
+      "video_id": "K05_V025",
+      "window_index": 12,
+      "start_s": 540.0,
+      "end_s": 600.0,
+      "sample_start": 8640000,
+      "sample_end": 9600000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V025_0013",
+      "video_id": "K05_V025",
+      "window_index": 13,
+      "start_s": 585.0,
+      "end_s": 645.0,
+      "sample_start": 9360000,
+      "sample_end": 10320000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V025_0014",
+      "video_id": "K05_V025",
+      "window_index": 14,
+      "start_s": 630.0,
+      "end_s": 690.0,
+      "sample_start": 10080000,
+      "sample_end": 11040000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V025_0015",
+      "video_id": "K05_V025",
+      "window_index": 15,
+      "start_s": 675.0,
+      "end_s": 735.0,
+      "sample_start": 10800000,
+      "sample_end": 11760000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V025_0016",
+      "video_id": "K05_V025",
+      "window_index": 16,
+      "start_s": 720.0,
+      "end_s": 780.0,
+      "sample_start": 11520000,
+      "sample_end": 12480000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V025_0017",
+      "video_id": "K05_V025",
+      "window_index": 17,
+      "start_s": 765.0,
+      "end_s": 825.0,
+      "sample_start": 12240000,
+      "sample_end": 13200000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V025_0018",
+      "video_id": "K05_V025",
+      "window_index": 18,
+      "start_s": 810.0,
+      "end_s": 870.0,
+      "sample_start": 12960000,
+      "sample_end": 13920000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V025_0019",
+      "video_id": "K05_V025",
+      "window_index": 19,
+      "start_s": 855.0,
+      "end_s": 915.0,
+      "sample_start": 13680000,
+      "sample_end": 14640000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V025_0020",
+      "video_id": "K05_V025",
+      "window_index": 20,
+      "start_s": 900.0,
+      "end_s": 960.0,
+      "sample_start": 14400000,
+      "sample_end": 15360000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V025_0021",
+      "video_id": "K05_V025",
+      "window_index": 21,
+      "start_s": 945.0,
+      "end_s": 1005.0,
+      "sample_start": 15120000,
+      "sample_end": 16080000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V025_0022",
+      "video_id": "K05_V025",
+      "window_index": 22,
+      "start_s": 990.0,
+      "end_s": 1050.0,
+      "sample_start": 15840000,
+      "sample_end": 16800000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V025_0023",
+      "video_id": "K05_V025",
+      "window_index": 23,
+      "start_s": 1035.0,
+      "end_s": 1095.0,
+      "sample_start": 16560000,
+      "sample_end": 17520000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V025_0024",
+      "video_id": "K05_V025",
+      "window_index": 24,
+      "start_s": 1080.0,
+      "end_s": 1113.2343125,
+      "sample_start": 17280000,
+      "sample_end": 17811749,
+      "duration_samples": 531749
+    },
+    {
+      "window_id": "K06_V010_0000",
+      "video_id": "K06_V010",
+      "window_index": 0,
+      "start_s": 0.0,
+      "end_s": 60.0,
+      "sample_start": 0,
+      "sample_end": 960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V010_0001",
+      "video_id": "K06_V010",
+      "window_index": 1,
+      "start_s": 45.0,
+      "end_s": 105.0,
+      "sample_start": 720000,
+      "sample_end": 1680000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V010_0002",
+      "video_id": "K06_V010",
+      "window_index": 2,
+      "start_s": 90.0,
+      "end_s": 150.0,
+      "sample_start": 1440000,
+      "sample_end": 2400000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V010_0003",
+      "video_id": "K06_V010",
+      "window_index": 3,
+      "start_s": 135.0,
+      "end_s": 195.0,
+      "sample_start": 2160000,
+      "sample_end": 3120000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V010_0004",
+      "video_id": "K06_V010",
+      "window_index": 4,
+      "start_s": 180.0,
+      "end_s": 240.0,
+      "sample_start": 2880000,
+      "sample_end": 3840000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V010_0005",
+      "video_id": "K06_V010",
+      "window_index": 5,
+      "start_s": 225.0,
+      "end_s": 285.0,
+      "sample_start": 3600000,
+      "sample_end": 4560000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V010_0006",
+      "video_id": "K06_V010",
+      "window_index": 6,
+      "start_s": 270.0,
+      "end_s": 330.0,
+      "sample_start": 4320000,
+      "sample_end": 5280000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V010_0007",
+      "video_id": "K06_V010",
+      "window_index": 7,
+      "start_s": 315.0,
+      "end_s": 375.0,
+      "sample_start": 5040000,
+      "sample_end": 6000000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V010_0008",
+      "video_id": "K06_V010",
+      "window_index": 8,
+      "start_s": 360.0,
+      "end_s": 420.0,
+      "sample_start": 5760000,
+      "sample_end": 6720000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V010_0009",
+      "video_id": "K06_V010",
+      "window_index": 9,
+      "start_s": 405.0,
+      "end_s": 465.0,
+      "sample_start": 6480000,
+      "sample_end": 7440000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V010_0010",
+      "video_id": "K06_V010",
+      "window_index": 10,
+      "start_s": 450.0,
+      "end_s": 510.0,
+      "sample_start": 7200000,
+      "sample_end": 8160000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V010_0011",
+      "video_id": "K06_V010",
+      "window_index": 11,
+      "start_s": 495.0,
+      "end_s": 555.0,
+      "sample_start": 7920000,
+      "sample_end": 8880000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V010_0012",
+      "video_id": "K06_V010",
+      "window_index": 12,
+      "start_s": 540.0,
+      "end_s": 600.0,
+      "sample_start": 8640000,
+      "sample_end": 9600000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V010_0013",
+      "video_id": "K06_V010",
+      "window_index": 13,
+      "start_s": 585.0,
+      "end_s": 645.0,
+      "sample_start": 9360000,
+      "sample_end": 10320000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V010_0014",
+      "video_id": "K06_V010",
+      "window_index": 14,
+      "start_s": 630.0,
+      "end_s": 690.0,
+      "sample_start": 10080000,
+      "sample_end": 11040000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V010_0015",
+      "video_id": "K06_V010",
+      "window_index": 15,
+      "start_s": 675.0,
+      "end_s": 735.0,
+      "sample_start": 10800000,
+      "sample_end": 11760000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V010_0016",
+      "video_id": "K06_V010",
+      "window_index": 16,
+      "start_s": 720.0,
+      "end_s": 780.0,
+      "sample_start": 11520000,
+      "sample_end": 12480000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V010_0017",
+      "video_id": "K06_V010",
+      "window_index": 17,
+      "start_s": 765.0,
+      "end_s": 825.0,
+      "sample_start": 12240000,
+      "sample_end": 13200000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V010_0018",
+      "video_id": "K06_V010",
+      "window_index": 18,
+      "start_s": 810.0,
+      "end_s": 870.0,
+      "sample_start": 12960000,
+      "sample_end": 13920000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V010_0019",
+      "video_id": "K06_V010",
+      "window_index": 19,
+      "start_s": 855.0,
+      "end_s": 915.0,
+      "sample_start": 13680000,
+      "sample_end": 14640000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V010_0020",
+      "video_id": "K06_V010",
+      "window_index": 20,
+      "start_s": 900.0,
+      "end_s": 960.0,
+      "sample_start": 14400000,
+      "sample_end": 15360000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V010_0021",
+      "video_id": "K06_V010",
+      "window_index": 21,
+      "start_s": 945.0,
+      "end_s": 1005.0,
+      "sample_start": 15120000,
+      "sample_end": 16080000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V010_0022",
+      "video_id": "K06_V010",
+      "window_index": 22,
+      "start_s": 990.0,
+      "end_s": 1050.0,
+      "sample_start": 15840000,
+      "sample_end": 16800000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V010_0023",
+      "video_id": "K06_V010",
+      "window_index": 23,
+      "start_s": 1035.0,
+      "end_s": 1095.0,
+      "sample_start": 16560000,
+      "sample_end": 17520000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V010_0024",
+      "video_id": "K06_V010",
+      "window_index": 24,
+      "start_s": 1080.0,
+      "end_s": 1140.0,
+      "sample_start": 17280000,
+      "sample_end": 18240000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V010_0025",
+      "video_id": "K06_V010",
+      "window_index": 25,
+      "start_s": 1125.0,
+      "end_s": 1156.5859375,
+      "sample_start": 18000000,
+      "sample_end": 18505375,
+      "duration_samples": 505375
+    },
+    {
+      "window_id": "K05_V013_0000",
+      "video_id": "K05_V013",
+      "window_index": 0,
+      "start_s": 0.0,
+      "end_s": 60.0,
+      "sample_start": 0,
+      "sample_end": 960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V013_0001",
+      "video_id": "K05_V013",
+      "window_index": 1,
+      "start_s": 45.0,
+      "end_s": 105.0,
+      "sample_start": 720000,
+      "sample_end": 1680000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V013_0002",
+      "video_id": "K05_V013",
+      "window_index": 2,
+      "start_s": 90.0,
+      "end_s": 150.0,
+      "sample_start": 1440000,
+      "sample_end": 2400000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V013_0003",
+      "video_id": "K05_V013",
+      "window_index": 3,
+      "start_s": 135.0,
+      "end_s": 195.0,
+      "sample_start": 2160000,
+      "sample_end": 3120000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V013_0004",
+      "video_id": "K05_V013",
+      "window_index": 4,
+      "start_s": 180.0,
+      "end_s": 240.0,
+      "sample_start": 2880000,
+      "sample_end": 3840000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V013_0005",
+      "video_id": "K05_V013",
+      "window_index": 5,
+      "start_s": 225.0,
+      "end_s": 285.0,
+      "sample_start": 3600000,
+      "sample_end": 4560000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V013_0006",
+      "video_id": "K05_V013",
+      "window_index": 6,
+      "start_s": 270.0,
+      "end_s": 330.0,
+      "sample_start": 4320000,
+      "sample_end": 5280000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V013_0007",
+      "video_id": "K05_V013",
+      "window_index": 7,
+      "start_s": 315.0,
+      "end_s": 375.0,
+      "sample_start": 5040000,
+      "sample_end": 6000000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V013_0008",
+      "video_id": "K05_V013",
+      "window_index": 8,
+      "start_s": 360.0,
+      "end_s": 420.0,
+      "sample_start": 5760000,
+      "sample_end": 6720000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V013_0009",
+      "video_id": "K05_V013",
+      "window_index": 9,
+      "start_s": 405.0,
+      "end_s": 465.0,
+      "sample_start": 6480000,
+      "sample_end": 7440000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V013_0010",
+      "video_id": "K05_V013",
+      "window_index": 10,
+      "start_s": 450.0,
+      "end_s": 510.0,
+      "sample_start": 7200000,
+      "sample_end": 8160000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V013_0011",
+      "video_id": "K05_V013",
+      "window_index": 11,
+      "start_s": 495.0,
+      "end_s": 555.0,
+      "sample_start": 7920000,
+      "sample_end": 8880000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V013_0012",
+      "video_id": "K05_V013",
+      "window_index": 12,
+      "start_s": 540.0,
+      "end_s": 600.0,
+      "sample_start": 8640000,
+      "sample_end": 9600000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V013_0013",
+      "video_id": "K05_V013",
+      "window_index": 13,
+      "start_s": 585.0,
+      "end_s": 645.0,
+      "sample_start": 9360000,
+      "sample_end": 10320000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V013_0014",
+      "video_id": "K05_V013",
+      "window_index": 14,
+      "start_s": 630.0,
+      "end_s": 690.0,
+      "sample_start": 10080000,
+      "sample_end": 11040000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V013_0015",
+      "video_id": "K05_V013",
+      "window_index": 15,
+      "start_s": 675.0,
+      "end_s": 735.0,
+      "sample_start": 10800000,
+      "sample_end": 11760000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V013_0016",
+      "video_id": "K05_V013",
+      "window_index": 16,
+      "start_s": 720.0,
+      "end_s": 780.0,
+      "sample_start": 11520000,
+      "sample_end": 12480000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V013_0017",
+      "video_id": "K05_V013",
+      "window_index": 17,
+      "start_s": 765.0,
+      "end_s": 825.0,
+      "sample_start": 12240000,
+      "sample_end": 13200000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V013_0018",
+      "video_id": "K05_V013",
+      "window_index": 18,
+      "start_s": 810.0,
+      "end_s": 870.0,
+      "sample_start": 12960000,
+      "sample_end": 13920000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V013_0019",
+      "video_id": "K05_V013",
+      "window_index": 19,
+      "start_s": 855.0,
+      "end_s": 915.0,
+      "sample_start": 13680000,
+      "sample_end": 14640000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V013_0020",
+      "video_id": "K05_V013",
+      "window_index": 20,
+      "start_s": 900.0,
+      "end_s": 960.0,
+      "sample_start": 14400000,
+      "sample_end": 15360000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V013_0021",
+      "video_id": "K05_V013",
+      "window_index": 21,
+      "start_s": 945.0,
+      "end_s": 1005.0,
+      "sample_start": 15120000,
+      "sample_end": 16080000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V013_0022",
+      "video_id": "K05_V013",
+      "window_index": 22,
+      "start_s": 990.0,
+      "end_s": 1050.0,
+      "sample_start": 15840000,
+      "sample_end": 16800000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V013_0023",
+      "video_id": "K05_V013",
+      "window_index": 23,
+      "start_s": 1035.0,
+      "end_s": 1095.0,
+      "sample_start": 16560000,
+      "sample_end": 17520000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V013_0024",
+      "video_id": "K05_V013",
+      "window_index": 24,
+      "start_s": 1080.0,
+      "end_s": 1140.0,
+      "sample_start": 17280000,
+      "sample_end": 18240000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V013_0025",
+      "video_id": "K05_V013",
+      "window_index": 25,
+      "start_s": 1125.0,
+      "end_s": 1185.0,
+      "sample_start": 18000000,
+      "sample_end": 18960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V013_0026",
+      "video_id": "K05_V013",
+      "window_index": 26,
+      "start_s": 1170.0,
+      "end_s": 1230.0,
+      "sample_start": 18720000,
+      "sample_end": 19680000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K05_V013_0027",
+      "video_id": "K05_V013",
+      "window_index": 27,
+      "start_s": 1215.0,
+      "end_s": 1237.2985,
+      "sample_start": 19440000,
+      "sample_end": 19796776,
+      "duration_samples": 356776
+    },
+    {
+      "window_id": "K03_V023_0000",
+      "video_id": "K03_V023",
+      "window_index": 0,
+      "start_s": 0.0,
+      "end_s": 60.0,
+      "sample_start": 0,
+      "sample_end": 960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K03_V023_0001",
+      "video_id": "K03_V023",
+      "window_index": 1,
+      "start_s": 45.0,
+      "end_s": 105.0,
+      "sample_start": 720000,
+      "sample_end": 1680000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K03_V023_0002",
+      "video_id": "K03_V023",
+      "window_index": 2,
+      "start_s": 90.0,
+      "end_s": 150.0,
+      "sample_start": 1440000,
+      "sample_end": 2400000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K03_V023_0003",
+      "video_id": "K03_V023",
+      "window_index": 3,
+      "start_s": 135.0,
+      "end_s": 195.0,
+      "sample_start": 2160000,
+      "sample_end": 3120000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K03_V023_0004",
+      "video_id": "K03_V023",
+      "window_index": 4,
+      "start_s": 180.0,
+      "end_s": 240.0,
+      "sample_start": 2880000,
+      "sample_end": 3840000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K03_V023_0005",
+      "video_id": "K03_V023",
+      "window_index": 5,
+      "start_s": 225.0,
+      "end_s": 285.0,
+      "sample_start": 3600000,
+      "sample_end": 4560000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K03_V023_0006",
+      "video_id": "K03_V023",
+      "window_index": 6,
+      "start_s": 270.0,
+      "end_s": 330.0,
+      "sample_start": 4320000,
+      "sample_end": 5280000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K03_V023_0007",
+      "video_id": "K03_V023",
+      "window_index": 7,
+      "start_s": 315.0,
+      "end_s": 375.0,
+      "sample_start": 5040000,
+      "sample_end": 6000000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K03_V023_0008",
+      "video_id": "K03_V023",
+      "window_index": 8,
+      "start_s": 360.0,
+      "end_s": 420.0,
+      "sample_start": 5760000,
+      "sample_end": 6720000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K03_V023_0009",
+      "video_id": "K03_V023",
+      "window_index": 9,
+      "start_s": 405.0,
+      "end_s": 465.0,
+      "sample_start": 6480000,
+      "sample_end": 7440000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K03_V023_0010",
+      "video_id": "K03_V023",
+      "window_index": 10,
+      "start_s": 450.0,
+      "end_s": 510.0,
+      "sample_start": 7200000,
+      "sample_end": 8160000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K03_V023_0011",
+      "video_id": "K03_V023",
+      "window_index": 11,
+      "start_s": 495.0,
+      "end_s": 555.0,
+      "sample_start": 7920000,
+      "sample_end": 8880000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K03_V023_0012",
+      "video_id": "K03_V023",
+      "window_index": 12,
+      "start_s": 540.0,
+      "end_s": 600.0,
+      "sample_start": 8640000,
+      "sample_end": 9600000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K03_V023_0013",
+      "video_id": "K03_V023",
+      "window_index": 13,
+      "start_s": 585.0,
+      "end_s": 645.0,
+      "sample_start": 9360000,
+      "sample_end": 10320000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K03_V023_0014",
+      "video_id": "K03_V023",
+      "window_index": 14,
+      "start_s": 630.0,
+      "end_s": 690.0,
+      "sample_start": 10080000,
+      "sample_end": 11040000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K03_V023_0015",
+      "video_id": "K03_V023",
+      "window_index": 15,
+      "start_s": 675.0,
+      "end_s": 735.0,
+      "sample_start": 10800000,
+      "sample_end": 11760000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K03_V023_0016",
+      "video_id": "K03_V023",
+      "window_index": 16,
+      "start_s": 720.0,
+      "end_s": 780.0,
+      "sample_start": 11520000,
+      "sample_end": 12480000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K03_V023_0017",
+      "video_id": "K03_V023",
+      "window_index": 17,
+      "start_s": 765.0,
+      "end_s": 825.0,
+      "sample_start": 12240000,
+      "sample_end": 13200000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K03_V023_0018",
+      "video_id": "K03_V023",
+      "window_index": 18,
+      "start_s": 810.0,
+      "end_s": 870.0,
+      "sample_start": 12960000,
+      "sample_end": 13920000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K03_V023_0019",
+      "video_id": "K03_V023",
+      "window_index": 19,
+      "start_s": 855.0,
+      "end_s": 915.0,
+      "sample_start": 13680000,
+      "sample_end": 14640000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K03_V023_0020",
+      "video_id": "K03_V023",
+      "window_index": 20,
+      "start_s": 900.0,
+      "end_s": 960.0,
+      "sample_start": 14400000,
+      "sample_end": 15360000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K03_V023_0021",
+      "video_id": "K03_V023",
+      "window_index": 21,
+      "start_s": 945.0,
+      "end_s": 1005.0,
+      "sample_start": 15120000,
+      "sample_end": 16080000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K03_V023_0022",
+      "video_id": "K03_V023",
+      "window_index": 22,
+      "start_s": 990.0,
+      "end_s": 1050.0,
+      "sample_start": 15840000,
+      "sample_end": 16800000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K03_V023_0023",
+      "video_id": "K03_V023",
+      "window_index": 23,
+      "start_s": 1035.0,
+      "end_s": 1064.1705625,
+      "sample_start": 16560000,
+      "sample_end": 17026729,
+      "duration_samples": 466729
+    },
+    {
+      "window_id": "K20_V009_0000",
+      "video_id": "K20_V009",
+      "window_index": 0,
+      "start_s": 0.0,
+      "end_s": 60.0,
+      "sample_start": 0,
+      "sample_end": 960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K20_V009_0001",
+      "video_id": "K20_V009",
+      "window_index": 1,
+      "start_s": 45.0,
+      "end_s": 105.0,
+      "sample_start": 720000,
+      "sample_end": 1680000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K20_V009_0002",
+      "video_id": "K20_V009",
+      "window_index": 2,
+      "start_s": 90.0,
+      "end_s": 150.0,
+      "sample_start": 1440000,
+      "sample_end": 2400000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K20_V009_0003",
+      "video_id": "K20_V009",
+      "window_index": 3,
+      "start_s": 135.0,
+      "end_s": 195.0,
+      "sample_start": 2160000,
+      "sample_end": 3120000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K20_V009_0004",
+      "video_id": "K20_V009",
+      "window_index": 4,
+      "start_s": 180.0,
+      "end_s": 240.0,
+      "sample_start": 2880000,
+      "sample_end": 3840000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K20_V009_0005",
+      "video_id": "K20_V009",
+      "window_index": 5,
+      "start_s": 225.0,
+      "end_s": 285.0,
+      "sample_start": 3600000,
+      "sample_end": 4560000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K20_V009_0006",
+      "video_id": "K20_V009",
+      "window_index": 6,
+      "start_s": 270.0,
+      "end_s": 330.0,
+      "sample_start": 4320000,
+      "sample_end": 5280000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K20_V009_0007",
+      "video_id": "K20_V009",
+      "window_index": 7,
+      "start_s": 315.0,
+      "end_s": 375.0,
+      "sample_start": 5040000,
+      "sample_end": 6000000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K20_V009_0008",
+      "video_id": "K20_V009",
+      "window_index": 8,
+      "start_s": 360.0,
+      "end_s": 420.0,
+      "sample_start": 5760000,
+      "sample_end": 6720000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K20_V009_0009",
+      "video_id": "K20_V009",
+      "window_index": 9,
+      "start_s": 405.0,
+      "end_s": 465.0,
+      "sample_start": 6480000,
+      "sample_end": 7440000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K20_V009_0010",
+      "video_id": "K20_V009",
+      "window_index": 10,
+      "start_s": 450.0,
+      "end_s": 510.0,
+      "sample_start": 7200000,
+      "sample_end": 8160000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K20_V009_0011",
+      "video_id": "K20_V009",
+      "window_index": 11,
+      "start_s": 495.0,
+      "end_s": 555.0,
+      "sample_start": 7920000,
+      "sample_end": 8880000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K20_V009_0012",
+      "video_id": "K20_V009",
+      "window_index": 12,
+      "start_s": 540.0,
+      "end_s": 600.0,
+      "sample_start": 8640000,
+      "sample_end": 9600000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K20_V009_0013",
+      "video_id": "K20_V009",
+      "window_index": 13,
+      "start_s": 585.0,
+      "end_s": 645.0,
+      "sample_start": 9360000,
+      "sample_end": 10320000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K20_V009_0014",
+      "video_id": "K20_V009",
+      "window_index": 14,
+      "start_s": 630.0,
+      "end_s": 690.0,
+      "sample_start": 10080000,
+      "sample_end": 11040000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K20_V009_0015",
+      "video_id": "K20_V009",
+      "window_index": 15,
+      "start_s": 675.0,
+      "end_s": 735.0,
+      "sample_start": 10800000,
+      "sample_end": 11760000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K20_V009_0016",
+      "video_id": "K20_V009",
+      "window_index": 16,
+      "start_s": 720.0,
+      "end_s": 780.0,
+      "sample_start": 11520000,
+      "sample_end": 12480000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K20_V009_0017",
+      "video_id": "K20_V009",
+      "window_index": 17,
+      "start_s": 765.0,
+      "end_s": 825.0,
+      "sample_start": 12240000,
+      "sample_end": 13200000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K20_V009_0018",
+      "video_id": "K20_V009",
+      "window_index": 18,
+      "start_s": 810.0,
+      "end_s": 870.0,
+      "sample_start": 12960000,
+      "sample_end": 13920000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K20_V009_0019",
+      "video_id": "K20_V009",
+      "window_index": 19,
+      "start_s": 855.0,
+      "end_s": 915.0,
+      "sample_start": 13680000,
+      "sample_end": 14640000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K20_V009_0020",
+      "video_id": "K20_V009",
+      "window_index": 20,
+      "start_s": 900.0,
+      "end_s": 960.0,
+      "sample_start": 14400000,
+      "sample_end": 15360000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K20_V009_0021",
+      "video_id": "K20_V009",
+      "window_index": 21,
+      "start_s": 945.0,
+      "end_s": 1005.0,
+      "sample_start": 15120000,
+      "sample_end": 16080000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K20_V009_0022",
+      "video_id": "K20_V009",
+      "window_index": 22,
+      "start_s": 990.0,
+      "end_s": 1050.0,
+      "sample_start": 15840000,
+      "sample_end": 16800000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K20_V009_0023",
+      "video_id": "K20_V009",
+      "window_index": 23,
+      "start_s": 1035.0,
+      "end_s": 1095.0,
+      "sample_start": 16560000,
+      "sample_end": 17520000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K20_V009_0024",
+      "video_id": "K20_V009",
+      "window_index": 24,
+      "start_s": 1080.0,
+      "end_s": 1140.0,
+      "sample_start": 17280000,
+      "sample_end": 18240000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K20_V009_0025",
+      "video_id": "K20_V009",
+      "window_index": 25,
+      "start_s": 1125.0,
+      "end_s": 1185.0,
+      "sample_start": 18000000,
+      "sample_end": 18960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K20_V009_0026",
+      "video_id": "K20_V009",
+      "window_index": 26,
+      "start_s": 1170.0,
+      "end_s": 1230.0,
+      "sample_start": 18720000,
+      "sample_end": 19680000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K20_V009_0027",
+      "video_id": "K20_V009",
+      "window_index": 27,
+      "start_s": 1215.0,
+      "end_s": 1260.49525,
+      "sample_start": 19440000,
+      "sample_end": 20167924,
+      "duration_samples": 727924
+    },
+    {
+      "window_id": "K06_V022_0000",
+      "video_id": "K06_V022",
+      "window_index": 0,
+      "start_s": 0.0,
+      "end_s": 60.0,
+      "sample_start": 0,
+      "sample_end": 960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V022_0001",
+      "video_id": "K06_V022",
+      "window_index": 1,
+      "start_s": 45.0,
+      "end_s": 105.0,
+      "sample_start": 720000,
+      "sample_end": 1680000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V022_0002",
+      "video_id": "K06_V022",
+      "window_index": 2,
+      "start_s": 90.0,
+      "end_s": 150.0,
+      "sample_start": 1440000,
+      "sample_end": 2400000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V022_0003",
+      "video_id": "K06_V022",
+      "window_index": 3,
+      "start_s": 135.0,
+      "end_s": 195.0,
+      "sample_start": 2160000,
+      "sample_end": 3120000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V022_0004",
+      "video_id": "K06_V022",
+      "window_index": 4,
+      "start_s": 180.0,
+      "end_s": 240.0,
+      "sample_start": 2880000,
+      "sample_end": 3840000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V022_0005",
+      "video_id": "K06_V022",
+      "window_index": 5,
+      "start_s": 225.0,
+      "end_s": 285.0,
+      "sample_start": 3600000,
+      "sample_end": 4560000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V022_0006",
+      "video_id": "K06_V022",
+      "window_index": 6,
+      "start_s": 270.0,
+      "end_s": 330.0,
+      "sample_start": 4320000,
+      "sample_end": 5280000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V022_0007",
+      "video_id": "K06_V022",
+      "window_index": 7,
+      "start_s": 315.0,
+      "end_s": 375.0,
+      "sample_start": 5040000,
+      "sample_end": 6000000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V022_0008",
+      "video_id": "K06_V022",
+      "window_index": 8,
+      "start_s": 360.0,
+      "end_s": 420.0,
+      "sample_start": 5760000,
+      "sample_end": 6720000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V022_0009",
+      "video_id": "K06_V022",
+      "window_index": 9,
+      "start_s": 405.0,
+      "end_s": 465.0,
+      "sample_start": 6480000,
+      "sample_end": 7440000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V022_0010",
+      "video_id": "K06_V022",
+      "window_index": 10,
+      "start_s": 450.0,
+      "end_s": 510.0,
+      "sample_start": 7200000,
+      "sample_end": 8160000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V022_0011",
+      "video_id": "K06_V022",
+      "window_index": 11,
+      "start_s": 495.0,
+      "end_s": 555.0,
+      "sample_start": 7920000,
+      "sample_end": 8880000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V022_0012",
+      "video_id": "K06_V022",
+      "window_index": 12,
+      "start_s": 540.0,
+      "end_s": 600.0,
+      "sample_start": 8640000,
+      "sample_end": 9600000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V022_0013",
+      "video_id": "K06_V022",
+      "window_index": 13,
+      "start_s": 585.0,
+      "end_s": 645.0,
+      "sample_start": 9360000,
+      "sample_end": 10320000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V022_0014",
+      "video_id": "K06_V022",
+      "window_index": 14,
+      "start_s": 630.0,
+      "end_s": 690.0,
+      "sample_start": 10080000,
+      "sample_end": 11040000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V022_0015",
+      "video_id": "K06_V022",
+      "window_index": 15,
+      "start_s": 675.0,
+      "end_s": 735.0,
+      "sample_start": 10800000,
+      "sample_end": 11760000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V022_0016",
+      "video_id": "K06_V022",
+      "window_index": 16,
+      "start_s": 720.0,
+      "end_s": 780.0,
+      "sample_start": 11520000,
+      "sample_end": 12480000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V022_0017",
+      "video_id": "K06_V022",
+      "window_index": 17,
+      "start_s": 765.0,
+      "end_s": 825.0,
+      "sample_start": 12240000,
+      "sample_end": 13200000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V022_0018",
+      "video_id": "K06_V022",
+      "window_index": 18,
+      "start_s": 810.0,
+      "end_s": 870.0,
+      "sample_start": 12960000,
+      "sample_end": 13920000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V022_0019",
+      "video_id": "K06_V022",
+      "window_index": 19,
+      "start_s": 855.0,
+      "end_s": 915.0,
+      "sample_start": 13680000,
+      "sample_end": 14640000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V022_0020",
+      "video_id": "K06_V022",
+      "window_index": 20,
+      "start_s": 900.0,
+      "end_s": 960.0,
+      "sample_start": 14400000,
+      "sample_end": 15360000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V022_0021",
+      "video_id": "K06_V022",
+      "window_index": 21,
+      "start_s": 945.0,
+      "end_s": 1005.0,
+      "sample_start": 15120000,
+      "sample_end": 16080000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V022_0022",
+      "video_id": "K06_V022",
+      "window_index": 22,
+      "start_s": 990.0,
+      "end_s": 1024.2554375,
+      "sample_start": 15840000,
+      "sample_end": 16388087,
+      "duration_samples": 548087
+    },
+    {
+      "window_id": "K12_V007_0000",
+      "video_id": "K12_V007",
+      "window_index": 0,
+      "start_s": 0.0,
+      "end_s": 60.0,
+      "sample_start": 0,
+      "sample_end": 960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K12_V007_0001",
+      "video_id": "K12_V007",
+      "window_index": 1,
+      "start_s": 45.0,
+      "end_s": 105.0,
+      "sample_start": 720000,
+      "sample_end": 1680000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K12_V007_0002",
+      "video_id": "K12_V007",
+      "window_index": 2,
+      "start_s": 90.0,
+      "end_s": 150.0,
+      "sample_start": 1440000,
+      "sample_end": 2400000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K12_V007_0003",
+      "video_id": "K12_V007",
+      "window_index": 3,
+      "start_s": 135.0,
+      "end_s": 195.0,
+      "sample_start": 2160000,
+      "sample_end": 3120000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K12_V007_0004",
+      "video_id": "K12_V007",
+      "window_index": 4,
+      "start_s": 180.0,
+      "end_s": 240.0,
+      "sample_start": 2880000,
+      "sample_end": 3840000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K12_V007_0005",
+      "video_id": "K12_V007",
+      "window_index": 5,
+      "start_s": 225.0,
+      "end_s": 285.0,
+      "sample_start": 3600000,
+      "sample_end": 4560000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K12_V007_0006",
+      "video_id": "K12_V007",
+      "window_index": 6,
+      "start_s": 270.0,
+      "end_s": 330.0,
+      "sample_start": 4320000,
+      "sample_end": 5280000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K12_V007_0007",
+      "video_id": "K12_V007",
+      "window_index": 7,
+      "start_s": 315.0,
+      "end_s": 375.0,
+      "sample_start": 5040000,
+      "sample_end": 6000000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K12_V007_0008",
+      "video_id": "K12_V007",
+      "window_index": 8,
+      "start_s": 360.0,
+      "end_s": 420.0,
+      "sample_start": 5760000,
+      "sample_end": 6720000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K12_V007_0009",
+      "video_id": "K12_V007",
+      "window_index": 9,
+      "start_s": 405.0,
+      "end_s": 465.0,
+      "sample_start": 6480000,
+      "sample_end": 7440000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K12_V007_0010",
+      "video_id": "K12_V007",
+      "window_index": 10,
+      "start_s": 450.0,
+      "end_s": 510.0,
+      "sample_start": 7200000,
+      "sample_end": 8160000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K12_V007_0011",
+      "video_id": "K12_V007",
+      "window_index": 11,
+      "start_s": 495.0,
+      "end_s": 555.0,
+      "sample_start": 7920000,
+      "sample_end": 8880000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K12_V007_0012",
+      "video_id": "K12_V007",
+      "window_index": 12,
+      "start_s": 540.0,
+      "end_s": 600.0,
+      "sample_start": 8640000,
+      "sample_end": 9600000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K12_V007_0013",
+      "video_id": "K12_V007",
+      "window_index": 13,
+      "start_s": 585.0,
+      "end_s": 645.0,
+      "sample_start": 9360000,
+      "sample_end": 10320000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K12_V007_0014",
+      "video_id": "K12_V007",
+      "window_index": 14,
+      "start_s": 630.0,
+      "end_s": 690.0,
+      "sample_start": 10080000,
+      "sample_end": 11040000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K12_V007_0015",
+      "video_id": "K12_V007",
+      "window_index": 15,
+      "start_s": 675.0,
+      "end_s": 735.0,
+      "sample_start": 10800000,
+      "sample_end": 11760000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K12_V007_0016",
+      "video_id": "K12_V007",
+      "window_index": 16,
+      "start_s": 720.0,
+      "end_s": 780.0,
+      "sample_start": 11520000,
+      "sample_end": 12480000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K12_V007_0017",
+      "video_id": "K12_V007",
+      "window_index": 17,
+      "start_s": 765.0,
+      "end_s": 825.0,
+      "sample_start": 12240000,
+      "sample_end": 13200000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K12_V007_0018",
+      "video_id": "K12_V007",
+      "window_index": 18,
+      "start_s": 810.0,
+      "end_s": 870.0,
+      "sample_start": 12960000,
+      "sample_end": 13920000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K12_V007_0019",
+      "video_id": "K12_V007",
+      "window_index": 19,
+      "start_s": 855.0,
+      "end_s": 915.0,
+      "sample_start": 13680000,
+      "sample_end": 14640000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K12_V007_0020",
+      "video_id": "K12_V007",
+      "window_index": 20,
+      "start_s": 900.0,
+      "end_s": 960.0,
+      "sample_start": 14400000,
+      "sample_end": 15360000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K12_V007_0021",
+      "video_id": "K12_V007",
+      "window_index": 21,
+      "start_s": 945.0,
+      "end_s": 1005.0,
+      "sample_start": 15120000,
+      "sample_end": 16080000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K12_V007_0022",
+      "video_id": "K12_V007",
+      "window_index": 22,
+      "start_s": 990.0,
+      "end_s": 1050.0,
+      "sample_start": 15840000,
+      "sample_end": 16800000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K12_V007_0023",
+      "video_id": "K12_V007",
+      "window_index": 23,
+      "start_s": 1035.0,
+      "end_s": 1095.0,
+      "sample_start": 16560000,
+      "sample_end": 17520000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K12_V007_0024",
+      "video_id": "K12_V007",
+      "window_index": 24,
+      "start_s": 1080.0,
+      "end_s": 1140.0,
+      "sample_start": 17280000,
+      "sample_end": 18240000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K12_V007_0025",
+      "video_id": "K12_V007",
+      "window_index": 25,
+      "start_s": 1125.0,
+      "end_s": 1185.0,
+      "sample_start": 18000000,
+      "sample_end": 18960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K12_V007_0026",
+      "video_id": "K12_V007",
+      "window_index": 26,
+      "start_s": 1170.0,
+      "end_s": 1230.0,
+      "sample_start": 18720000,
+      "sample_end": 19680000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K12_V007_0027",
+      "video_id": "K12_V007",
+      "window_index": 27,
+      "start_s": 1215.0,
+      "end_s": 1275.0,
+      "sample_start": 19440000,
+      "sample_end": 20400000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K12_V007_0028",
+      "video_id": "K12_V007",
+      "window_index": 28,
+      "start_s": 1260.0,
+      "end_s": 1307.8639375,
+      "sample_start": 20160000,
+      "sample_end": 20925823,
+      "duration_samples": 765823
+    },
+    {
+      "window_id": "L29_V023_0000",
+      "video_id": "L29_V023",
+      "window_index": 0,
+      "start_s": 0.0,
+      "end_s": 60.0,
+      "sample_start": 0,
+      "sample_end": 960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L29_V023_0001",
+      "video_id": "L29_V023",
+      "window_index": 1,
+      "start_s": 45.0,
+      "end_s": 105.0,
+      "sample_start": 720000,
+      "sample_end": 1680000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L29_V023_0002",
+      "video_id": "L29_V023",
+      "window_index": 2,
+      "start_s": 90.0,
+      "end_s": 150.0,
+      "sample_start": 1440000,
+      "sample_end": 2400000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L29_V023_0003",
+      "video_id": "L29_V023",
+      "window_index": 3,
+      "start_s": 135.0,
+      "end_s": 195.0,
+      "sample_start": 2160000,
+      "sample_end": 3120000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L29_V023_0004",
+      "video_id": "L29_V023",
+      "window_index": 4,
+      "start_s": 180.0,
+      "end_s": 240.0,
+      "sample_start": 2880000,
+      "sample_end": 3840000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L29_V023_0005",
+      "video_id": "L29_V023",
+      "window_index": 5,
+      "start_s": 225.0,
+      "end_s": 285.0,
+      "sample_start": 3600000,
+      "sample_end": 4560000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L29_V023_0006",
+      "video_id": "L29_V023",
+      "window_index": 6,
+      "start_s": 270.0,
+      "end_s": 330.0,
+      "sample_start": 4320000,
+      "sample_end": 5280000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L29_V023_0007",
+      "video_id": "L29_V023",
+      "window_index": 7,
+      "start_s": 315.0,
+      "end_s": 375.0,
+      "sample_start": 5040000,
+      "sample_end": 6000000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L29_V023_0008",
+      "video_id": "L29_V023",
+      "window_index": 8,
+      "start_s": 360.0,
+      "end_s": 420.0,
+      "sample_start": 5760000,
+      "sample_end": 6720000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L29_V023_0009",
+      "video_id": "L29_V023",
+      "window_index": 9,
+      "start_s": 405.0,
+      "end_s": 465.0,
+      "sample_start": 6480000,
+      "sample_end": 7440000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L29_V023_0010",
+      "video_id": "L29_V023",
+      "window_index": 10,
+      "start_s": 450.0,
+      "end_s": 510.0,
+      "sample_start": 7200000,
+      "sample_end": 8160000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L29_V023_0011",
+      "video_id": "L29_V023",
+      "window_index": 11,
+      "start_s": 495.0,
+      "end_s": 555.0,
+      "sample_start": 7920000,
+      "sample_end": 8880000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L29_V023_0012",
+      "video_id": "L29_V023",
+      "window_index": 12,
+      "start_s": 540.0,
+      "end_s": 600.0,
+      "sample_start": 8640000,
+      "sample_end": 9600000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L29_V023_0013",
+      "video_id": "L29_V023",
+      "window_index": 13,
+      "start_s": 585.0,
+      "end_s": 645.0,
+      "sample_start": 9360000,
+      "sample_end": 10320000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L29_V023_0014",
+      "video_id": "L29_V023",
+      "window_index": 14,
+      "start_s": 630.0,
+      "end_s": 690.0,
+      "sample_start": 10080000,
+      "sample_end": 11040000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L29_V023_0015",
+      "video_id": "L29_V023",
+      "window_index": 15,
+      "start_s": 675.0,
+      "end_s": 735.0,
+      "sample_start": 10800000,
+      "sample_end": 11760000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L29_V023_0016",
+      "video_id": "L29_V023",
+      "window_index": 16,
+      "start_s": 720.0,
+      "end_s": 780.0,
+      "sample_start": 11520000,
+      "sample_end": 12480000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L29_V023_0017",
+      "video_id": "L29_V023",
+      "window_index": 17,
+      "start_s": 765.0,
+      "end_s": 825.0,
+      "sample_start": 12240000,
+      "sample_end": 13200000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L29_V023_0018",
+      "video_id": "L29_V023",
+      "window_index": 18,
+      "start_s": 810.0,
+      "end_s": 870.0,
+      "sample_start": 12960000,
+      "sample_end": 13920000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L29_V023_0019",
+      "video_id": "L29_V023",
+      "window_index": 19,
+      "start_s": 855.0,
+      "end_s": 915.0,
+      "sample_start": 13680000,
+      "sample_end": 14640000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L29_V023_0020",
+      "video_id": "L29_V023",
+      "window_index": 20,
+      "start_s": 900.0,
+      "end_s": 960.0,
+      "sample_start": 14400000,
+      "sample_end": 15360000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L29_V023_0021",
+      "video_id": "L29_V023",
+      "window_index": 21,
+      "start_s": 945.0,
+      "end_s": 1005.0,
+      "sample_start": 15120000,
+      "sample_end": 16080000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L29_V023_0022",
+      "video_id": "L29_V023",
+      "window_index": 22,
+      "start_s": 990.0,
+      "end_s": 1050.0,
+      "sample_start": 15840000,
+      "sample_end": 16800000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L29_V023_0023",
+      "video_id": "L29_V023",
+      "window_index": 23,
+      "start_s": 1035.0,
+      "end_s": 1082.3285625,
+      "sample_start": 16560000,
+      "sample_end": 17317257,
+      "duration_samples": 757257
+    },
+    {
+      "window_id": "L30_V017_0000",
+      "video_id": "L30_V017",
+      "window_index": 0,
+      "start_s": 0.0,
+      "end_s": 60.0,
+      "sample_start": 0,
+      "sample_end": 960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L30_V017_0001",
+      "video_id": "L30_V017",
+      "window_index": 1,
+      "start_s": 45.0,
+      "end_s": 105.0,
+      "sample_start": 720000,
+      "sample_end": 1680000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L30_V017_0002",
+      "video_id": "L30_V017",
+      "window_index": 2,
+      "start_s": 90.0,
+      "end_s": 150.0,
+      "sample_start": 1440000,
+      "sample_end": 2400000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L30_V017_0003",
+      "video_id": "L30_V017",
+      "window_index": 3,
+      "start_s": 135.0,
+      "end_s": 195.0,
+      "sample_start": 2160000,
+      "sample_end": 3120000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L30_V017_0004",
+      "video_id": "L30_V017",
+      "window_index": 4,
+      "start_s": 180.0,
+      "end_s": 240.0,
+      "sample_start": 2880000,
+      "sample_end": 3840000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L30_V017_0005",
+      "video_id": "L30_V017",
+      "window_index": 5,
+      "start_s": 225.0,
+      "end_s": 285.0,
+      "sample_start": 3600000,
+      "sample_end": 4560000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L30_V017_0006",
+      "video_id": "L30_V017",
+      "window_index": 6,
+      "start_s": 270.0,
+      "end_s": 290.667375,
+      "sample_start": 4320000,
+      "sample_end": 4650678,
+      "duration_samples": 330678
+    },
+    {
+      "window_id": "L26_V200_0000",
+      "video_id": "L26_V200",
+      "window_index": 0,
+      "start_s": 0.0,
+      "end_s": 60.0,
+      "sample_start": 0,
+      "sample_end": 960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L26_V200_0001",
+      "video_id": "L26_V200",
+      "window_index": 1,
+      "start_s": 45.0,
+      "end_s": 105.0,
+      "sample_start": 720000,
+      "sample_end": 1680000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L26_V200_0002",
+      "video_id": "L26_V200",
+      "window_index": 2,
+      "start_s": 90.0,
+      "end_s": 150.0,
+      "sample_start": 1440000,
+      "sample_end": 2400000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L26_V200_0003",
+      "video_id": "L26_V200",
+      "window_index": 3,
+      "start_s": 135.0,
+      "end_s": 195.0,
+      "sample_start": 2160000,
+      "sample_end": 3120000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L26_V200_0004",
+      "video_id": "L26_V200",
+      "window_index": 4,
+      "start_s": 180.0,
+      "end_s": 240.0,
+      "sample_start": 2880000,
+      "sample_end": 3840000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L26_V200_0005",
+      "video_id": "L26_V200",
+      "window_index": 5,
+      "start_s": 225.0,
+      "end_s": 285.0,
+      "sample_start": 3600000,
+      "sample_end": 4560000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L26_V200_0006",
+      "video_id": "L26_V200",
+      "window_index": 6,
+      "start_s": 270.0,
+      "end_s": 321.782125,
+      "sample_start": 4320000,
+      "sample_end": 5148514,
+      "duration_samples": 828514
+    },
+    {
+      "window_id": "L21_V027_0000",
+      "video_id": "L21_V027",
+      "window_index": 0,
+      "start_s": 0.0,
+      "end_s": 60.0,
+      "sample_start": 0,
+      "sample_end": 960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V027_0001",
+      "video_id": "L21_V027",
+      "window_index": 1,
+      "start_s": 45.0,
+      "end_s": 105.0,
+      "sample_start": 720000,
+      "sample_end": 1680000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V027_0002",
+      "video_id": "L21_V027",
+      "window_index": 2,
+      "start_s": 90.0,
+      "end_s": 150.0,
+      "sample_start": 1440000,
+      "sample_end": 2400000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V027_0003",
+      "video_id": "L21_V027",
+      "window_index": 3,
+      "start_s": 135.0,
+      "end_s": 195.0,
+      "sample_start": 2160000,
+      "sample_end": 3120000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V027_0004",
+      "video_id": "L21_V027",
+      "window_index": 4,
+      "start_s": 180.0,
+      "end_s": 240.0,
+      "sample_start": 2880000,
+      "sample_end": 3840000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V027_0005",
+      "video_id": "L21_V027",
+      "window_index": 5,
+      "start_s": 225.0,
+      "end_s": 285.0,
+      "sample_start": 3600000,
+      "sample_end": 4560000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V027_0006",
+      "video_id": "L21_V027",
+      "window_index": 6,
+      "start_s": 270.0,
+      "end_s": 330.0,
+      "sample_start": 4320000,
+      "sample_end": 5280000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V027_0007",
+      "video_id": "L21_V027",
+      "window_index": 7,
+      "start_s": 315.0,
+      "end_s": 375.0,
+      "sample_start": 5040000,
+      "sample_end": 6000000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V027_0008",
+      "video_id": "L21_V027",
+      "window_index": 8,
+      "start_s": 360.0,
+      "end_s": 420.0,
+      "sample_start": 5760000,
+      "sample_end": 6720000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V027_0009",
+      "video_id": "L21_V027",
+      "window_index": 9,
+      "start_s": 405.0,
+      "end_s": 465.0,
+      "sample_start": 6480000,
+      "sample_end": 7440000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V027_0010",
+      "video_id": "L21_V027",
+      "window_index": 10,
+      "start_s": 450.0,
+      "end_s": 510.0,
+      "sample_start": 7200000,
+      "sample_end": 8160000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V027_0011",
+      "video_id": "L21_V027",
+      "window_index": 11,
+      "start_s": 495.0,
+      "end_s": 555.0,
+      "sample_start": 7920000,
+      "sample_end": 8880000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V027_0012",
+      "video_id": "L21_V027",
+      "window_index": 12,
+      "start_s": 540.0,
+      "end_s": 600.0,
+      "sample_start": 8640000,
+      "sample_end": 9600000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V027_0013",
+      "video_id": "L21_V027",
+      "window_index": 13,
+      "start_s": 585.0,
+      "end_s": 645.0,
+      "sample_start": 9360000,
+      "sample_end": 10320000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V027_0014",
+      "video_id": "L21_V027",
+      "window_index": 14,
+      "start_s": 630.0,
+      "end_s": 690.0,
+      "sample_start": 10080000,
+      "sample_end": 11040000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V027_0015",
+      "video_id": "L21_V027",
+      "window_index": 15,
+      "start_s": 675.0,
+      "end_s": 735.0,
+      "sample_start": 10800000,
+      "sample_end": 11760000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V027_0016",
+      "video_id": "L21_V027",
+      "window_index": 16,
+      "start_s": 720.0,
+      "end_s": 780.0,
+      "sample_start": 11520000,
+      "sample_end": 12480000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V027_0017",
+      "video_id": "L21_V027",
+      "window_index": 17,
+      "start_s": 765.0,
+      "end_s": 825.0,
+      "sample_start": 12240000,
+      "sample_end": 13200000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V027_0018",
+      "video_id": "L21_V027",
+      "window_index": 18,
+      "start_s": 810.0,
+      "end_s": 870.0,
+      "sample_start": 12960000,
+      "sample_end": 13920000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V027_0019",
+      "video_id": "L21_V027",
+      "window_index": 19,
+      "start_s": 855.0,
+      "end_s": 915.0,
+      "sample_start": 13680000,
+      "sample_end": 14640000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V027_0020",
+      "video_id": "L21_V027",
+      "window_index": 20,
+      "start_s": 900.0,
+      "end_s": 960.0,
+      "sample_start": 14400000,
+      "sample_end": 15360000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V027_0021",
+      "video_id": "L21_V027",
+      "window_index": 21,
+      "start_s": 945.0,
+      "end_s": 1005.0,
+      "sample_start": 15120000,
+      "sample_end": 16080000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V027_0022",
+      "video_id": "L21_V027",
+      "window_index": 22,
+      "start_s": 990.0,
+      "end_s": 1050.0,
+      "sample_start": 15840000,
+      "sample_end": 16800000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V027_0023",
+      "video_id": "L21_V027",
+      "window_index": 23,
+      "start_s": 1035.0,
+      "end_s": 1095.0,
+      "sample_start": 16560000,
+      "sample_end": 17520000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V027_0024",
+      "video_id": "L21_V027",
+      "window_index": 24,
+      "start_s": 1080.0,
+      "end_s": 1140.0,
+      "sample_start": 17280000,
+      "sample_end": 18240000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L21_V027_0025",
+      "video_id": "L21_V027",
+      "window_index": 25,
+      "start_s": 1125.0,
+      "end_s": 1160.20825,
+      "sample_start": 18000000,
+      "sample_end": 18563332,
+      "duration_samples": 563332
+    },
+    {
+      "window_id": "L27_V010_0000",
+      "video_id": "L27_V010",
+      "window_index": 0,
+      "start_s": 0.0,
+      "end_s": 60.0,
+      "sample_start": 0,
+      "sample_end": 960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L27_V010_0001",
+      "video_id": "L27_V010",
+      "window_index": 1,
+      "start_s": 45.0,
+      "end_s": 105.0,
+      "sample_start": 720000,
+      "sample_end": 1680000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L27_V010_0002",
+      "video_id": "L27_V010",
+      "window_index": 2,
+      "start_s": 90.0,
+      "end_s": 150.0,
+      "sample_start": 1440000,
+      "sample_end": 2400000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L27_V010_0003",
+      "video_id": "L27_V010",
+      "window_index": 3,
+      "start_s": 135.0,
+      "end_s": 195.0,
+      "sample_start": 2160000,
+      "sample_end": 3120000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L27_V010_0004",
+      "video_id": "L27_V010",
+      "window_index": 4,
+      "start_s": 180.0,
+      "end_s": 240.0,
+      "sample_start": 2880000,
+      "sample_end": 3840000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L27_V010_0005",
+      "video_id": "L27_V010",
+      "window_index": 5,
+      "start_s": 225.0,
+      "end_s": 285.0,
+      "sample_start": 3600000,
+      "sample_end": 4560000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L27_V010_0006",
+      "video_id": "L27_V010",
+      "window_index": 6,
+      "start_s": 270.0,
+      "end_s": 330.0,
+      "sample_start": 4320000,
+      "sample_end": 5280000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L27_V010_0007",
+      "video_id": "L27_V010",
+      "window_index": 7,
+      "start_s": 315.0,
+      "end_s": 375.0,
+      "sample_start": 5040000,
+      "sample_end": 6000000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L27_V010_0008",
+      "video_id": "L27_V010",
+      "window_index": 8,
+      "start_s": 360.0,
+      "end_s": 420.0,
+      "sample_start": 5760000,
+      "sample_end": 6720000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L27_V010_0009",
+      "video_id": "L27_V010",
+      "window_index": 9,
+      "start_s": 405.0,
+      "end_s": 465.0,
+      "sample_start": 6480000,
+      "sample_end": 7440000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L27_V010_0010",
+      "video_id": "L27_V010",
+      "window_index": 10,
+      "start_s": 450.0,
+      "end_s": 510.0,
+      "sample_start": 7200000,
+      "sample_end": 8160000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L27_V010_0011",
+      "video_id": "L27_V010",
+      "window_index": 11,
+      "start_s": 495.0,
+      "end_s": 555.0,
+      "sample_start": 7920000,
+      "sample_end": 8880000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L27_V010_0012",
+      "video_id": "L27_V010",
+      "window_index": 12,
+      "start_s": 540.0,
+      "end_s": 584.4926875,
+      "sample_start": 8640000,
+      "sample_end": 9351883,
+      "duration_samples": 711883
+    },
+    {
+      "window_id": "L26_V004_0000",
+      "video_id": "L26_V004",
+      "window_index": 0,
+      "start_s": 0.0,
+      "end_s": 60.0,
+      "sample_start": 0,
+      "sample_end": 960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L26_V004_0001",
+      "video_id": "L26_V004",
+      "window_index": 1,
+      "start_s": 45.0,
+      "end_s": 105.0,
+      "sample_start": 720000,
+      "sample_end": 1680000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L26_V004_0002",
+      "video_id": "L26_V004",
+      "window_index": 2,
+      "start_s": 90.0,
+      "end_s": 150.0,
+      "sample_start": 1440000,
+      "sample_end": 2400000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L26_V004_0003",
+      "video_id": "L26_V004",
+      "window_index": 3,
+      "start_s": 135.0,
+      "end_s": 195.0,
+      "sample_start": 2160000,
+      "sample_end": 3120000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L26_V004_0004",
+      "video_id": "L26_V004",
+      "window_index": 4,
+      "start_s": 180.0,
+      "end_s": 240.0,
+      "sample_start": 2880000,
+      "sample_end": 3840000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L26_V004_0005",
+      "video_id": "L26_V004",
+      "window_index": 5,
+      "start_s": 225.0,
+      "end_s": 285.0,
+      "sample_start": 3600000,
+      "sample_end": 4560000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L26_V004_0006",
+      "video_id": "L26_V004",
+      "window_index": 6,
+      "start_s": 270.0,
+      "end_s": 294.4290625,
+      "sample_start": 4320000,
+      "sample_end": 4710865,
+      "duration_samples": 390865
+    },
+    {
+      "window_id": "L23_V007_0000",
+      "video_id": "L23_V007",
+      "window_index": 0,
+      "start_s": 0.0,
+      "end_s": 60.0,
+      "sample_start": 0,
+      "sample_end": 960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L23_V007_0001",
+      "video_id": "L23_V007",
+      "window_index": 1,
+      "start_s": 45.0,
+      "end_s": 105.0,
+      "sample_start": 720000,
+      "sample_end": 1680000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L23_V007_0002",
+      "video_id": "L23_V007",
+      "window_index": 2,
+      "start_s": 90.0,
+      "end_s": 150.0,
+      "sample_start": 1440000,
+      "sample_end": 2400000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L23_V007_0003",
+      "video_id": "L23_V007",
+      "window_index": 3,
+      "start_s": 135.0,
+      "end_s": 195.0,
+      "sample_start": 2160000,
+      "sample_end": 3120000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L23_V007_0004",
+      "video_id": "L23_V007",
+      "window_index": 4,
+      "start_s": 180.0,
+      "end_s": 240.0,
+      "sample_start": 2880000,
+      "sample_end": 3840000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L23_V007_0005",
+      "video_id": "L23_V007",
+      "window_index": 5,
+      "start_s": 225.0,
+      "end_s": 285.0,
+      "sample_start": 3600000,
+      "sample_end": 4560000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L23_V007_0006",
+      "video_id": "L23_V007",
+      "window_index": 6,
+      "start_s": 270.0,
+      "end_s": 330.0,
+      "sample_start": 4320000,
+      "sample_end": 5280000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L23_V007_0007",
+      "video_id": "L23_V007",
+      "window_index": 7,
+      "start_s": 315.0,
+      "end_s": 375.0,
+      "sample_start": 5040000,
+      "sample_end": 6000000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L23_V007_0008",
+      "video_id": "L23_V007",
+      "window_index": 8,
+      "start_s": 360.0,
+      "end_s": 394.808875,
+      "sample_start": 5760000,
+      "sample_end": 6316942,
+      "duration_samples": 556942
+    },
+    {
+      "window_id": "L30_V040_0000",
+      "video_id": "L30_V040",
+      "window_index": 0,
+      "start_s": 0.0,
+      "end_s": 60.0,
+      "sample_start": 0,
+      "sample_end": 960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L30_V040_0001",
+      "video_id": "L30_V040",
+      "window_index": 1,
+      "start_s": 45.0,
+      "end_s": 65.1784375,
+      "sample_start": 720000,
+      "sample_end": 1042855,
+      "duration_samples": 322855
+    },
+    {
+      "window_id": "L25_V058_0000",
+      "video_id": "L25_V058",
+      "window_index": 0,
+      "start_s": 0.0,
+      "end_s": 60.0,
+      "sample_start": 0,
+      "sample_end": 960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L25_V058_0001",
+      "video_id": "L25_V058",
+      "window_index": 1,
+      "start_s": 45.0,
+      "end_s": 105.0,
+      "sample_start": 720000,
+      "sample_end": 1680000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L25_V058_0002",
+      "video_id": "L25_V058",
+      "window_index": 2,
+      "start_s": 90.0,
+      "end_s": 150.0,
+      "sample_start": 1440000,
+      "sample_end": 2400000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L25_V058_0003",
+      "video_id": "L25_V058",
+      "window_index": 3,
+      "start_s": 135.0,
+      "end_s": 195.0,
+      "sample_start": 2160000,
+      "sample_end": 3120000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L25_V058_0004",
+      "video_id": "L25_V058",
+      "window_index": 4,
+      "start_s": 180.0,
+      "end_s": 240.0,
+      "sample_start": 2880000,
+      "sample_end": 3840000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L25_V058_0005",
+      "video_id": "L25_V058",
+      "window_index": 5,
+      "start_s": 225.0,
+      "end_s": 285.0,
+      "sample_start": 3600000,
+      "sample_end": 4560000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L25_V058_0006",
+      "video_id": "L25_V058",
+      "window_index": 6,
+      "start_s": 270.0,
+      "end_s": 330.0,
+      "sample_start": 4320000,
+      "sample_end": 5280000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L25_V058_0007",
+      "video_id": "L25_V058",
+      "window_index": 7,
+      "start_s": 315.0,
+      "end_s": 375.0,
+      "sample_start": 5040000,
+      "sample_end": 6000000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L25_V058_0008",
+      "video_id": "L25_V058",
+      "window_index": 8,
+      "start_s": 360.0,
+      "end_s": 420.0,
+      "sample_start": 5760000,
+      "sample_end": 6720000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L25_V058_0009",
+      "video_id": "L25_V058",
+      "window_index": 9,
+      "start_s": 405.0,
+      "end_s": 465.0,
+      "sample_start": 6480000,
+      "sample_end": 7440000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L25_V058_0010",
+      "video_id": "L25_V058",
+      "window_index": 10,
+      "start_s": 450.0,
+      "end_s": 510.0,
+      "sample_start": 7200000,
+      "sample_end": 8160000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L25_V058_0011",
+      "video_id": "L25_V058",
+      "window_index": 11,
+      "start_s": 495.0,
+      "end_s": 555.0,
+      "sample_start": 7920000,
+      "sample_end": 8880000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L25_V058_0012",
+      "video_id": "L25_V058",
+      "window_index": 12,
+      "start_s": 540.0,
+      "end_s": 600.0,
+      "sample_start": 8640000,
+      "sample_end": 9600000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L25_V058_0013",
+      "video_id": "L25_V058",
+      "window_index": 13,
+      "start_s": 585.0,
+      "end_s": 645.0,
+      "sample_start": 9360000,
+      "sample_end": 10320000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L25_V058_0014",
+      "video_id": "L25_V058",
+      "window_index": 14,
+      "start_s": 630.0,
+      "end_s": 690.0,
+      "sample_start": 10080000,
+      "sample_end": 11040000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L25_V058_0015",
+      "video_id": "L25_V058",
+      "window_index": 15,
+      "start_s": 675.0,
+      "end_s": 735.0,
+      "sample_start": 10800000,
+      "sample_end": 11760000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L25_V058_0016",
+      "video_id": "L25_V058",
+      "window_index": 16,
+      "start_s": 720.0,
+      "end_s": 780.0,
+      "sample_start": 11520000,
+      "sample_end": 12480000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L25_V058_0017",
+      "video_id": "L25_V058",
+      "window_index": 17,
+      "start_s": 765.0,
+      "end_s": 825.0,
+      "sample_start": 12240000,
+      "sample_end": 13200000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L25_V058_0018",
+      "video_id": "L25_V058",
+      "window_index": 18,
+      "start_s": 810.0,
+      "end_s": 870.0,
+      "sample_start": 12960000,
+      "sample_end": 13920000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L25_V058_0019",
+      "video_id": "L25_V058",
+      "window_index": 19,
+      "start_s": 855.0,
+      "end_s": 915.0,
+      "sample_start": 13680000,
+      "sample_end": 14640000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L25_V058_0020",
+      "video_id": "L25_V058",
+      "window_index": 20,
+      "start_s": 900.0,
+      "end_s": 960.0,
+      "sample_start": 14400000,
+      "sample_end": 15360000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L25_V058_0021",
+      "video_id": "L25_V058",
+      "window_index": 21,
+      "start_s": 945.0,
+      "end_s": 1005.0,
+      "sample_start": 15120000,
+      "sample_end": 16080000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L25_V058_0022",
+      "video_id": "L25_V058",
+      "window_index": 22,
+      "start_s": 990.0,
+      "end_s": 1050.0,
+      "sample_start": 15840000,
+      "sample_end": 16800000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L25_V058_0023",
+      "video_id": "L25_V058",
+      "window_index": 23,
+      "start_s": 1035.0,
+      "end_s": 1095.0,
+      "sample_start": 16560000,
+      "sample_end": 17520000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L25_V058_0024",
+      "video_id": "L25_V058",
+      "window_index": 24,
+      "start_s": 1080.0,
+      "end_s": 1140.0,
+      "sample_start": 17280000,
+      "sample_end": 18240000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L25_V058_0025",
+      "video_id": "L25_V058",
+      "window_index": 25,
+      "start_s": 1125.0,
+      "end_s": 1185.0,
+      "sample_start": 18000000,
+      "sample_end": 18960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L25_V058_0026",
+      "video_id": "L25_V058",
+      "window_index": 26,
+      "start_s": 1170.0,
+      "end_s": 1230.0,
+      "sample_start": 18720000,
+      "sample_end": 19680000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L25_V058_0027",
+      "video_id": "L25_V058",
+      "window_index": 27,
+      "start_s": 1215.0,
+      "end_s": 1275.0,
+      "sample_start": 19440000,
+      "sample_end": 20400000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L25_V058_0028",
+      "video_id": "L25_V058",
+      "window_index": 28,
+      "start_s": 1260.0,
+      "end_s": 1320.0,
+      "sample_start": 20160000,
+      "sample_end": 21120000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L25_V058_0029",
+      "video_id": "L25_V058",
+      "window_index": 29,
+      "start_s": 1305.0,
+      "end_s": 1365.0,
+      "sample_start": 20880000,
+      "sample_end": 21840000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L25_V058_0030",
+      "video_id": "L25_V058",
+      "window_index": 30,
+      "start_s": 1350.0,
+      "end_s": 1410.0,
+      "sample_start": 21600000,
+      "sample_end": 22560000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L25_V058_0031",
+      "video_id": "L25_V058",
+      "window_index": 31,
+      "start_s": 1395.0,
+      "end_s": 1455.0,
+      "sample_start": 22320000,
+      "sample_end": 23280000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L25_V058_0032",
+      "video_id": "L25_V058",
+      "window_index": 32,
+      "start_s": 1440.0,
+      "end_s": 1500.0,
+      "sample_start": 23040000,
+      "sample_end": 24000000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L25_V058_0033",
+      "video_id": "L25_V058",
+      "window_index": 33,
+      "start_s": 1485.0,
+      "end_s": 1501.123625,
+      "sample_start": 23760000,
+      "sample_end": 24017978,
+      "duration_samples": 257978
+    },
+    {
+      "window_id": "L26_V444_0000",
+      "video_id": "L26_V444",
+      "window_index": 0,
+      "start_s": 0.0,
+      "end_s": 60.0,
+      "sample_start": 0,
+      "sample_end": 960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L26_V444_0001",
+      "video_id": "L26_V444",
+      "window_index": 1,
+      "start_s": 45.0,
+      "end_s": 105.0,
+      "sample_start": 720000,
+      "sample_end": 1680000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L26_V444_0002",
+      "video_id": "L26_V444",
+      "window_index": 2,
+      "start_s": 90.0,
+      "end_s": 150.0,
+      "sample_start": 1440000,
+      "sample_end": 2400000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L26_V444_0003",
+      "video_id": "L26_V444",
+      "window_index": 3,
+      "start_s": 135.0,
+      "end_s": 195.0,
+      "sample_start": 2160000,
+      "sample_end": 3120000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L26_V444_0004",
+      "video_id": "L26_V444",
+      "window_index": 4,
+      "start_s": 180.0,
+      "end_s": 240.0,
+      "sample_start": 2880000,
+      "sample_end": 3840000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L26_V444_0005",
+      "video_id": "L26_V444",
+      "window_index": 5,
+      "start_s": 225.0,
+      "end_s": 285.0,
+      "sample_start": 3600000,
+      "sample_end": 4560000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "L26_V444_0006",
+      "video_id": "L26_V444",
+      "window_index": 6,
+      "start_s": 270.0,
+      "end_s": 329.700125,
+      "sample_start": 4320000,
+      "sample_end": 5275202,
+      "duration_samples": 955202
+    },
+    {
+      "window_id": "K14_V027_0000",
+      "video_id": "K14_V027",
+      "window_index": 0,
+      "start_s": 0.0,
+      "end_s": 60.0,
+      "sample_start": 0,
+      "sample_end": 960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K14_V027_0001",
+      "video_id": "K14_V027",
+      "window_index": 1,
+      "start_s": 45.0,
+      "end_s": 105.0,
+      "sample_start": 720000,
+      "sample_end": 1680000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K14_V027_0002",
+      "video_id": "K14_V027",
+      "window_index": 2,
+      "start_s": 90.0,
+      "end_s": 150.0,
+      "sample_start": 1440000,
+      "sample_end": 2400000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K14_V027_0003",
+      "video_id": "K14_V027",
+      "window_index": 3,
+      "start_s": 135.0,
+      "end_s": 195.0,
+      "sample_start": 2160000,
+      "sample_end": 3120000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K14_V027_0004",
+      "video_id": "K14_V027",
+      "window_index": 4,
+      "start_s": 180.0,
+      "end_s": 240.0,
+      "sample_start": 2880000,
+      "sample_end": 3840000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K14_V027_0005",
+      "video_id": "K14_V027",
+      "window_index": 5,
+      "start_s": 225.0,
+      "end_s": 285.0,
+      "sample_start": 3600000,
+      "sample_end": 4560000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K14_V027_0006",
+      "video_id": "K14_V027",
+      "window_index": 6,
+      "start_s": 270.0,
+      "end_s": 330.0,
+      "sample_start": 4320000,
+      "sample_end": 5280000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K14_V027_0007",
+      "video_id": "K14_V027",
+      "window_index": 7,
+      "start_s": 315.0,
+      "end_s": 375.0,
+      "sample_start": 5040000,
+      "sample_end": 6000000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K14_V027_0008",
+      "video_id": "K14_V027",
+      "window_index": 8,
+      "start_s": 360.0,
+      "end_s": 420.0,
+      "sample_start": 5760000,
+      "sample_end": 6720000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K14_V027_0009",
+      "video_id": "K14_V027",
+      "window_index": 9,
+      "start_s": 405.0,
+      "end_s": 465.0,
+      "sample_start": 6480000,
+      "sample_end": 7440000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K14_V027_0010",
+      "video_id": "K14_V027",
+      "window_index": 10,
+      "start_s": 450.0,
+      "end_s": 510.0,
+      "sample_start": 7200000,
+      "sample_end": 8160000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K14_V027_0011",
+      "video_id": "K14_V027",
+      "window_index": 11,
+      "start_s": 495.0,
+      "end_s": 555.0,
+      "sample_start": 7920000,
+      "sample_end": 8880000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K14_V027_0012",
+      "video_id": "K14_V027",
+      "window_index": 12,
+      "start_s": 540.0,
+      "end_s": 600.0,
+      "sample_start": 8640000,
+      "sample_end": 9600000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K14_V027_0013",
+      "video_id": "K14_V027",
+      "window_index": 13,
+      "start_s": 585.0,
+      "end_s": 645.0,
+      "sample_start": 9360000,
+      "sample_end": 10320000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K14_V027_0014",
+      "video_id": "K14_V027",
+      "window_index": 14,
+      "start_s": 630.0,
+      "end_s": 690.0,
+      "sample_start": 10080000,
+      "sample_end": 11040000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K14_V027_0015",
+      "video_id": "K14_V027",
+      "window_index": 15,
+      "start_s": 675.0,
+      "end_s": 735.0,
+      "sample_start": 10800000,
+      "sample_end": 11760000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K14_V027_0016",
+      "video_id": "K14_V027",
+      "window_index": 16,
+      "start_s": 720.0,
+      "end_s": 780.0,
+      "sample_start": 11520000,
+      "sample_end": 12480000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K14_V027_0017",
+      "video_id": "K14_V027",
+      "window_index": 17,
+      "start_s": 765.0,
+      "end_s": 825.0,
+      "sample_start": 12240000,
+      "sample_end": 13200000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K14_V027_0018",
+      "video_id": "K14_V027",
+      "window_index": 18,
+      "start_s": 810.0,
+      "end_s": 870.0,
+      "sample_start": 12960000,
+      "sample_end": 13920000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K14_V027_0019",
+      "video_id": "K14_V027",
+      "window_index": 19,
+      "start_s": 855.0,
+      "end_s": 915.0,
+      "sample_start": 13680000,
+      "sample_end": 14640000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K14_V027_0020",
+      "video_id": "K14_V027",
+      "window_index": 20,
+      "start_s": 900.0,
+      "end_s": 960.0,
+      "sample_start": 14400000,
+      "sample_end": 15360000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K14_V027_0021",
+      "video_id": "K14_V027",
+      "window_index": 21,
+      "start_s": 945.0,
+      "end_s": 1005.0,
+      "sample_start": 15120000,
+      "sample_end": 16080000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K14_V027_0022",
+      "video_id": "K14_V027",
+      "window_index": 22,
+      "start_s": 990.0,
+      "end_s": 1050.0,
+      "sample_start": 15840000,
+      "sample_end": 16800000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K14_V027_0023",
+      "video_id": "K14_V027",
+      "window_index": 23,
+      "start_s": 1035.0,
+      "end_s": 1095.0,
+      "sample_start": 16560000,
+      "sample_end": 17520000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K14_V027_0024",
+      "video_id": "K14_V027",
+      "window_index": 24,
+      "start_s": 1080.0,
+      "end_s": 1131.926375,
+      "sample_start": 17280000,
+      "sample_end": 18110822,
+      "duration_samples": 830822
+    },
+    {
+      "window_id": "K01_V018_0000",
+      "video_id": "K01_V018",
+      "window_index": 0,
+      "start_s": 0.0,
+      "end_s": 60.0,
+      "sample_start": 0,
+      "sample_end": 960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K01_V018_0001",
+      "video_id": "K01_V018",
+      "window_index": 1,
+      "start_s": 45.0,
+      "end_s": 105.0,
+      "sample_start": 720000,
+      "sample_end": 1680000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K01_V018_0002",
+      "video_id": "K01_V018",
+      "window_index": 2,
+      "start_s": 90.0,
+      "end_s": 150.0,
+      "sample_start": 1440000,
+      "sample_end": 2400000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K01_V018_0003",
+      "video_id": "K01_V018",
+      "window_index": 3,
+      "start_s": 135.0,
+      "end_s": 195.0,
+      "sample_start": 2160000,
+      "sample_end": 3120000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K01_V018_0004",
+      "video_id": "K01_V018",
+      "window_index": 4,
+      "start_s": 180.0,
+      "end_s": 240.0,
+      "sample_start": 2880000,
+      "sample_end": 3840000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K01_V018_0005",
+      "video_id": "K01_V018",
+      "window_index": 5,
+      "start_s": 225.0,
+      "end_s": 285.0,
+      "sample_start": 3600000,
+      "sample_end": 4560000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K01_V018_0006",
+      "video_id": "K01_V018",
+      "window_index": 6,
+      "start_s": 270.0,
+      "end_s": 330.0,
+      "sample_start": 4320000,
+      "sample_end": 5280000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K01_V018_0007",
+      "video_id": "K01_V018",
+      "window_index": 7,
+      "start_s": 315.0,
+      "end_s": 375.0,
+      "sample_start": 5040000,
+      "sample_end": 6000000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K01_V018_0008",
+      "video_id": "K01_V018",
+      "window_index": 8,
+      "start_s": 360.0,
+      "end_s": 420.0,
+      "sample_start": 5760000,
+      "sample_end": 6720000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K01_V018_0009",
+      "video_id": "K01_V018",
+      "window_index": 9,
+      "start_s": 405.0,
+      "end_s": 465.0,
+      "sample_start": 6480000,
+      "sample_end": 7440000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K01_V018_0010",
+      "video_id": "K01_V018",
+      "window_index": 10,
+      "start_s": 450.0,
+      "end_s": 510.0,
+      "sample_start": 7200000,
+      "sample_end": 8160000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K01_V018_0011",
+      "video_id": "K01_V018",
+      "window_index": 11,
+      "start_s": 495.0,
+      "end_s": 555.0,
+      "sample_start": 7920000,
+      "sample_end": 8880000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K01_V018_0012",
+      "video_id": "K01_V018",
+      "window_index": 12,
+      "start_s": 540.0,
+      "end_s": 600.0,
+      "sample_start": 8640000,
+      "sample_end": 9600000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K01_V018_0013",
+      "video_id": "K01_V018",
+      "window_index": 13,
+      "start_s": 585.0,
+      "end_s": 645.0,
+      "sample_start": 9360000,
+      "sample_end": 10320000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K01_V018_0014",
+      "video_id": "K01_V018",
+      "window_index": 14,
+      "start_s": 630.0,
+      "end_s": 690.0,
+      "sample_start": 10080000,
+      "sample_end": 11040000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K01_V018_0015",
+      "video_id": "K01_V018",
+      "window_index": 15,
+      "start_s": 675.0,
+      "end_s": 735.0,
+      "sample_start": 10800000,
+      "sample_end": 11760000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K01_V018_0016",
+      "video_id": "K01_V018",
+      "window_index": 16,
+      "start_s": 720.0,
+      "end_s": 780.0,
+      "sample_start": 11520000,
+      "sample_end": 12480000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K01_V018_0017",
+      "video_id": "K01_V018",
+      "window_index": 17,
+      "start_s": 765.0,
+      "end_s": 825.0,
+      "sample_start": 12240000,
+      "sample_end": 13200000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K01_V018_0018",
+      "video_id": "K01_V018",
+      "window_index": 18,
+      "start_s": 810.0,
+      "end_s": 870.0,
+      "sample_start": 12960000,
+      "sample_end": 13920000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K01_V018_0019",
+      "video_id": "K01_V018",
+      "window_index": 19,
+      "start_s": 855.0,
+      "end_s": 915.0,
+      "sample_start": 13680000,
+      "sample_end": 14640000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K01_V018_0020",
+      "video_id": "K01_V018",
+      "window_index": 20,
+      "start_s": 900.0,
+      "end_s": 960.0,
+      "sample_start": 14400000,
+      "sample_end": 15360000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K01_V018_0021",
+      "video_id": "K01_V018",
+      "window_index": 21,
+      "start_s": 945.0,
+      "end_s": 1005.0,
+      "sample_start": 15120000,
+      "sample_end": 16080000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K01_V018_0022",
+      "video_id": "K01_V018",
+      "window_index": 22,
+      "start_s": 990.0,
+      "end_s": 1050.0,
+      "sample_start": 15840000,
+      "sample_end": 16800000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K01_V018_0023",
+      "video_id": "K01_V018",
+      "window_index": 23,
+      "start_s": 1035.0,
+      "end_s": 1092.7310625,
+      "sample_start": 16560000,
+      "sample_end": 17483697,
+      "duration_samples": 923697
+    },
+    {
+      "window_id": "K08_V019_0000",
+      "video_id": "K08_V019",
+      "window_index": 0,
+      "start_s": 0.0,
+      "end_s": 60.0,
+      "sample_start": 0,
+      "sample_end": 960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K08_V019_0001",
+      "video_id": "K08_V019",
+      "window_index": 1,
+      "start_s": 45.0,
+      "end_s": 105.0,
+      "sample_start": 720000,
+      "sample_end": 1680000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K08_V019_0002",
+      "video_id": "K08_V019",
+      "window_index": 2,
+      "start_s": 90.0,
+      "end_s": 150.0,
+      "sample_start": 1440000,
+      "sample_end": 2400000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K08_V019_0003",
+      "video_id": "K08_V019",
+      "window_index": 3,
+      "start_s": 135.0,
+      "end_s": 195.0,
+      "sample_start": 2160000,
+      "sample_end": 3120000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K08_V019_0004",
+      "video_id": "K08_V019",
+      "window_index": 4,
+      "start_s": 180.0,
+      "end_s": 240.0,
+      "sample_start": 2880000,
+      "sample_end": 3840000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K08_V019_0005",
+      "video_id": "K08_V019",
+      "window_index": 5,
+      "start_s": 225.0,
+      "end_s": 285.0,
+      "sample_start": 3600000,
+      "sample_end": 4560000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K08_V019_0006",
+      "video_id": "K08_V019",
+      "window_index": 6,
+      "start_s": 270.0,
+      "end_s": 330.0,
+      "sample_start": 4320000,
+      "sample_end": 5280000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K08_V019_0007",
+      "video_id": "K08_V019",
+      "window_index": 7,
+      "start_s": 315.0,
+      "end_s": 375.0,
+      "sample_start": 5040000,
+      "sample_end": 6000000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K08_V019_0008",
+      "video_id": "K08_V019",
+      "window_index": 8,
+      "start_s": 360.0,
+      "end_s": 420.0,
+      "sample_start": 5760000,
+      "sample_end": 6720000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K08_V019_0009",
+      "video_id": "K08_V019",
+      "window_index": 9,
+      "start_s": 405.0,
+      "end_s": 465.0,
+      "sample_start": 6480000,
+      "sample_end": 7440000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K08_V019_0010",
+      "video_id": "K08_V019",
+      "window_index": 10,
+      "start_s": 450.0,
+      "end_s": 510.0,
+      "sample_start": 7200000,
+      "sample_end": 8160000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K08_V019_0011",
+      "video_id": "K08_V019",
+      "window_index": 11,
+      "start_s": 495.0,
+      "end_s": 555.0,
+      "sample_start": 7920000,
+      "sample_end": 8880000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K08_V019_0012",
+      "video_id": "K08_V019",
+      "window_index": 12,
+      "start_s": 540.0,
+      "end_s": 600.0,
+      "sample_start": 8640000,
+      "sample_end": 9600000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K08_V019_0013",
+      "video_id": "K08_V019",
+      "window_index": 13,
+      "start_s": 585.0,
+      "end_s": 645.0,
+      "sample_start": 9360000,
+      "sample_end": 10320000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K08_V019_0014",
+      "video_id": "K08_V019",
+      "window_index": 14,
+      "start_s": 630.0,
+      "end_s": 690.0,
+      "sample_start": 10080000,
+      "sample_end": 11040000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K08_V019_0015",
+      "video_id": "K08_V019",
+      "window_index": 15,
+      "start_s": 675.0,
+      "end_s": 735.0,
+      "sample_start": 10800000,
+      "sample_end": 11760000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K08_V019_0016",
+      "video_id": "K08_V019",
+      "window_index": 16,
+      "start_s": 720.0,
+      "end_s": 780.0,
+      "sample_start": 11520000,
+      "sample_end": 12480000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K08_V019_0017",
+      "video_id": "K08_V019",
+      "window_index": 17,
+      "start_s": 765.0,
+      "end_s": 825.0,
+      "sample_start": 12240000,
+      "sample_end": 13200000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K08_V019_0018",
+      "video_id": "K08_V019",
+      "window_index": 18,
+      "start_s": 810.0,
+      "end_s": 870.0,
+      "sample_start": 12960000,
+      "sample_end": 13920000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K08_V019_0019",
+      "video_id": "K08_V019",
+      "window_index": 19,
+      "start_s": 855.0,
+      "end_s": 915.0,
+      "sample_start": 13680000,
+      "sample_end": 14640000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K08_V019_0020",
+      "video_id": "K08_V019",
+      "window_index": 20,
+      "start_s": 900.0,
+      "end_s": 960.0,
+      "sample_start": 14400000,
+      "sample_end": 15360000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K08_V019_0021",
+      "video_id": "K08_V019",
+      "window_index": 21,
+      "start_s": 945.0,
+      "end_s": 1005.0,
+      "sample_start": 15120000,
+      "sample_end": 16080000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K08_V019_0022",
+      "video_id": "K08_V019",
+      "window_index": 22,
+      "start_s": 990.0,
+      "end_s": 1050.0,
+      "sample_start": 15840000,
+      "sample_end": 16800000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K08_V019_0023",
+      "video_id": "K08_V019",
+      "window_index": 23,
+      "start_s": 1035.0,
+      "end_s": 1095.0,
+      "sample_start": 16560000,
+      "sample_end": 17520000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K08_V019_0024",
+      "video_id": "K08_V019",
+      "window_index": 24,
+      "start_s": 1080.0,
+      "end_s": 1140.0,
+      "sample_start": 17280000,
+      "sample_end": 18240000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K08_V019_0025",
+      "video_id": "K08_V019",
+      "window_index": 25,
+      "start_s": 1125.0,
+      "end_s": 1185.0,
+      "sample_start": 18000000,
+      "sample_end": 18960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K08_V019_0026",
+      "video_id": "K08_V019",
+      "window_index": 26,
+      "start_s": 1170.0,
+      "end_s": 1207.0196875,
+      "sample_start": 18720000,
+      "sample_end": 19312315,
+      "duration_samples": 592315
+    },
+    {
+      "window_id": "K19_V022_0000",
+      "video_id": "K19_V022",
+      "window_index": 0,
+      "start_s": 0.0,
+      "end_s": 60.0,
+      "sample_start": 0,
+      "sample_end": 960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K19_V022_0001",
+      "video_id": "K19_V022",
+      "window_index": 1,
+      "start_s": 45.0,
+      "end_s": 105.0,
+      "sample_start": 720000,
+      "sample_end": 1680000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K19_V022_0002",
+      "video_id": "K19_V022",
+      "window_index": 2,
+      "start_s": 90.0,
+      "end_s": 150.0,
+      "sample_start": 1440000,
+      "sample_end": 2400000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K19_V022_0003",
+      "video_id": "K19_V022",
+      "window_index": 3,
+      "start_s": 135.0,
+      "end_s": 195.0,
+      "sample_start": 2160000,
+      "sample_end": 3120000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K19_V022_0004",
+      "video_id": "K19_V022",
+      "window_index": 4,
+      "start_s": 180.0,
+      "end_s": 240.0,
+      "sample_start": 2880000,
+      "sample_end": 3840000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K19_V022_0005",
+      "video_id": "K19_V022",
+      "window_index": 5,
+      "start_s": 225.0,
+      "end_s": 285.0,
+      "sample_start": 3600000,
+      "sample_end": 4560000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K19_V022_0006",
+      "video_id": "K19_V022",
+      "window_index": 6,
+      "start_s": 270.0,
+      "end_s": 330.0,
+      "sample_start": 4320000,
+      "sample_end": 5280000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K19_V022_0007",
+      "video_id": "K19_V022",
+      "window_index": 7,
+      "start_s": 315.0,
+      "end_s": 375.0,
+      "sample_start": 5040000,
+      "sample_end": 6000000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K19_V022_0008",
+      "video_id": "K19_V022",
+      "window_index": 8,
+      "start_s": 360.0,
+      "end_s": 420.0,
+      "sample_start": 5760000,
+      "sample_end": 6720000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K19_V022_0009",
+      "video_id": "K19_V022",
+      "window_index": 9,
+      "start_s": 405.0,
+      "end_s": 465.0,
+      "sample_start": 6480000,
+      "sample_end": 7440000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K19_V022_0010",
+      "video_id": "K19_V022",
+      "window_index": 10,
+      "start_s": 450.0,
+      "end_s": 510.0,
+      "sample_start": 7200000,
+      "sample_end": 8160000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K19_V022_0011",
+      "video_id": "K19_V022",
+      "window_index": 11,
+      "start_s": 495.0,
+      "end_s": 555.0,
+      "sample_start": 7920000,
+      "sample_end": 8880000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K19_V022_0012",
+      "video_id": "K19_V022",
+      "window_index": 12,
+      "start_s": 540.0,
+      "end_s": 600.0,
+      "sample_start": 8640000,
+      "sample_end": 9600000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K19_V022_0013",
+      "video_id": "K19_V022",
+      "window_index": 13,
+      "start_s": 585.0,
+      "end_s": 645.0,
+      "sample_start": 9360000,
+      "sample_end": 10320000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K19_V022_0014",
+      "video_id": "K19_V022",
+      "window_index": 14,
+      "start_s": 630.0,
+      "end_s": 690.0,
+      "sample_start": 10080000,
+      "sample_end": 11040000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K19_V022_0015",
+      "video_id": "K19_V022",
+      "window_index": 15,
+      "start_s": 675.0,
+      "end_s": 735.0,
+      "sample_start": 10800000,
+      "sample_end": 11760000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K19_V022_0016",
+      "video_id": "K19_V022",
+      "window_index": 16,
+      "start_s": 720.0,
+      "end_s": 780.0,
+      "sample_start": 11520000,
+      "sample_end": 12480000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K19_V022_0017",
+      "video_id": "K19_V022",
+      "window_index": 17,
+      "start_s": 765.0,
+      "end_s": 825.0,
+      "sample_start": 12240000,
+      "sample_end": 13200000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K19_V022_0018",
+      "video_id": "K19_V022",
+      "window_index": 18,
+      "start_s": 810.0,
+      "end_s": 870.0,
+      "sample_start": 12960000,
+      "sample_end": 13920000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K19_V022_0019",
+      "video_id": "K19_V022",
+      "window_index": 19,
+      "start_s": 855.0,
+      "end_s": 915.0,
+      "sample_start": 13680000,
+      "sample_end": 14640000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K19_V022_0020",
+      "video_id": "K19_V022",
+      "window_index": 20,
+      "start_s": 900.0,
+      "end_s": 960.0,
+      "sample_start": 14400000,
+      "sample_end": 15360000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K19_V022_0021",
+      "video_id": "K19_V022",
+      "window_index": 21,
+      "start_s": 945.0,
+      "end_s": 1005.0,
+      "sample_start": 15120000,
+      "sample_end": 16080000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K19_V022_0022",
+      "video_id": "K19_V022",
+      "window_index": 22,
+      "start_s": 990.0,
+      "end_s": 1050.0,
+      "sample_start": 15840000,
+      "sample_end": 16800000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K19_V022_0023",
+      "video_id": "K19_V022",
+      "window_index": 23,
+      "start_s": 1035.0,
+      "end_s": 1095.0,
+      "sample_start": 16560000,
+      "sample_end": 17520000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K19_V022_0024",
+      "video_id": "K19_V022",
+      "window_index": 24,
+      "start_s": 1080.0,
+      "end_s": 1140.0,
+      "sample_start": 17280000,
+      "sample_end": 18240000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K19_V022_0025",
+      "video_id": "K19_V022",
+      "window_index": 25,
+      "start_s": 1125.0,
+      "end_s": 1185.0,
+      "sample_start": 18000000,
+      "sample_end": 18960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K19_V022_0026",
+      "video_id": "K19_V022",
+      "window_index": 26,
+      "start_s": 1170.0,
+      "end_s": 1230.0,
+      "sample_start": 18720000,
+      "sample_end": 19680000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K19_V022_0027",
+      "video_id": "K19_V022",
+      "window_index": 27,
+      "start_s": 1215.0,
+      "end_s": 1275.0,
+      "sample_start": 19440000,
+      "sample_end": 20400000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K19_V022_0028",
+      "video_id": "K19_V022",
+      "window_index": 28,
+      "start_s": 1260.0,
+      "end_s": 1318.0343125,
+      "sample_start": 20160000,
+      "sample_end": 21088549,
+      "duration_samples": 928549
+    },
+    {
+      "window_id": "K04_V021_0000",
+      "video_id": "K04_V021",
+      "window_index": 0,
+      "start_s": 0.0,
+      "end_s": 60.0,
+      "sample_start": 0,
+      "sample_end": 960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V021_0001",
+      "video_id": "K04_V021",
+      "window_index": 1,
+      "start_s": 45.0,
+      "end_s": 105.0,
+      "sample_start": 720000,
+      "sample_end": 1680000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V021_0002",
+      "video_id": "K04_V021",
+      "window_index": 2,
+      "start_s": 90.0,
+      "end_s": 150.0,
+      "sample_start": 1440000,
+      "sample_end": 2400000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V021_0003",
+      "video_id": "K04_V021",
+      "window_index": 3,
+      "start_s": 135.0,
+      "end_s": 195.0,
+      "sample_start": 2160000,
+      "sample_end": 3120000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V021_0004",
+      "video_id": "K04_V021",
+      "window_index": 4,
+      "start_s": 180.0,
+      "end_s": 240.0,
+      "sample_start": 2880000,
+      "sample_end": 3840000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V021_0005",
+      "video_id": "K04_V021",
+      "window_index": 5,
+      "start_s": 225.0,
+      "end_s": 285.0,
+      "sample_start": 3600000,
+      "sample_end": 4560000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V021_0006",
+      "video_id": "K04_V021",
+      "window_index": 6,
+      "start_s": 270.0,
+      "end_s": 330.0,
+      "sample_start": 4320000,
+      "sample_end": 5280000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V021_0007",
+      "video_id": "K04_V021",
+      "window_index": 7,
+      "start_s": 315.0,
+      "end_s": 375.0,
+      "sample_start": 5040000,
+      "sample_end": 6000000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V021_0008",
+      "video_id": "K04_V021",
+      "window_index": 8,
+      "start_s": 360.0,
+      "end_s": 420.0,
+      "sample_start": 5760000,
+      "sample_end": 6720000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V021_0009",
+      "video_id": "K04_V021",
+      "window_index": 9,
+      "start_s": 405.0,
+      "end_s": 465.0,
+      "sample_start": 6480000,
+      "sample_end": 7440000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V021_0010",
+      "video_id": "K04_V021",
+      "window_index": 10,
+      "start_s": 450.0,
+      "end_s": 510.0,
+      "sample_start": 7200000,
+      "sample_end": 8160000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V021_0011",
+      "video_id": "K04_V021",
+      "window_index": 11,
+      "start_s": 495.0,
+      "end_s": 555.0,
+      "sample_start": 7920000,
+      "sample_end": 8880000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V021_0012",
+      "video_id": "K04_V021",
+      "window_index": 12,
+      "start_s": 540.0,
+      "end_s": 600.0,
+      "sample_start": 8640000,
+      "sample_end": 9600000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V021_0013",
+      "video_id": "K04_V021",
+      "window_index": 13,
+      "start_s": 585.0,
+      "end_s": 645.0,
+      "sample_start": 9360000,
+      "sample_end": 10320000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V021_0014",
+      "video_id": "K04_V021",
+      "window_index": 14,
+      "start_s": 630.0,
+      "end_s": 690.0,
+      "sample_start": 10080000,
+      "sample_end": 11040000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V021_0015",
+      "video_id": "K04_V021",
+      "window_index": 15,
+      "start_s": 675.0,
+      "end_s": 735.0,
+      "sample_start": 10800000,
+      "sample_end": 11760000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V021_0016",
+      "video_id": "K04_V021",
+      "window_index": 16,
+      "start_s": 720.0,
+      "end_s": 780.0,
+      "sample_start": 11520000,
+      "sample_end": 12480000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V021_0017",
+      "video_id": "K04_V021",
+      "window_index": 17,
+      "start_s": 765.0,
+      "end_s": 825.0,
+      "sample_start": 12240000,
+      "sample_end": 13200000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V021_0018",
+      "video_id": "K04_V021",
+      "window_index": 18,
+      "start_s": 810.0,
+      "end_s": 870.0,
+      "sample_start": 12960000,
+      "sample_end": 13920000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V021_0019",
+      "video_id": "K04_V021",
+      "window_index": 19,
+      "start_s": 855.0,
+      "end_s": 915.0,
+      "sample_start": 13680000,
+      "sample_end": 14640000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V021_0020",
+      "video_id": "K04_V021",
+      "window_index": 20,
+      "start_s": 900.0,
+      "end_s": 960.0,
+      "sample_start": 14400000,
+      "sample_end": 15360000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V021_0021",
+      "video_id": "K04_V021",
+      "window_index": 21,
+      "start_s": 945.0,
+      "end_s": 1005.0,
+      "sample_start": 15120000,
+      "sample_end": 16080000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V021_0022",
+      "video_id": "K04_V021",
+      "window_index": 22,
+      "start_s": 990.0,
+      "end_s": 1050.0,
+      "sample_start": 15840000,
+      "sample_end": 16800000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V021_0023",
+      "video_id": "K04_V021",
+      "window_index": 23,
+      "start_s": 1035.0,
+      "end_s": 1095.0,
+      "sample_start": 16560000,
+      "sample_end": 17520000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V021_0024",
+      "video_id": "K04_V021",
+      "window_index": 24,
+      "start_s": 1080.0,
+      "end_s": 1140.0,
+      "sample_start": 17280000,
+      "sample_end": 18240000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V021_0025",
+      "video_id": "K04_V021",
+      "window_index": 25,
+      "start_s": 1125.0,
+      "end_s": 1185.0,
+      "sample_start": 18000000,
+      "sample_end": 18960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V021_0026",
+      "video_id": "K04_V021",
+      "window_index": 26,
+      "start_s": 1170.0,
+      "end_s": 1230.0,
+      "sample_start": 18720000,
+      "sample_end": 19680000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V021_0027",
+      "video_id": "K04_V021",
+      "window_index": 27,
+      "start_s": 1215.0,
+      "end_s": 1275.0,
+      "sample_start": 19440000,
+      "sample_end": 20400000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V021_0028",
+      "video_id": "K04_V021",
+      "window_index": 28,
+      "start_s": 1260.0,
+      "end_s": 1301.9893125,
+      "sample_start": 20160000,
+      "sample_end": 20831829,
+      "duration_samples": 671829
+    },
+    {
+      "window_id": "K04_V013_0000",
+      "video_id": "K04_V013",
+      "window_index": 0,
+      "start_s": 0.0,
+      "end_s": 60.0,
+      "sample_start": 0,
+      "sample_end": 960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V013_0001",
+      "video_id": "K04_V013",
+      "window_index": 1,
+      "start_s": 45.0,
+      "end_s": 105.0,
+      "sample_start": 720000,
+      "sample_end": 1680000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V013_0002",
+      "video_id": "K04_V013",
+      "window_index": 2,
+      "start_s": 90.0,
+      "end_s": 150.0,
+      "sample_start": 1440000,
+      "sample_end": 2400000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V013_0003",
+      "video_id": "K04_V013",
+      "window_index": 3,
+      "start_s": 135.0,
+      "end_s": 195.0,
+      "sample_start": 2160000,
+      "sample_end": 3120000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V013_0004",
+      "video_id": "K04_V013",
+      "window_index": 4,
+      "start_s": 180.0,
+      "end_s": 240.0,
+      "sample_start": 2880000,
+      "sample_end": 3840000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V013_0005",
+      "video_id": "K04_V013",
+      "window_index": 5,
+      "start_s": 225.0,
+      "end_s": 285.0,
+      "sample_start": 3600000,
+      "sample_end": 4560000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V013_0006",
+      "video_id": "K04_V013",
+      "window_index": 6,
+      "start_s": 270.0,
+      "end_s": 330.0,
+      "sample_start": 4320000,
+      "sample_end": 5280000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V013_0007",
+      "video_id": "K04_V013",
+      "window_index": 7,
+      "start_s": 315.0,
+      "end_s": 375.0,
+      "sample_start": 5040000,
+      "sample_end": 6000000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V013_0008",
+      "video_id": "K04_V013",
+      "window_index": 8,
+      "start_s": 360.0,
+      "end_s": 420.0,
+      "sample_start": 5760000,
+      "sample_end": 6720000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V013_0009",
+      "video_id": "K04_V013",
+      "window_index": 9,
+      "start_s": 405.0,
+      "end_s": 465.0,
+      "sample_start": 6480000,
+      "sample_end": 7440000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V013_0010",
+      "video_id": "K04_V013",
+      "window_index": 10,
+      "start_s": 450.0,
+      "end_s": 510.0,
+      "sample_start": 7200000,
+      "sample_end": 8160000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V013_0011",
+      "video_id": "K04_V013",
+      "window_index": 11,
+      "start_s": 495.0,
+      "end_s": 555.0,
+      "sample_start": 7920000,
+      "sample_end": 8880000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V013_0012",
+      "video_id": "K04_V013",
+      "window_index": 12,
+      "start_s": 540.0,
+      "end_s": 600.0,
+      "sample_start": 8640000,
+      "sample_end": 9600000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V013_0013",
+      "video_id": "K04_V013",
+      "window_index": 13,
+      "start_s": 585.0,
+      "end_s": 645.0,
+      "sample_start": 9360000,
+      "sample_end": 10320000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V013_0014",
+      "video_id": "K04_V013",
+      "window_index": 14,
+      "start_s": 630.0,
+      "end_s": 690.0,
+      "sample_start": 10080000,
+      "sample_end": 11040000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V013_0015",
+      "video_id": "K04_V013",
+      "window_index": 15,
+      "start_s": 675.0,
+      "end_s": 735.0,
+      "sample_start": 10800000,
+      "sample_end": 11760000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V013_0016",
+      "video_id": "K04_V013",
+      "window_index": 16,
+      "start_s": 720.0,
+      "end_s": 780.0,
+      "sample_start": 11520000,
+      "sample_end": 12480000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V013_0017",
+      "video_id": "K04_V013",
+      "window_index": 17,
+      "start_s": 765.0,
+      "end_s": 825.0,
+      "sample_start": 12240000,
+      "sample_end": 13200000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V013_0018",
+      "video_id": "K04_V013",
+      "window_index": 18,
+      "start_s": 810.0,
+      "end_s": 870.0,
+      "sample_start": 12960000,
+      "sample_end": 13920000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V013_0019",
+      "video_id": "K04_V013",
+      "window_index": 19,
+      "start_s": 855.0,
+      "end_s": 915.0,
+      "sample_start": 13680000,
+      "sample_end": 14640000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V013_0020",
+      "video_id": "K04_V013",
+      "window_index": 20,
+      "start_s": 900.0,
+      "end_s": 960.0,
+      "sample_start": 14400000,
+      "sample_end": 15360000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V013_0021",
+      "video_id": "K04_V013",
+      "window_index": 21,
+      "start_s": 945.0,
+      "end_s": 1005.0,
+      "sample_start": 15120000,
+      "sample_end": 16080000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V013_0022",
+      "video_id": "K04_V013",
+      "window_index": 22,
+      "start_s": 990.0,
+      "end_s": 1050.0,
+      "sample_start": 15840000,
+      "sample_end": 16800000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V013_0023",
+      "video_id": "K04_V013",
+      "window_index": 23,
+      "start_s": 1035.0,
+      "end_s": 1095.0,
+      "sample_start": 16560000,
+      "sample_end": 17520000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V013_0024",
+      "video_id": "K04_V013",
+      "window_index": 24,
+      "start_s": 1080.0,
+      "end_s": 1140.0,
+      "sample_start": 17280000,
+      "sample_end": 18240000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V013_0025",
+      "video_id": "K04_V013",
+      "window_index": 25,
+      "start_s": 1125.0,
+      "end_s": 1185.0,
+      "sample_start": 18000000,
+      "sample_end": 18960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K04_V013_0026",
+      "video_id": "K04_V013",
+      "window_index": 26,
+      "start_s": 1170.0,
+      "end_s": 1211.6636875,
+      "sample_start": 18720000,
+      "sample_end": 19386619,
+      "duration_samples": 666619
+    },
+    {
+      "window_id": "K06_V014_0000",
+      "video_id": "K06_V014",
+      "window_index": 0,
+      "start_s": 0.0,
+      "end_s": 60.0,
+      "sample_start": 0,
+      "sample_end": 960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V014_0001",
+      "video_id": "K06_V014",
+      "window_index": 1,
+      "start_s": 45.0,
+      "end_s": 105.0,
+      "sample_start": 720000,
+      "sample_end": 1680000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V014_0002",
+      "video_id": "K06_V014",
+      "window_index": 2,
+      "start_s": 90.0,
+      "end_s": 150.0,
+      "sample_start": 1440000,
+      "sample_end": 2400000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V014_0003",
+      "video_id": "K06_V014",
+      "window_index": 3,
+      "start_s": 135.0,
+      "end_s": 195.0,
+      "sample_start": 2160000,
+      "sample_end": 3120000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V014_0004",
+      "video_id": "K06_V014",
+      "window_index": 4,
+      "start_s": 180.0,
+      "end_s": 240.0,
+      "sample_start": 2880000,
+      "sample_end": 3840000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V014_0005",
+      "video_id": "K06_V014",
+      "window_index": 5,
+      "start_s": 225.0,
+      "end_s": 285.0,
+      "sample_start": 3600000,
+      "sample_end": 4560000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V014_0006",
+      "video_id": "K06_V014",
+      "window_index": 6,
+      "start_s": 270.0,
+      "end_s": 330.0,
+      "sample_start": 4320000,
+      "sample_end": 5280000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V014_0007",
+      "video_id": "K06_V014",
+      "window_index": 7,
+      "start_s": 315.0,
+      "end_s": 375.0,
+      "sample_start": 5040000,
+      "sample_end": 6000000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V014_0008",
+      "video_id": "K06_V014",
+      "window_index": 8,
+      "start_s": 360.0,
+      "end_s": 420.0,
+      "sample_start": 5760000,
+      "sample_end": 6720000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V014_0009",
+      "video_id": "K06_V014",
+      "window_index": 9,
+      "start_s": 405.0,
+      "end_s": 465.0,
+      "sample_start": 6480000,
+      "sample_end": 7440000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V014_0010",
+      "video_id": "K06_V014",
+      "window_index": 10,
+      "start_s": 450.0,
+      "end_s": 510.0,
+      "sample_start": 7200000,
+      "sample_end": 8160000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V014_0011",
+      "video_id": "K06_V014",
+      "window_index": 11,
+      "start_s": 495.0,
+      "end_s": 555.0,
+      "sample_start": 7920000,
+      "sample_end": 8880000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V014_0012",
+      "video_id": "K06_V014",
+      "window_index": 12,
+      "start_s": 540.0,
+      "end_s": 600.0,
+      "sample_start": 8640000,
+      "sample_end": 9600000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V014_0013",
+      "video_id": "K06_V014",
+      "window_index": 13,
+      "start_s": 585.0,
+      "end_s": 645.0,
+      "sample_start": 9360000,
+      "sample_end": 10320000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V014_0014",
+      "video_id": "K06_V014",
+      "window_index": 14,
+      "start_s": 630.0,
+      "end_s": 690.0,
+      "sample_start": 10080000,
+      "sample_end": 11040000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V014_0015",
+      "video_id": "K06_V014",
+      "window_index": 15,
+      "start_s": 675.0,
+      "end_s": 735.0,
+      "sample_start": 10800000,
+      "sample_end": 11760000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V014_0016",
+      "video_id": "K06_V014",
+      "window_index": 16,
+      "start_s": 720.0,
+      "end_s": 780.0,
+      "sample_start": 11520000,
+      "sample_end": 12480000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V014_0017",
+      "video_id": "K06_V014",
+      "window_index": 17,
+      "start_s": 765.0,
+      "end_s": 825.0,
+      "sample_start": 12240000,
+      "sample_end": 13200000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V014_0018",
+      "video_id": "K06_V014",
+      "window_index": 18,
+      "start_s": 810.0,
+      "end_s": 870.0,
+      "sample_start": 12960000,
+      "sample_end": 13920000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V014_0019",
+      "video_id": "K06_V014",
+      "window_index": 19,
+      "start_s": 855.0,
+      "end_s": 915.0,
+      "sample_start": 13680000,
+      "sample_end": 14640000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V014_0020",
+      "video_id": "K06_V014",
+      "window_index": 20,
+      "start_s": 900.0,
+      "end_s": 960.0,
+      "sample_start": 14400000,
+      "sample_end": 15360000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V014_0021",
+      "video_id": "K06_V014",
+      "window_index": 21,
+      "start_s": 945.0,
+      "end_s": 1005.0,
+      "sample_start": 15120000,
+      "sample_end": 16080000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V014_0022",
+      "video_id": "K06_V014",
+      "window_index": 22,
+      "start_s": 990.0,
+      "end_s": 1050.0,
+      "sample_start": 15840000,
+      "sample_end": 16800000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V014_0023",
+      "video_id": "K06_V014",
+      "window_index": 23,
+      "start_s": 1035.0,
+      "end_s": 1095.0,
+      "sample_start": 16560000,
+      "sample_end": 17520000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V014_0024",
+      "video_id": "K06_V014",
+      "window_index": 24,
+      "start_s": 1080.0,
+      "end_s": 1140.0,
+      "sample_start": 17280000,
+      "sample_end": 18240000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K06_V014_0025",
+      "video_id": "K06_V014",
+      "window_index": 25,
+      "start_s": 1125.0,
+      "end_s": 1141.585875,
+      "sample_start": 18000000,
+      "sample_end": 18265374,
+      "duration_samples": 265374
+    },
+    {
+      "window_id": "K13_V003_0000",
+      "video_id": "K13_V003",
+      "window_index": 0,
+      "start_s": 0.0,
+      "end_s": 60.0,
+      "sample_start": 0,
+      "sample_end": 960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K13_V003_0001",
+      "video_id": "K13_V003",
+      "window_index": 1,
+      "start_s": 45.0,
+      "end_s": 105.0,
+      "sample_start": 720000,
+      "sample_end": 1680000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K13_V003_0002",
+      "video_id": "K13_V003",
+      "window_index": 2,
+      "start_s": 90.0,
+      "end_s": 150.0,
+      "sample_start": 1440000,
+      "sample_end": 2400000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K13_V003_0003",
+      "video_id": "K13_V003",
+      "window_index": 3,
+      "start_s": 135.0,
+      "end_s": 195.0,
+      "sample_start": 2160000,
+      "sample_end": 3120000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K13_V003_0004",
+      "video_id": "K13_V003",
+      "window_index": 4,
+      "start_s": 180.0,
+      "end_s": 240.0,
+      "sample_start": 2880000,
+      "sample_end": 3840000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K13_V003_0005",
+      "video_id": "K13_V003",
+      "window_index": 5,
+      "start_s": 225.0,
+      "end_s": 285.0,
+      "sample_start": 3600000,
+      "sample_end": 4560000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K13_V003_0006",
+      "video_id": "K13_V003",
+      "window_index": 6,
+      "start_s": 270.0,
+      "end_s": 330.0,
+      "sample_start": 4320000,
+      "sample_end": 5280000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K13_V003_0007",
+      "video_id": "K13_V003",
+      "window_index": 7,
+      "start_s": 315.0,
+      "end_s": 375.0,
+      "sample_start": 5040000,
+      "sample_end": 6000000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K13_V003_0008",
+      "video_id": "K13_V003",
+      "window_index": 8,
+      "start_s": 360.0,
+      "end_s": 420.0,
+      "sample_start": 5760000,
+      "sample_end": 6720000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K13_V003_0009",
+      "video_id": "K13_V003",
+      "window_index": 9,
+      "start_s": 405.0,
+      "end_s": 465.0,
+      "sample_start": 6480000,
+      "sample_end": 7440000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K13_V003_0010",
+      "video_id": "K13_V003",
+      "window_index": 10,
+      "start_s": 450.0,
+      "end_s": 510.0,
+      "sample_start": 7200000,
+      "sample_end": 8160000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K13_V003_0011",
+      "video_id": "K13_V003",
+      "window_index": 11,
+      "start_s": 495.0,
+      "end_s": 555.0,
+      "sample_start": 7920000,
+      "sample_end": 8880000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K13_V003_0012",
+      "video_id": "K13_V003",
+      "window_index": 12,
+      "start_s": 540.0,
+      "end_s": 600.0,
+      "sample_start": 8640000,
+      "sample_end": 9600000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K13_V003_0013",
+      "video_id": "K13_V003",
+      "window_index": 13,
+      "start_s": 585.0,
+      "end_s": 645.0,
+      "sample_start": 9360000,
+      "sample_end": 10320000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K13_V003_0014",
+      "video_id": "K13_V003",
+      "window_index": 14,
+      "start_s": 630.0,
+      "end_s": 690.0,
+      "sample_start": 10080000,
+      "sample_end": 11040000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K13_V003_0015",
+      "video_id": "K13_V003",
+      "window_index": 15,
+      "start_s": 675.0,
+      "end_s": 735.0,
+      "sample_start": 10800000,
+      "sample_end": 11760000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K13_V003_0016",
+      "video_id": "K13_V003",
+      "window_index": 16,
+      "start_s": 720.0,
+      "end_s": 780.0,
+      "sample_start": 11520000,
+      "sample_end": 12480000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K13_V003_0017",
+      "video_id": "K13_V003",
+      "window_index": 17,
+      "start_s": 765.0,
+      "end_s": 825.0,
+      "sample_start": 12240000,
+      "sample_end": 13200000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K13_V003_0018",
+      "video_id": "K13_V003",
+      "window_index": 18,
+      "start_s": 810.0,
+      "end_s": 870.0,
+      "sample_start": 12960000,
+      "sample_end": 13920000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K13_V003_0019",
+      "video_id": "K13_V003",
+      "window_index": 19,
+      "start_s": 855.0,
+      "end_s": 915.0,
+      "sample_start": 13680000,
+      "sample_end": 14640000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K13_V003_0020",
+      "video_id": "K13_V003",
+      "window_index": 20,
+      "start_s": 900.0,
+      "end_s": 960.0,
+      "sample_start": 14400000,
+      "sample_end": 15360000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K13_V003_0021",
+      "video_id": "K13_V003",
+      "window_index": 21,
+      "start_s": 945.0,
+      "end_s": 1005.0,
+      "sample_start": 15120000,
+      "sample_end": 16080000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K13_V003_0022",
+      "video_id": "K13_V003",
+      "window_index": 22,
+      "start_s": 990.0,
+      "end_s": 1050.0,
+      "sample_start": 15840000,
+      "sample_end": 16800000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K13_V003_0023",
+      "video_id": "K13_V003",
+      "window_index": 23,
+      "start_s": 1035.0,
+      "end_s": 1095.0,
+      "sample_start": 16560000,
+      "sample_end": 17520000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K13_V003_0024",
+      "video_id": "K13_V003",
+      "window_index": 24,
+      "start_s": 1080.0,
+      "end_s": 1140.0,
+      "sample_start": 17280000,
+      "sample_end": 18240000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K13_V003_0025",
+      "video_id": "K13_V003",
+      "window_index": 25,
+      "start_s": 1125.0,
+      "end_s": 1185.0,
+      "sample_start": 18000000,
+      "sample_end": 18960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K13_V003_0026",
+      "video_id": "K13_V003",
+      "window_index": 26,
+      "start_s": 1170.0,
+      "end_s": 1230.0,
+      "sample_start": 18720000,
+      "sample_end": 19680000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K13_V003_0027",
+      "video_id": "K13_V003",
+      "window_index": 27,
+      "start_s": 1215.0,
+      "end_s": 1274.7290625,
+      "sample_start": 19440000,
+      "sample_end": 20395665,
+      "duration_samples": 955665
+    },
+    {
+      "window_id": "K02_V007_0000",
+      "video_id": "K02_V007",
+      "window_index": 0,
+      "start_s": 0.0,
+      "end_s": 60.0,
+      "sample_start": 0,
+      "sample_end": 960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V007_0001",
+      "video_id": "K02_V007",
+      "window_index": 1,
+      "start_s": 45.0,
+      "end_s": 105.0,
+      "sample_start": 720000,
+      "sample_end": 1680000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V007_0002",
+      "video_id": "K02_V007",
+      "window_index": 2,
+      "start_s": 90.0,
+      "end_s": 150.0,
+      "sample_start": 1440000,
+      "sample_end": 2400000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V007_0003",
+      "video_id": "K02_V007",
+      "window_index": 3,
+      "start_s": 135.0,
+      "end_s": 195.0,
+      "sample_start": 2160000,
+      "sample_end": 3120000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V007_0004",
+      "video_id": "K02_V007",
+      "window_index": 4,
+      "start_s": 180.0,
+      "end_s": 240.0,
+      "sample_start": 2880000,
+      "sample_end": 3840000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V007_0005",
+      "video_id": "K02_V007",
+      "window_index": 5,
+      "start_s": 225.0,
+      "end_s": 285.0,
+      "sample_start": 3600000,
+      "sample_end": 4560000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V007_0006",
+      "video_id": "K02_V007",
+      "window_index": 6,
+      "start_s": 270.0,
+      "end_s": 330.0,
+      "sample_start": 4320000,
+      "sample_end": 5280000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V007_0007",
+      "video_id": "K02_V007",
+      "window_index": 7,
+      "start_s": 315.0,
+      "end_s": 375.0,
+      "sample_start": 5040000,
+      "sample_end": 6000000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V007_0008",
+      "video_id": "K02_V007",
+      "window_index": 8,
+      "start_s": 360.0,
+      "end_s": 420.0,
+      "sample_start": 5760000,
+      "sample_end": 6720000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V007_0009",
+      "video_id": "K02_V007",
+      "window_index": 9,
+      "start_s": 405.0,
+      "end_s": 465.0,
+      "sample_start": 6480000,
+      "sample_end": 7440000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V007_0010",
+      "video_id": "K02_V007",
+      "window_index": 10,
+      "start_s": 450.0,
+      "end_s": 510.0,
+      "sample_start": 7200000,
+      "sample_end": 8160000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V007_0011",
+      "video_id": "K02_V007",
+      "window_index": 11,
+      "start_s": 495.0,
+      "end_s": 555.0,
+      "sample_start": 7920000,
+      "sample_end": 8880000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V007_0012",
+      "video_id": "K02_V007",
+      "window_index": 12,
+      "start_s": 540.0,
+      "end_s": 600.0,
+      "sample_start": 8640000,
+      "sample_end": 9600000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V007_0013",
+      "video_id": "K02_V007",
+      "window_index": 13,
+      "start_s": 585.0,
+      "end_s": 645.0,
+      "sample_start": 9360000,
+      "sample_end": 10320000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V007_0014",
+      "video_id": "K02_V007",
+      "window_index": 14,
+      "start_s": 630.0,
+      "end_s": 690.0,
+      "sample_start": 10080000,
+      "sample_end": 11040000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V007_0015",
+      "video_id": "K02_V007",
+      "window_index": 15,
+      "start_s": 675.0,
+      "end_s": 735.0,
+      "sample_start": 10800000,
+      "sample_end": 11760000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V007_0016",
+      "video_id": "K02_V007",
+      "window_index": 16,
+      "start_s": 720.0,
+      "end_s": 780.0,
+      "sample_start": 11520000,
+      "sample_end": 12480000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V007_0017",
+      "video_id": "K02_V007",
+      "window_index": 17,
+      "start_s": 765.0,
+      "end_s": 825.0,
+      "sample_start": 12240000,
+      "sample_end": 13200000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V007_0018",
+      "video_id": "K02_V007",
+      "window_index": 18,
+      "start_s": 810.0,
+      "end_s": 870.0,
+      "sample_start": 12960000,
+      "sample_end": 13920000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V007_0019",
+      "video_id": "K02_V007",
+      "window_index": 19,
+      "start_s": 855.0,
+      "end_s": 915.0,
+      "sample_start": 13680000,
+      "sample_end": 14640000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V007_0020",
+      "video_id": "K02_V007",
+      "window_index": 20,
+      "start_s": 900.0,
+      "end_s": 960.0,
+      "sample_start": 14400000,
+      "sample_end": 15360000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V007_0021",
+      "video_id": "K02_V007",
+      "window_index": 21,
+      "start_s": 945.0,
+      "end_s": 968.0166875,
+      "sample_start": 15120000,
+      "sample_end": 15488267,
+      "duration_samples": 368267
+    },
+    {
+      "window_id": "K02_V012_0000",
+      "video_id": "K02_V012",
+      "window_index": 0,
+      "start_s": 0.0,
+      "end_s": 60.0,
+      "sample_start": 0,
+      "sample_end": 960000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V012_0001",
+      "video_id": "K02_V012",
+      "window_index": 1,
+      "start_s": 45.0,
+      "end_s": 105.0,
+      "sample_start": 720000,
+      "sample_end": 1680000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V012_0002",
+      "video_id": "K02_V012",
+      "window_index": 2,
+      "start_s": 90.0,
+      "end_s": 150.0,
+      "sample_start": 1440000,
+      "sample_end": 2400000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V012_0003",
+      "video_id": "K02_V012",
+      "window_index": 3,
+      "start_s": 135.0,
+      "end_s": 195.0,
+      "sample_start": 2160000,
+      "sample_end": 3120000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V012_0004",
+      "video_id": "K02_V012",
+      "window_index": 4,
+      "start_s": 180.0,
+      "end_s": 240.0,
+      "sample_start": 2880000,
+      "sample_end": 3840000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V012_0005",
+      "video_id": "K02_V012",
+      "window_index": 5,
+      "start_s": 225.0,
+      "end_s": 285.0,
+      "sample_start": 3600000,
+      "sample_end": 4560000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V012_0006",
+      "video_id": "K02_V012",
+      "window_index": 6,
+      "start_s": 270.0,
+      "end_s": 330.0,
+      "sample_start": 4320000,
+      "sample_end": 5280000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V012_0007",
+      "video_id": "K02_V012",
+      "window_index": 7,
+      "start_s": 315.0,
+      "end_s": 375.0,
+      "sample_start": 5040000,
+      "sample_end": 6000000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V012_0008",
+      "video_id": "K02_V012",
+      "window_index": 8,
+      "start_s": 360.0,
+      "end_s": 420.0,
+      "sample_start": 5760000,
+      "sample_end": 6720000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V012_0009",
+      "video_id": "K02_V012",
+      "window_index": 9,
+      "start_s": 405.0,
+      "end_s": 465.0,
+      "sample_start": 6480000,
+      "sample_end": 7440000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V012_0010",
+      "video_id": "K02_V012",
+      "window_index": 10,
+      "start_s": 450.0,
+      "end_s": 510.0,
+      "sample_start": 7200000,
+      "sample_end": 8160000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V012_0011",
+      "video_id": "K02_V012",
+      "window_index": 11,
+      "start_s": 495.0,
+      "end_s": 555.0,
+      "sample_start": 7920000,
+      "sample_end": 8880000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V012_0012",
+      "video_id": "K02_V012",
+      "window_index": 12,
+      "start_s": 540.0,
+      "end_s": 600.0,
+      "sample_start": 8640000,
+      "sample_end": 9600000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V012_0013",
+      "video_id": "K02_V012",
+      "window_index": 13,
+      "start_s": 585.0,
+      "end_s": 645.0,
+      "sample_start": 9360000,
+      "sample_end": 10320000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V012_0014",
+      "video_id": "K02_V012",
+      "window_index": 14,
+      "start_s": 630.0,
+      "end_s": 690.0,
+      "sample_start": 10080000,
+      "sample_end": 11040000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V012_0015",
+      "video_id": "K02_V012",
+      "window_index": 15,
+      "start_s": 675.0,
+      "end_s": 735.0,
+      "sample_start": 10800000,
+      "sample_end": 11760000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V012_0016",
+      "video_id": "K02_V012",
+      "window_index": 16,
+      "start_s": 720.0,
+      "end_s": 780.0,
+      "sample_start": 11520000,
+      "sample_end": 12480000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V012_0017",
+      "video_id": "K02_V012",
+      "window_index": 17,
+      "start_s": 765.0,
+      "end_s": 825.0,
+      "sample_start": 12240000,
+      "sample_end": 13200000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V012_0018",
+      "video_id": "K02_V012",
+      "window_index": 18,
+      "start_s": 810.0,
+      "end_s": 870.0,
+      "sample_start": 12960000,
+      "sample_end": 13920000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V012_0019",
+      "video_id": "K02_V012",
+      "window_index": 19,
+      "start_s": 855.0,
+      "end_s": 915.0,
+      "sample_start": 13680000,
+      "sample_end": 14640000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V012_0020",
+      "video_id": "K02_V012",
+      "window_index": 20,
+      "start_s": 900.0,
+      "end_s": 960.0,
+      "sample_start": 14400000,
+      "sample_end": 15360000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V012_0021",
+      "video_id": "K02_V012",
+      "window_index": 21,
+      "start_s": 945.0,
+      "end_s": 1005.0,
+      "sample_start": 15120000,
+      "sample_end": 16080000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V012_0022",
+      "video_id": "K02_V012",
+      "window_index": 22,
+      "start_s": 990.0,
+      "end_s": 1050.0,
+      "sample_start": 15840000,
+      "sample_end": 16800000,
+      "duration_samples": 960000
+    },
+    {
+      "window_id": "K02_V012_0023",
+      "video_id": "K02_V012",
+      "window_index": 23,
+      "start_s": 1035.0,
+      "end_s": 1077.8935,
+      "sample_start": 16560000,
+      "sample_end": 17246296,
+      "duration_samples": 686296
+    }
+  ]
+}

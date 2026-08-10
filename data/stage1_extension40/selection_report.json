@@ -1,0 +1,35 @@
+{
+  "stage_id": "stage1_extension40",
+  "status": "PASS",
+  "video_count": 40,
+  "query_count": 40,
+  "window_count": 775,
+  "split_counts": {
+    "development20": 20,
+    "holdout20": 20
+  },
+  "k_video_count": 20,
+  "l_video_count": 20,
+  "source_duration_s": 34618.976,
+  "source_duration_h": 9.616382222222223,
+  "windowed_audio_s": 45643.9558125,
+  "windowed_audio_h": 12.678876614583332,
+  "selection_hash": "700a0316c8b518bfc2e382016d416011c3d305ad28a1b91f6f3ca41f8e21d404",
+  "window_policy_hash": "02f41c37cc9024a1b11fc04e35d9656df3357928355f33f1ebe48d2fd0aa5d29",
+  "window_manifest_hash": "92091496531db659c1b275a056bb449688ba82f8ea8d9bffcb1e2123032dba3d",
+  "benchmark_content_hash": "c1c986ab306c7b42d0ebcafc4832bd5e46b3f51b91444c58a3b0a3ceba835b6c",
+  "selected_cases_sha256": "54146bcf4eb9ec86dc58bc7b1736ef3450784880589eff6ffba3ef5bd291059e",
+  "windows_file_sha256": "ae134bb0dda8e9abe60235b05b37562516d58e41483ded0b0d1b651a4ce7f329",
+  "benchmark_manifest_path": "/content/drive/MyDrive/aic26/asr_model_comparison/data/stage1_extension40/benchmark_manifest.json",
+  "replacement": {
+    "removed": {
+      "query_id": "R3-8",
+      "video_id": "K16_V004"
+    },
+    "added": {
+      "query_id": "R2-8",
+      "video_id": "K03_V023"
+    }
+  },
+  "created_at_utc": "2026-08-07T06:30:55.913249+00:00"
+}

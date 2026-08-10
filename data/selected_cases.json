@@ -1,0 +1,2927 @@
+{
+  "version": "1.1",
+  "source_document": "/content/drive/MyDrive/aic26/Documents/Đánh giá Query AIC2025.docx",
+  "source_document_hash": "3661859240b0938d3b8964ce6bd64df37f1b8a27ae02f512ff1d0285ee41d822",
+  "supervision_level": "silver",
+  "created_at": "2026-08-06T04:21:27.970926+00:00",
+  "videos": [
+    {
+      "video_id": "L21_V015",
+      "mp4_path": "/content/drive/.shortcut-targets-by-id/1OyHW1DoeS_kvHUFLMU9CRsMUqqqHlUGB/aic25/AIC_Video/L21/L21_V015.mp4",
+      "mp4_size": 141186250,
+      "mp4_mtime_ns": 1755571656000000000,
+      "audio_stream_index": 1,
+      "audio_stream_metadata": {
+        "index": 1,
+        "codec_name": "aac",
+        "codec_long_name": "AAC (Advanced Audio Coding)",
+        "profile": "LC",
+        "codec_type": "audio",
+        "codec_tag_string": "mp4a",
+        "codec_tag": "0x6134706d",
+        "sample_fmt": "fltp",
+        "sample_rate": "44100",
+        "channels": 2,
+        "channel_layout": "stereo",
+        "bits_per_sample": 0,
+        "r_frame_rate": "0/0",
+        "avg_frame_rate": "0/0",
+        "time_base": "1/44100",
+        "start_pts": 0,
+        "start_time": "0.000000",
+        "duration_ts": 57505792,
+        "duration": "1303.986213",
+        "bit_rate": "127999",
+        "nb_frames": "56158",
+        "disposition": {
+          "default": 1,
+          "dub": 0,
+          "original": 0,
+          "comment": 0,
+          "lyrics": 0,
+          "karaoke": 0,
+          "forced": 0,
+          "hearing_impaired": 0,
+          "visual_impaired": 0,
+          "clean_effects": 0,
+          "attached_pic": 0,
+          "timed_thumbnails": 0
+        },
+        "tags": {
+          "language": "eng",
+          "handler_name": "ISO Media file produced by Google Inc.",
+          "vendor_id": "[0][0][0][0]"
+        }
+      },
+      "duration_s": 1303.987,
+      "fps": 30.0,
+      "fps_source": "avg_frame_rate",
+      "fps_warning_reasons": [],
+      "fps_confirmed": false,
+      "wav_path": "/content/drive/MyDrive/aic26/asr_model_comparison/data/audio/L21_V015.wav",
+      "wav_meta_path": "/content/drive/MyDrive/aic26/asr_model_comparison/data/audio/L21_V015.wav.meta.json",
+      "previously_inspected": true,
+      "queries": [
+        {
+          "query_id": "R1-1",
+          "query_text": "Đây là phần giới thiệu việc phóng tàu vũ trụ tư nhân. Đoạn clip bắt đầu với hình ảnh 4 phi hành gia mặc áo đen. Một trong những nhiệm vụ dự kiến của tàu vũ trụ là nghiên cứu ánh sáng cực quang ở vùng cực",
+          "original_answer": "L21_V015,25605",
+          "frame_id": 25605,
+          "answer_time_s": 853.5,
+          "query_category": "number_or_measurement"
+        }
+      ],
+      "wav_hash": "57fba586fca59952d745a03663a07f98960c7889e24760a928e62521f73c0d30",
+      "wav_sample_rate": 16000,
+      "wav_sample_count": 20863780,
+      "windows": [
+        {
+          "window_id": "L21_V015_0000",
+          "video_id": "L21_V015",
+          "window_index": 0,
+          "start_s": 0.0,
+          "end_s": 60.0,
+          "sample_start": 0,
+          "sample_end": 960000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L21_V015_0001",
+          "video_id": "L21_V015",
+          "window_index": 1,
+          "start_s": 45.0,
+          "end_s": 105.0,
+          "sample_start": 720000,
+          "sample_end": 1680000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L21_V015_0002",
+          "video_id": "L21_V015",
+          "window_index": 2,
+          "start_s": 90.0,
+          "end_s": 150.0,
+          "sample_start": 1440000,
+          "sample_end": 2400000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L21_V015_0003",
+          "video_id": "L21_V015",
+          "window_index": 3,
+          "start_s": 135.0,
+          "end_s": 195.0,
+          "sample_start": 2160000,
+          "sample_end": 3120000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L21_V015_0004",
+          "video_id": "L21_V015",
+          "window_index": 4,
+          "start_s": 180.0,
+          "end_s": 240.0,
+          "sample_start": 2880000,
+          "sample_end": 3840000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L21_V015_0005",
+          "video_id": "L21_V015",
+          "window_index": 5,
+          "start_s": 225.0,
+          "end_s": 285.0,
+          "sample_start": 3600000,
+          "sample_end": 4560000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L21_V015_0006",
+          "video_id": "L21_V015",
+          "window_index": 6,
+          "start_s": 270.0,
+          "end_s": 330.0,
+          "sample_start": 4320000,
+          "sample_end": 5280000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L21_V015_0007",
+          "video_id": "L21_V015",
+          "window_index": 7,
+          "start_s": 315.0,
+          "end_s": 375.0,
+          "sample_start": 5040000,
+          "sample_end": 6000000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L21_V015_0008",
+          "video_id": "L21_V015",
+          "window_index": 8,
+          "start_s": 360.0,
+          "end_s": 420.0,
+          "sample_start": 5760000,
+          "sample_end": 6720000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L21_V015_0009",
+          "video_id": "L21_V015",
+          "window_index": 9,
+          "start_s": 405.0,
+          "end_s": 465.0,
+          "sample_start": 6480000,
+          "sample_end": 7440000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L21_V015_0010",
+          "video_id": "L21_V015",
+          "window_index": 10,
+          "start_s": 450.0,
+          "end_s": 510.0,
+          "sample_start": 7200000,
+          "sample_end": 8160000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L21_V015_0011",
+          "video_id": "L21_V015",
+          "window_index": 11,
+          "start_s": 495.0,
+          "end_s": 555.0,
+          "sample_start": 7920000,
+          "sample_end": 8880000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L21_V015_0012",
+          "video_id": "L21_V015",
+          "window_index": 12,
+          "start_s": 540.0,
+          "end_s": 600.0,
+          "sample_start": 8640000,
+          "sample_end": 9600000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L21_V015_0013",
+          "video_id": "L21_V015",
+          "window_index": 13,
+          "start_s": 585.0,
+          "end_s": 645.0,
+          "sample_start": 9360000,
+          "sample_end": 10320000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L21_V015_0014",
+          "video_id": "L21_V015",
+          "window_index": 14,
+          "start_s": 630.0,
+          "end_s": 690.0,
+          "sample_start": 10080000,
+          "sample_end": 11040000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L21_V015_0015",
+          "video_id": "L21_V015",
+          "window_index": 15,
+          "start_s": 675.0,
+          "end_s": 735.0,
+          "sample_start": 10800000,
+          "sample_end": 11760000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L21_V015_0016",
+          "video_id": "L21_V015",
+          "window_index": 16,
+          "start_s": 720.0,
+          "end_s": 780.0,
+          "sample_start": 11520000,
+          "sample_end": 12480000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L21_V015_0017",
+          "video_id": "L21_V015",
+          "window_index": 17,
+          "start_s": 765.0,
+          "end_s": 825.0,
+          "sample_start": 12240000,
+          "sample_end": 13200000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L21_V015_0018",
+          "video_id": "L21_V015",
+          "window_index": 18,
+          "start_s": 810.0,
+          "end_s": 870.0,
+          "sample_start": 12960000,
+          "sample_end": 13920000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L21_V015_0019",
+          "video_id": "L21_V015",
+          "window_index": 19,
+          "start_s": 855.0,
+          "end_s": 915.0,
+          "sample_start": 13680000,
+          "sample_end": 14640000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L21_V015_0020",
+          "video_id": "L21_V015",
+          "window_index": 20,
+          "start_s": 900.0,
+          "end_s": 960.0,
+          "sample_start": 14400000,
+          "sample_end": 15360000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L21_V015_0021",
+          "video_id": "L21_V015",
+          "window_index": 21,
+          "start_s": 945.0,
+          "end_s": 1005.0,
+          "sample_start": 15120000,
+          "sample_end": 16080000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L21_V015_0022",
+          "video_id": "L21_V015",
+          "window_index": 22,
+          "start_s": 990.0,
+          "end_s": 1050.0,
+          "sample_start": 15840000,
+          "sample_end": 16800000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L21_V015_0023",
+          "video_id": "L21_V015",
+          "window_index": 23,
+          "start_s": 1035.0,
+          "end_s": 1095.0,
+          "sample_start": 16560000,
+          "sample_end": 17520000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L21_V015_0024",
+          "video_id": "L21_V015",
+          "window_index": 24,
+          "start_s": 1080.0,
+          "end_s": 1140.0,
+          "sample_start": 17280000,
+          "sample_end": 18240000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L21_V015_0025",
+          "video_id": "L21_V015",
+          "window_index": 25,
+          "start_s": 1125.0,
+          "end_s": 1185.0,
+          "sample_start": 18000000,
+          "sample_end": 18960000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L21_V015_0026",
+          "video_id": "L21_V015",
+          "window_index": 26,
+          "start_s": 1170.0,
+          "end_s": 1230.0,
+          "sample_start": 18720000,
+          "sample_end": 19680000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L21_V015_0027",
+          "video_id": "L21_V015",
+          "window_index": 27,
+          "start_s": 1215.0,
+          "end_s": 1275.0,
+          "sample_start": 19440000,
+          "sample_end": 20400000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L21_V015_0028",
+          "video_id": "L21_V015",
+          "window_index": 28,
+          "start_s": 1260.0,
+          "end_s": 1303.98625,
+          "sample_start": 20160000,
+          "sample_end": 20863780,
+          "duration_samples": 703780
+        }
+      ]
+    },
+    {
+      "video_id": "K12_V001",
+      "mp4_path": "/content/drive/.shortcut-targets-by-id/1OyHW1DoeS_kvHUFLMU9CRsMUqqqHlUGB/aic25/AIC_Video/K12/K12_V001.mp4",
+      "mp4_size": 343026044,
+      "mp4_mtime_ns": 1757123520000000000,
+      "audio_stream_index": 1,
+      "audio_stream_metadata": {
+        "index": 1,
+        "codec_name": "aac",
+        "codec_long_name": "AAC (Advanced Audio Coding)",
+        "profile": "LC",
+        "codec_type": "audio",
+        "codec_tag_string": "mp4a",
+        "codec_tag": "0x6134706d",
+        "sample_fmt": "fltp",
+        "sample_rate": "44100",
+        "channels": 2,
+        "channel_layout": "stereo",
+        "bits_per_sample": 0,
+        "r_frame_rate": "0/0",
+        "avg_frame_rate": "0/0",
+        "time_base": "1/44100",
+        "start_pts": 0,
+        "start_time": "0.000000",
+        "duration_ts": 53464064,
+        "duration": "1212.337052",
+        "bit_rate": "128002",
+        "nb_frames": "52211",
+        "disposition": {
+          "default": 1,
+          "dub": 0,
+          "original": 0,
+          "comment": 0,
+          "lyrics": 0,
+          "karaoke": 0,
+          "forced": 0,
+          "hearing_impaired": 0,
+          "visual_impaired": 0,
+          "clean_effects": 0,
+          "attached_pic": 0,
+          "timed_thumbnails": 0
+        },
+        "tags": {
+          "language": "und",
+          "handler_name": "ISO Media file produced by Google Inc.",
+          "vendor_id": "[0][0][0][0]"
+        }
+      },
+      "duration_s": 1212.338,
+      "fps": 25.0,
+      "fps_source": "avg_frame_rate",
+      "fps_warning_reasons": [],
+      "fps_confirmed": false,
+      "wav_path": "/content/drive/MyDrive/aic26/asr_model_comparison/data/audio/K12_V001.wav",
+      "wav_meta_path": "/content/drive/MyDrive/aic26/asr_model_comparison/data/audio/K12_V001.wav.meta.json",
+      "previously_inspected": true,
+      "queries": [
+        {
+          "query_id": "R2-9",
+          "query_text": "Đoạn video đưa tin về việc ngư dân vừa câu được một con cá nhám với kích thước hiếm gặp, nặng đến 211kg. Đoạn tin đưa hình ảnh của con cá rất lớn treo trên một chiếc xe cẩu.",
+          "original_answer": "K12_V001,8681",
+          "frame_id": 8681,
+          "answer_time_s": 347.24,
+          "query_category": "number_or_measurement"
+        }
+      ],
+      "wav_hash": "964f0643be3ca4d4885e3eef7025f360b631de6b2366bed7b78ff6ffdb073d02",
+      "wav_sample_rate": 16000,
+      "wav_sample_count": 19397393,
+      "windows": [
+        {
+          "window_id": "K12_V001_0000",
+          "video_id": "K12_V001",
+          "window_index": 0,
+          "start_s": 0.0,
+          "end_s": 60.0,
+          "sample_start": 0,
+          "sample_end": 960000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K12_V001_0001",
+          "video_id": "K12_V001",
+          "window_index": 1,
+          "start_s": 45.0,
+          "end_s": 105.0,
+          "sample_start": 720000,
+          "sample_end": 1680000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K12_V001_0002",
+          "video_id": "K12_V001",
+          "window_index": 2,
+          "start_s": 90.0,
+          "end_s": 150.0,
+          "sample_start": 1440000,
+          "sample_end": 2400000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K12_V001_0003",
+          "video_id": "K12_V001",
+          "window_index": 3,
+          "start_s": 135.0,
+          "end_s": 195.0,
+          "sample_start": 2160000,
+          "sample_end": 3120000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K12_V001_0004",
+          "video_id": "K12_V001",
+          "window_index": 4,
+          "start_s": 180.0,
+          "end_s": 240.0,
+          "sample_start": 2880000,
+          "sample_end": 3840000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K12_V001_0005",
+          "video_id": "K12_V001",
+          "window_index": 5,
+          "start_s": 225.0,
+          "end_s": 285.0,
+          "sample_start": 3600000,
+          "sample_end": 4560000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K12_V001_0006",
+          "video_id": "K12_V001",
+          "window_index": 6,
+          "start_s": 270.0,
+          "end_s": 330.0,
+          "sample_start": 4320000,
+          "sample_end": 5280000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K12_V001_0007",
+          "video_id": "K12_V001",
+          "window_index": 7,
+          "start_s": 315.0,
+          "end_s": 375.0,
+          "sample_start": 5040000,
+          "sample_end": 6000000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K12_V001_0008",
+          "video_id": "K12_V001",
+          "window_index": 8,
+          "start_s": 360.0,
+          "end_s": 420.0,
+          "sample_start": 5760000,
+          "sample_end": 6720000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K12_V001_0009",
+          "video_id": "K12_V001",
+          "window_index": 9,
+          "start_s": 405.0,
+          "end_s": 465.0,
+          "sample_start": 6480000,
+          "sample_end": 7440000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K12_V001_0010",
+          "video_id": "K12_V001",
+          "window_index": 10,
+          "start_s": 450.0,
+          "end_s": 510.0,
+          "sample_start": 7200000,
+          "sample_end": 8160000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K12_V001_0011",
+          "video_id": "K12_V001",
+          "window_index": 11,
+          "start_s": 495.0,
+          "end_s": 555.0,
+          "sample_start": 7920000,
+          "sample_end": 8880000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K12_V001_0012",
+          "video_id": "K12_V001",
+          "window_index": 12,
+          "start_s": 540.0,
+          "end_s": 600.0,
+          "sample_start": 8640000,
+          "sample_end": 9600000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K12_V001_0013",
+          "video_id": "K12_V001",
+          "window_index": 13,
+          "start_s": 585.0,
+          "end_s": 645.0,
+          "sample_start": 9360000,
+          "sample_end": 10320000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K12_V001_0014",
+          "video_id": "K12_V001",
+          "window_index": 14,
+          "start_s": 630.0,
+          "end_s": 690.0,
+          "sample_start": 10080000,
+          "sample_end": 11040000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K12_V001_0015",
+          "video_id": "K12_V001",
+          "window_index": 15,
+          "start_s": 675.0,
+          "end_s": 735.0,
+          "sample_start": 10800000,
+          "sample_end": 11760000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K12_V001_0016",
+          "video_id": "K12_V001",
+          "window_index": 16,
+          "start_s": 720.0,
+          "end_s": 780.0,
+          "sample_start": 11520000,
+          "sample_end": 12480000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K12_V001_0017",
+          "video_id": "K12_V001",
+          "window_index": 17,
+          "start_s": 765.0,
+          "end_s": 825.0,
+          "sample_start": 12240000,
+          "sample_end": 13200000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K12_V001_0018",
+          "video_id": "K12_V001",
+          "window_index": 18,
+          "start_s": 810.0,
+          "end_s": 870.0,
+          "sample_start": 12960000,
+          "sample_end": 13920000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K12_V001_0019",
+          "video_id": "K12_V001",
+          "window_index": 19,
+          "start_s": 855.0,
+          "end_s": 915.0,
+          "sample_start": 13680000,
+          "sample_end": 14640000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K12_V001_0020",
+          "video_id": "K12_V001",
+          "window_index": 20,
+          "start_s": 900.0,
+          "end_s": 960.0,
+          "sample_start": 14400000,
+          "sample_end": 15360000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K12_V001_0021",
+          "video_id": "K12_V001",
+          "window_index": 21,
+          "start_s": 945.0,
+          "end_s": 1005.0,
+          "sample_start": 15120000,
+          "sample_end": 16080000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K12_V001_0022",
+          "video_id": "K12_V001",
+          "window_index": 22,
+          "start_s": 990.0,
+          "end_s": 1050.0,
+          "sample_start": 15840000,
+          "sample_end": 16800000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K12_V001_0023",
+          "video_id": "K12_V001",
+          "window_index": 23,
+          "start_s": 1035.0,
+          "end_s": 1095.0,
+          "sample_start": 16560000,
+          "sample_end": 17520000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K12_V001_0024",
+          "video_id": "K12_V001",
+          "window_index": 24,
+          "start_s": 1080.0,
+          "end_s": 1140.0,
+          "sample_start": 17280000,
+          "sample_end": 18240000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K12_V001_0025",
+          "video_id": "K12_V001",
+          "window_index": 25,
+          "start_s": 1125.0,
+          "end_s": 1185.0,
+          "sample_start": 18000000,
+          "sample_end": 18960000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K12_V001_0026",
+          "video_id": "K12_V001",
+          "window_index": 26,
+          "start_s": 1170.0,
+          "end_s": 1212.3370625,
+          "sample_start": 18720000,
+          "sample_end": 19397393,
+          "duration_samples": 677393
+        }
+      ]
+    },
+    {
+      "video_id": "K01_V009",
+      "mp4_path": "/content/drive/.shortcut-targets-by-id/1OyHW1DoeS_kvHUFLMU9CRsMUqqqHlUGB/aic25/AIC_Video/K01/K01_V009.mp4",
+      "mp4_size": 272572902,
+      "mp4_mtime_ns": 1757134015000000000,
+      "audio_stream_index": 1,
+      "audio_stream_metadata": {
+        "index": 1,
+        "codec_name": "aac",
+        "codec_long_name": "AAC (Advanced Audio Coding)",
+        "profile": "LC",
+        "codec_type": "audio",
+        "codec_tag_string": "mp4a",
+        "codec_tag": "0x6134706d",
+        "sample_fmt": "fltp",
+        "sample_rate": "44100",
+        "channels": 2,
+        "channel_layout": "stereo",
+        "bits_per_sample": 0,
+        "r_frame_rate": "0/0",
+        "avg_frame_rate": "0/0",
+        "time_base": "1/44100",
+        "start_pts": 0,
+        "start_time": "0.000000",
+        "duration_ts": 51776512,
+        "duration": "1174.070567",
+        "bit_rate": "128004",
+        "nb_frames": "50563",
+        "disposition": {
+          "default": 1,
+          "dub": 0,
+          "original": 0,
+          "comment": 0,
+          "lyrics": 0,
+          "karaoke": 0,
+          "forced": 0,
+          "hearing_impaired": 0,
+          "visual_impaired": 0,
+          "clean_effects": 0,
+          "attached_pic": 0,
+          "timed_thumbnails": 0
+        },
+        "tags": {
+          "language": "eng",
+          "handler_name": "ISO Media file produced by Google Inc.",
+          "vendor_id": "[0][0][0][0]"
+        }
+      },
+      "duration_s": 1174.071,
+      "fps": 30.000851812941878,
+      "fps_source": "avg_frame_rate",
+      "fps_warning_reasons": [],
+      "fps_confirmed": false,
+      "wav_path": "/content/drive/MyDrive/aic26/asr_model_comparison/data/audio/K01_V009.wav",
+      "wav_meta_path": "/content/drive/MyDrive/aic26/asr_model_comparison/data/audio/K01_V009.wav.meta.json",
+      "previously_inspected": false,
+      "queries": [
+        {
+          "query_id": "R2-4",
+          "query_text": "Đoạn clip trích trong cảnh cứu hộ người dân trong lũ lụt. Có cảnh ở giữa là một cụ bà đội nón lá, ngồi trên một chiếc xuồng cứu hộ màu cam, trên xuồng có áo mưa màu xanh da trời.\nBên phải là một thanh niên mặc áo mưa tím, đang ra sức đẩy xuồng, gương mặt lộ rõ sự căng thẳng, quyết tâm.\nPhía sau có người mặc áo phao màu cam hỗ trợ.\nXung quanh là dòng nước ngập, cho thấy khu vực đang chịu ảnh hưởng nặng nề bởi mưa lũ.",
+          "original_answer": "K01_V009,11642",
+          "frame_id": 11642,
+          "answer_time_s": 388.0556483058868,
+          "query_category": "person_organization_location"
+        }
+      ],
+      "wav_hash": "4a4f848ed2cf0fe0a9c6f48e305515c799237085cb9304a221160b80d3fba57e",
+      "wav_sample_rate": 16000,
+      "wav_sample_count": 18785129,
+      "windows": [
+        {
+          "window_id": "K01_V009_0000",
+          "video_id": "K01_V009",
+          "window_index": 0,
+          "start_s": 0.0,
+          "end_s": 60.0,
+          "sample_start": 0,
+          "sample_end": 960000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K01_V009_0001",
+          "video_id": "K01_V009",
+          "window_index": 1,
+          "start_s": 45.0,
+          "end_s": 105.0,
+          "sample_start": 720000,
+          "sample_end": 1680000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K01_V009_0002",
+          "video_id": "K01_V009",
+          "window_index": 2,
+          "start_s": 90.0,
+          "end_s": 150.0,
+          "sample_start": 1440000,
+          "sample_end": 2400000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K01_V009_0003",
+          "video_id": "K01_V009",
+          "window_index": 3,
+          "start_s": 135.0,
+          "end_s": 195.0,
+          "sample_start": 2160000,
+          "sample_end": 3120000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K01_V009_0004",
+          "video_id": "K01_V009",
+          "window_index": 4,
+          "start_s": 180.0,
+          "end_s": 240.0,
+          "sample_start": 2880000,
+          "sample_end": 3840000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K01_V009_0005",
+          "video_id": "K01_V009",
+          "window_index": 5,
+          "start_s": 225.0,
+          "end_s": 285.0,
+          "sample_start": 3600000,
+          "sample_end": 4560000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K01_V009_0006",
+          "video_id": "K01_V009",
+          "window_index": 6,
+          "start_s": 270.0,
+          "end_s": 330.0,
+          "sample_start": 4320000,
+          "sample_end": 5280000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K01_V009_0007",
+          "video_id": "K01_V009",
+          "window_index": 7,
+          "start_s": 315.0,
+          "end_s": 375.0,
+          "sample_start": 5040000,
+          "sample_end": 6000000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K01_V009_0008",
+          "video_id": "K01_V009",
+          "window_index": 8,
+          "start_s": 360.0,
+          "end_s": 420.0,
+          "sample_start": 5760000,
+          "sample_end": 6720000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K01_V009_0009",
+          "video_id": "K01_V009",
+          "window_index": 9,
+          "start_s": 405.0,
+          "end_s": 465.0,
+          "sample_start": 6480000,
+          "sample_end": 7440000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K01_V009_0010",
+          "video_id": "K01_V009",
+          "window_index": 10,
+          "start_s": 450.0,
+          "end_s": 510.0,
+          "sample_start": 7200000,
+          "sample_end": 8160000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K01_V009_0011",
+          "video_id": "K01_V009",
+          "window_index": 11,
+          "start_s": 495.0,
+          "end_s": 555.0,
+          "sample_start": 7920000,
+          "sample_end": 8880000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K01_V009_0012",
+          "video_id": "K01_V009",
+          "window_index": 12,
+          "start_s": 540.0,
+          "end_s": 600.0,
+          "sample_start": 8640000,
+          "sample_end": 9600000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K01_V009_0013",
+          "video_id": "K01_V009",
+          "window_index": 13,
+          "start_s": 585.0,
+          "end_s": 645.0,
+          "sample_start": 9360000,
+          "sample_end": 10320000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K01_V009_0014",
+          "video_id": "K01_V009",
+          "window_index": 14,
+          "start_s": 630.0,
+          "end_s": 690.0,
+          "sample_start": 10080000,
+          "sample_end": 11040000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K01_V009_0015",
+          "video_id": "K01_V009",
+          "window_index": 15,
+          "start_s": 675.0,
+          "end_s": 735.0,
+          "sample_start": 10800000,
+          "sample_end": 11760000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K01_V009_0016",
+          "video_id": "K01_V009",
+          "window_index": 16,
+          "start_s": 720.0,
+          "end_s": 780.0,
+          "sample_start": 11520000,
+          "sample_end": 12480000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K01_V009_0017",
+          "video_id": "K01_V009",
+          "window_index": 17,
+          "start_s": 765.0,
+          "end_s": 825.0,
+          "sample_start": 12240000,
+          "sample_end": 13200000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K01_V009_0018",
+          "video_id": "K01_V009",
+          "window_index": 18,
+          "start_s": 810.0,
+          "end_s": 870.0,
+          "sample_start": 12960000,
+          "sample_end": 13920000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K01_V009_0019",
+          "video_id": "K01_V009",
+          "window_index": 19,
+          "start_s": 855.0,
+          "end_s": 915.0,
+          "sample_start": 13680000,
+          "sample_end": 14640000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K01_V009_0020",
+          "video_id": "K01_V009",
+          "window_index": 20,
+          "start_s": 900.0,
+          "end_s": 960.0,
+          "sample_start": 14400000,
+          "sample_end": 15360000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K01_V009_0021",
+          "video_id": "K01_V009",
+          "window_index": 21,
+          "start_s": 945.0,
+          "end_s": 1005.0,
+          "sample_start": 15120000,
+          "sample_end": 16080000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K01_V009_0022",
+          "video_id": "K01_V009",
+          "window_index": 22,
+          "start_s": 990.0,
+          "end_s": 1050.0,
+          "sample_start": 15840000,
+          "sample_end": 16800000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K01_V009_0023",
+          "video_id": "K01_V009",
+          "window_index": 23,
+          "start_s": 1035.0,
+          "end_s": 1095.0,
+          "sample_start": 16560000,
+          "sample_end": 17520000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K01_V009_0024",
+          "video_id": "K01_V009",
+          "window_index": 24,
+          "start_s": 1080.0,
+          "end_s": 1140.0,
+          "sample_start": 17280000,
+          "sample_end": 18240000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K01_V009_0025",
+          "video_id": "K01_V009",
+          "window_index": 25,
+          "start_s": 1125.0,
+          "end_s": 1174.0705625,
+          "sample_start": 18000000,
+          "sample_end": 18785129,
+          "duration_samples": 785129
+        }
+      ]
+    },
+    {
+      "video_id": "K07_V030",
+      "mp4_path": "/content/drive/.shortcut-targets-by-id/1OyHW1DoeS_kvHUFLMU9CRsMUqqqHlUGB/aic25/AIC_Video/K07/K07_V030.mp4",
+      "mp4_size": 176910629,
+      "mp4_mtime_ns": 1757120932000000000,
+      "audio_stream_index": 1,
+      "audio_stream_metadata": {
+        "index": 1,
+        "codec_name": "aac",
+        "codec_long_name": "AAC (Advanced Audio Coding)",
+        "profile": "LC",
+        "codec_type": "audio",
+        "codec_tag_string": "mp4a",
+        "codec_tag": "0x6134706d",
+        "sample_fmt": "fltp",
+        "sample_rate": "44100",
+        "channels": 2,
+        "channel_layout": "stereo",
+        "bits_per_sample": 0,
+        "r_frame_rate": "0/0",
+        "avg_frame_rate": "0/0",
+        "time_base": "1/44100",
+        "start_pts": 0,
+        "start_time": "0.000000",
+        "duration_ts": 40572928,
+        "duration": "920.021043",
+        "bit_rate": "128002",
+        "nb_frames": "39622",
+        "disposition": {
+          "default": 1,
+          "dub": 0,
+          "original": 0,
+          "comment": 0,
+          "lyrics": 0,
+          "karaoke": 0,
+          "forced": 0,
+          "hearing_impaired": 0,
+          "visual_impaired": 0,
+          "clean_effects": 0,
+          "attached_pic": 0,
+          "timed_thumbnails": 0
+        },
+        "tags": {
+          "language": "eng",
+          "handler_name": "ISO Media file produced by Google Inc.",
+          "vendor_id": "[0][0][0][0]"
+        }
+      },
+      "duration_s": 920.022,
+      "fps": 30.0,
+      "fps_source": "avg_frame_rate",
+      "fps_warning_reasons": [],
+      "fps_confirmed": false,
+      "wav_path": "/content/drive/MyDrive/aic26/asr_model_comparison/data/audio/K07_V030.wav",
+      "wav_meta_path": "/content/drive/MyDrive/aic26/asr_model_comparison/data/audio/K07_V030.wav.meta.json",
+      "previously_inspected": false,
+      "queries": [
+        {
+          "query_id": "R2-17",
+          "query_text": "Một người phụ nữ đang trả lời phỏng vấn, người phụ nữ này đội nón len, đeo kính. Trên kính có chữ Happy New Year.",
+          "original_answer": "K07_V030,22278",
+          "frame_id": 22278,
+          "answer_time_s": 742.6,
+          "query_category": "other"
+        }
+      ],
+      "wav_hash": "ace26c5f8b9bfb4b3d2e91db1fd20aa65da0a2ec11f669bc2c3e5364843cf737",
+      "wav_sample_rate": 16000,
+      "wav_sample_count": 14720337,
+      "windows": [
+        {
+          "window_id": "K07_V030_0000",
+          "video_id": "K07_V030",
+          "window_index": 0,
+          "start_s": 0.0,
+          "end_s": 60.0,
+          "sample_start": 0,
+          "sample_end": 960000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K07_V030_0001",
+          "video_id": "K07_V030",
+          "window_index": 1,
+          "start_s": 45.0,
+          "end_s": 105.0,
+          "sample_start": 720000,
+          "sample_end": 1680000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K07_V030_0002",
+          "video_id": "K07_V030",
+          "window_index": 2,
+          "start_s": 90.0,
+          "end_s": 150.0,
+          "sample_start": 1440000,
+          "sample_end": 2400000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K07_V030_0003",
+          "video_id": "K07_V030",
+          "window_index": 3,
+          "start_s": 135.0,
+          "end_s": 195.0,
+          "sample_start": 2160000,
+          "sample_end": 3120000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K07_V030_0004",
+          "video_id": "K07_V030",
+          "window_index": 4,
+          "start_s": 180.0,
+          "end_s": 240.0,
+          "sample_start": 2880000,
+          "sample_end": 3840000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K07_V030_0005",
+          "video_id": "K07_V030",
+          "window_index": 5,
+          "start_s": 225.0,
+          "end_s": 285.0,
+          "sample_start": 3600000,
+          "sample_end": 4560000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K07_V030_0006",
+          "video_id": "K07_V030",
+          "window_index": 6,
+          "start_s": 270.0,
+          "end_s": 330.0,
+          "sample_start": 4320000,
+          "sample_end": 5280000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K07_V030_0007",
+          "video_id": "K07_V030",
+          "window_index": 7,
+          "start_s": 315.0,
+          "end_s": 375.0,
+          "sample_start": 5040000,
+          "sample_end": 6000000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K07_V030_0008",
+          "video_id": "K07_V030",
+          "window_index": 8,
+          "start_s": 360.0,
+          "end_s": 420.0,
+          "sample_start": 5760000,
+          "sample_end": 6720000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K07_V030_0009",
+          "video_id": "K07_V030",
+          "window_index": 9,
+          "start_s": 405.0,
+          "end_s": 465.0,
+          "sample_start": 6480000,
+          "sample_end": 7440000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K07_V030_0010",
+          "video_id": "K07_V030",
+          "window_index": 10,
+          "start_s": 450.0,
+          "end_s": 510.0,
+          "sample_start": 7200000,
+          "sample_end": 8160000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K07_V030_0011",
+          "video_id": "K07_V030",
+          "window_index": 11,
+          "start_s": 495.0,
+          "end_s": 555.0,
+          "sample_start": 7920000,
+          "sample_end": 8880000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K07_V030_0012",
+          "video_id": "K07_V030",
+          "window_index": 12,
+          "start_s": 540.0,
+          "end_s": 600.0,
+          "sample_start": 8640000,
+          "sample_end": 9600000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K07_V030_0013",
+          "video_id": "K07_V030",
+          "window_index": 13,
+          "start_s": 585.0,
+          "end_s": 645.0,
+          "sample_start": 9360000,
+          "sample_end": 10320000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K07_V030_0014",
+          "video_id": "K07_V030",
+          "window_index": 14,
+          "start_s": 630.0,
+          "end_s": 690.0,
+          "sample_start": 10080000,
+          "sample_end": 11040000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K07_V030_0015",
+          "video_id": "K07_V030",
+          "window_index": 15,
+          "start_s": 675.0,
+          "end_s": 735.0,
+          "sample_start": 10800000,
+          "sample_end": 11760000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K07_V030_0016",
+          "video_id": "K07_V030",
+          "window_index": 16,
+          "start_s": 720.0,
+          "end_s": 780.0,
+          "sample_start": 11520000,
+          "sample_end": 12480000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K07_V030_0017",
+          "video_id": "K07_V030",
+          "window_index": 17,
+          "start_s": 765.0,
+          "end_s": 825.0,
+          "sample_start": 12240000,
+          "sample_end": 13200000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K07_V030_0018",
+          "video_id": "K07_V030",
+          "window_index": 18,
+          "start_s": 810.0,
+          "end_s": 870.0,
+          "sample_start": 12960000,
+          "sample_end": 13920000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K07_V030_0019",
+          "video_id": "K07_V030",
+          "window_index": 19,
+          "start_s": 855.0,
+          "end_s": 915.0,
+          "sample_start": 13680000,
+          "sample_end": 14640000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K07_V030_0020",
+          "video_id": "K07_V030",
+          "window_index": 20,
+          "start_s": 900.0,
+          "end_s": 920.0210625,
+          "sample_start": 14400000,
+          "sample_end": 14720337,
+          "duration_samples": 320337
+        }
+      ]
+    },
+    {
+      "video_id": "L22_V030",
+      "mp4_path": "/content/drive/.shortcut-targets-by-id/1OyHW1DoeS_kvHUFLMU9CRsMUqqqHlUGB/aic25/AIC_Video/L22/L22_V030.mp4",
+      "mp4_size": 128542267,
+      "mp4_mtime_ns": 1755572079000000000,
+      "audio_stream_index": 1,
+      "audio_stream_metadata": {
+        "index": 1,
+        "codec_name": "aac",
+        "codec_long_name": "AAC (Advanced Audio Coding)",
+        "profile": "LC",
+        "codec_type": "audio",
+        "codec_tag_string": "mp4a",
+        "codec_tag": "0x6134706d",
+        "sample_fmt": "fltp",
+        "sample_rate": "44100",
+        "channels": 2,
+        "channel_layout": "stereo",
+        "bits_per_sample": 0,
+        "r_frame_rate": "0/0",
+        "avg_frame_rate": "0/0",
+        "time_base": "1/44100",
+        "start_pts": 0,
+        "start_time": "0.000000",
+        "duration_ts": 49297408,
+        "duration": "1117.855057",
+        "bit_rate": "128005",
+        "nb_frames": "48142",
+        "disposition": {
+          "default": 1,
+          "dub": 0,
+          "original": 0,
+          "comment": 0,
+          "lyrics": 0,
+          "karaoke": 0,
+          "forced": 0,
+          "hearing_impaired": 0,
+          "visual_impaired": 0,
+          "clean_effects": 0,
+          "attached_pic": 0,
+          "timed_thumbnails": 0
+        },
+        "tags": {
+          "language": "eng",
+          "handler_name": "ISO Media file produced by Google Inc.",
+          "vendor_id": "[0][0][0][0]"
+        }
+      },
+      "duration_s": 1117.856,
+      "fps": 25.0,
+      "fps_source": "avg_frame_rate",
+      "fps_warning_reasons": [],
+      "fps_confirmed": false,
+      "wav_path": "/content/drive/MyDrive/aic26/asr_model_comparison/data/audio/L22_V030.wav",
+      "wav_meta_path": "/content/drive/MyDrive/aic26/asr_model_comparison/data/audio/L22_V030.wav.meta.json",
+      "previously_inspected": false,
+      "queries": [
+        {
+          "query_id": "R1-8",
+          "query_text": "Đoạn video về một lễ hội ẩm thực Nhật Bản lớn nhất thế giới. Hãy tìm chính xác phân cảnh một cô bé đeo một con bạch tuộc / con mực màu đỏ phía trước ngực. Trên tay cô bé có cầm một chiếc túi giấy.",
+          "original_answer": "L22_V030,18327",
+          "frame_id": 18327,
+          "answer_time_s": 733.08,
+          "query_category": "other"
+        }
+      ],
+      "wav_hash": "648647441038006bb839d3fa7d29295e72e080c7875ad5505e12fc77841511cf",
+      "wav_sample_rate": 16000,
+      "wav_sample_count": 17885681,
+      "windows": [
+        {
+          "window_id": "L22_V030_0000",
+          "video_id": "L22_V030",
+          "window_index": 0,
+          "start_s": 0.0,
+          "end_s": 60.0,
+          "sample_start": 0,
+          "sample_end": 960000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L22_V030_0001",
+          "video_id": "L22_V030",
+          "window_index": 1,
+          "start_s": 45.0,
+          "end_s": 105.0,
+          "sample_start": 720000,
+          "sample_end": 1680000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L22_V030_0002",
+          "video_id": "L22_V030",
+          "window_index": 2,
+          "start_s": 90.0,
+          "end_s": 150.0,
+          "sample_start": 1440000,
+          "sample_end": 2400000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L22_V030_0003",
+          "video_id": "L22_V030",
+          "window_index": 3,
+          "start_s": 135.0,
+          "end_s": 195.0,
+          "sample_start": 2160000,
+          "sample_end": 3120000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L22_V030_0004",
+          "video_id": "L22_V030",
+          "window_index": 4,
+          "start_s": 180.0,
+          "end_s": 240.0,
+          "sample_start": 2880000,
+          "sample_end": 3840000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L22_V030_0005",
+          "video_id": "L22_V030",
+          "window_index": 5,
+          "start_s": 225.0,
+          "end_s": 285.0,
+          "sample_start": 3600000,
+          "sample_end": 4560000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L22_V030_0006",
+          "video_id": "L22_V030",
+          "window_index": 6,
+          "start_s": 270.0,
+          "end_s": 330.0,
+          "sample_start": 4320000,
+          "sample_end": 5280000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L22_V030_0007",
+          "video_id": "L22_V030",
+          "window_index": 7,
+          "start_s": 315.0,
+          "end_s": 375.0,
+          "sample_start": 5040000,
+          "sample_end": 6000000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L22_V030_0008",
+          "video_id": "L22_V030",
+          "window_index": 8,
+          "start_s": 360.0,
+          "end_s": 420.0,
+          "sample_start": 5760000,
+          "sample_end": 6720000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L22_V030_0009",
+          "video_id": "L22_V030",
+          "window_index": 9,
+          "start_s": 405.0,
+          "end_s": 465.0,
+          "sample_start": 6480000,
+          "sample_end": 7440000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L22_V030_0010",
+          "video_id": "L22_V030",
+          "window_index": 10,
+          "start_s": 450.0,
+          "end_s": 510.0,
+          "sample_start": 7200000,
+          "sample_end": 8160000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L22_V030_0011",
+          "video_id": "L22_V030",
+          "window_index": 11,
+          "start_s": 495.0,
+          "end_s": 555.0,
+          "sample_start": 7920000,
+          "sample_end": 8880000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L22_V030_0012",
+          "video_id": "L22_V030",
+          "window_index": 12,
+          "start_s": 540.0,
+          "end_s": 600.0,
+          "sample_start": 8640000,
+          "sample_end": 9600000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L22_V030_0013",
+          "video_id": "L22_V030",
+          "window_index": 13,
+          "start_s": 585.0,
+          "end_s": 645.0,
+          "sample_start": 9360000,
+          "sample_end": 10320000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L22_V030_0014",
+          "video_id": "L22_V030",
+          "window_index": 14,
+          "start_s": 630.0,
+          "end_s": 690.0,
+          "sample_start": 10080000,
+          "sample_end": 11040000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L22_V030_0015",
+          "video_id": "L22_V030",
+          "window_index": 15,
+          "start_s": 675.0,
+          "end_s": 735.0,
+          "sample_start": 10800000,
+          "sample_end": 11760000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L22_V030_0016",
+          "video_id": "L22_V030",
+          "window_index": 16,
+          "start_s": 720.0,
+          "end_s": 780.0,
+          "sample_start": 11520000,
+          "sample_end": 12480000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L22_V030_0017",
+          "video_id": "L22_V030",
+          "window_index": 17,
+          "start_s": 765.0,
+          "end_s": 825.0,
+          "sample_start": 12240000,
+          "sample_end": 13200000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L22_V030_0018",
+          "video_id": "L22_V030",
+          "window_index": 18,
+          "start_s": 810.0,
+          "end_s": 870.0,
+          "sample_start": 12960000,
+          "sample_end": 13920000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L22_V030_0019",
+          "video_id": "L22_V030",
+          "window_index": 19,
+          "start_s": 855.0,
+          "end_s": 915.0,
+          "sample_start": 13680000,
+          "sample_end": 14640000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L22_V030_0020",
+          "video_id": "L22_V030",
+          "window_index": 20,
+          "start_s": 900.0,
+          "end_s": 960.0,
+          "sample_start": 14400000,
+          "sample_end": 15360000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L22_V030_0021",
+          "video_id": "L22_V030",
+          "window_index": 21,
+          "start_s": 945.0,
+          "end_s": 1005.0,
+          "sample_start": 15120000,
+          "sample_end": 16080000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L22_V030_0022",
+          "video_id": "L22_V030",
+          "window_index": 22,
+          "start_s": 990.0,
+          "end_s": 1050.0,
+          "sample_start": 15840000,
+          "sample_end": 16800000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L22_V030_0023",
+          "video_id": "L22_V030",
+          "window_index": 23,
+          "start_s": 1035.0,
+          "end_s": 1095.0,
+          "sample_start": 16560000,
+          "sample_end": 17520000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L22_V030_0024",
+          "video_id": "L22_V030",
+          "window_index": 24,
+          "start_s": 1080.0,
+          "end_s": 1117.8550625,
+          "sample_start": 17280000,
+          "sample_end": 17885681,
+          "duration_samples": 605681
+        }
+      ]
+    },
+    {
+      "video_id": "K16_V010",
+      "mp4_path": "/content/drive/.shortcut-targets-by-id/1OyHW1DoeS_kvHUFLMU9CRsMUqqqHlUGB/aic25/AIC_Video/K16/K16_V010.mp4",
+      "mp4_size": 210297302,
+      "mp4_mtime_ns": 1757125439000000000,
+      "audio_stream_index": 1,
+      "audio_stream_metadata": {
+        "index": 1,
+        "codec_name": "aac",
+        "codec_long_name": "AAC (Advanced Audio Coding)",
+        "profile": "LC",
+        "codec_type": "audio",
+        "codec_tag_string": "mp4a",
+        "codec_tag": "0x6134706d",
+        "sample_fmt": "fltp",
+        "sample_rate": "44100",
+        "channels": 2,
+        "channel_layout": "stereo",
+        "bits_per_sample": 0,
+        "r_frame_rate": "0/0",
+        "avg_frame_rate": "0/0",
+        "time_base": "1/44100",
+        "start_pts": 0,
+        "start_time": "0.000000",
+        "duration_ts": 53679104,
+        "duration": "1217.213243",
+        "bit_rate": "128001",
+        "nb_frames": "52421",
+        "disposition": {
+          "default": 1,
+          "dub": 0,
+          "original": 0,
+          "comment": 0,
+          "lyrics": 0,
+          "karaoke": 0,
+          "forced": 0,
+          "hearing_impaired": 0,
+          "visual_impaired": 0,
+          "clean_effects": 0,
+          "attached_pic": 0,
+          "timed_thumbnails": 0
+        },
+        "tags": {
+          "language": "und",
+          "handler_name": "ISO Media file produced by Google Inc.",
+          "vendor_id": "[0][0][0][0]"
+        }
+      },
+      "duration_s": 1217.214,
+      "fps": 25.00082161167346,
+      "fps_source": "avg_frame_rate",
+      "fps_warning_reasons": [],
+      "fps_confirmed": false,
+      "wav_path": "/content/drive/MyDrive/aic26/asr_model_comparison/data/audio/K16_V010.wav",
+      "wav_meta_path": "/content/drive/MyDrive/aic26/asr_model_comparison/data/audio/K16_V010.wav.meta.json",
+      "previously_inspected": false,
+      "queries": [
+        {
+          "query_id": "R2-14",
+          "query_text": "Đoạn video minh họa thống kê cho tác dụng phụ khi dùng thuốc điều trị bệnh. Để trực quan hóa số liệu cho việc số ca có triệu chứng, các icon hình não được xếp vào hình chữ nhật 5 x 10 và trừ dòng dưới cùng sẽ có thêm 2 icon dư ra. Sấp xỉ 5,8% số người có triệu chứng này đã tử vong.",
+          "original_answer": "K16_V010,15047",
+          "frame_id": 15047,
+          "answer_time_s": 601.8602201846923,
+          "query_category": "number_or_measurement"
+        }
+      ],
+      "wav_hash": "3485d258dd1587afb583342152a4fc3b5a825fb408f239332fa2500298a6f18c",
+      "wav_sample_rate": 16000,
+      "wav_sample_count": 19475412,
+      "windows": [
+        {
+          "window_id": "K16_V010_0000",
+          "video_id": "K16_V010",
+          "window_index": 0,
+          "start_s": 0.0,
+          "end_s": 60.0,
+          "sample_start": 0,
+          "sample_end": 960000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K16_V010_0001",
+          "video_id": "K16_V010",
+          "window_index": 1,
+          "start_s": 45.0,
+          "end_s": 105.0,
+          "sample_start": 720000,
+          "sample_end": 1680000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K16_V010_0002",
+          "video_id": "K16_V010",
+          "window_index": 2,
+          "start_s": 90.0,
+          "end_s": 150.0,
+          "sample_start": 1440000,
+          "sample_end": 2400000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K16_V010_0003",
+          "video_id": "K16_V010",
+          "window_index": 3,
+          "start_s": 135.0,
+          "end_s": 195.0,
+          "sample_start": 2160000,
+          "sample_end": 3120000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K16_V010_0004",
+          "video_id": "K16_V010",
+          "window_index": 4,
+          "start_s": 180.0,
+          "end_s": 240.0,
+          "sample_start": 2880000,
+          "sample_end": 3840000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K16_V010_0005",
+          "video_id": "K16_V010",
+          "window_index": 5,
+          "start_s": 225.0,
+          "end_s": 285.0,
+          "sample_start": 3600000,
+          "sample_end": 4560000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K16_V010_0006",
+          "video_id": "K16_V010",
+          "window_index": 6,
+          "start_s": 270.0,
+          "end_s": 330.0,
+          "sample_start": 4320000,
+          "sample_end": 5280000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K16_V010_0007",
+          "video_id": "K16_V010",
+          "window_index": 7,
+          "start_s": 315.0,
+          "end_s": 375.0,
+          "sample_start": 5040000,
+          "sample_end": 6000000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K16_V010_0008",
+          "video_id": "K16_V010",
+          "window_index": 8,
+          "start_s": 360.0,
+          "end_s": 420.0,
+          "sample_start": 5760000,
+          "sample_end": 6720000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K16_V010_0009",
+          "video_id": "K16_V010",
+          "window_index": 9,
+          "start_s": 405.0,
+          "end_s": 465.0,
+          "sample_start": 6480000,
+          "sample_end": 7440000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K16_V010_0010",
+          "video_id": "K16_V010",
+          "window_index": 10,
+          "start_s": 450.0,
+          "end_s": 510.0,
+          "sample_start": 7200000,
+          "sample_end": 8160000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K16_V010_0011",
+          "video_id": "K16_V010",
+          "window_index": 11,
+          "start_s": 495.0,
+          "end_s": 555.0,
+          "sample_start": 7920000,
+          "sample_end": 8880000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K16_V010_0012",
+          "video_id": "K16_V010",
+          "window_index": 12,
+          "start_s": 540.0,
+          "end_s": 600.0,
+          "sample_start": 8640000,
+          "sample_end": 9600000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K16_V010_0013",
+          "video_id": "K16_V010",
+          "window_index": 13,
+          "start_s": 585.0,
+          "end_s": 645.0,
+          "sample_start": 9360000,
+          "sample_end": 10320000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K16_V010_0014",
+          "video_id": "K16_V010",
+          "window_index": 14,
+          "start_s": 630.0,
+          "end_s": 690.0,
+          "sample_start": 10080000,
+          "sample_end": 11040000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K16_V010_0015",
+          "video_id": "K16_V010",
+          "window_index": 15,
+          "start_s": 675.0,
+          "end_s": 735.0,
+          "sample_start": 10800000,
+          "sample_end": 11760000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K16_V010_0016",
+          "video_id": "K16_V010",
+          "window_index": 16,
+          "start_s": 720.0,
+          "end_s": 780.0,
+          "sample_start": 11520000,
+          "sample_end": 12480000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K16_V010_0017",
+          "video_id": "K16_V010",
+          "window_index": 17,
+          "start_s": 765.0,
+          "end_s": 825.0,
+          "sample_start": 12240000,
+          "sample_end": 13200000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K16_V010_0018",
+          "video_id": "K16_V010",
+          "window_index": 18,
+          "start_s": 810.0,
+          "end_s": 870.0,
+          "sample_start": 12960000,
+          "sample_end": 13920000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K16_V010_0019",
+          "video_id": "K16_V010",
+          "window_index": 19,
+          "start_s": 855.0,
+          "end_s": 915.0,
+          "sample_start": 13680000,
+          "sample_end": 14640000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K16_V010_0020",
+          "video_id": "K16_V010",
+          "window_index": 20,
+          "start_s": 900.0,
+          "end_s": 960.0,
+          "sample_start": 14400000,
+          "sample_end": 15360000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K16_V010_0021",
+          "video_id": "K16_V010",
+          "window_index": 21,
+          "start_s": 945.0,
+          "end_s": 1005.0,
+          "sample_start": 15120000,
+          "sample_end": 16080000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K16_V010_0022",
+          "video_id": "K16_V010",
+          "window_index": 22,
+          "start_s": 990.0,
+          "end_s": 1050.0,
+          "sample_start": 15840000,
+          "sample_end": 16800000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K16_V010_0023",
+          "video_id": "K16_V010",
+          "window_index": 23,
+          "start_s": 1035.0,
+          "end_s": 1095.0,
+          "sample_start": 16560000,
+          "sample_end": 17520000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K16_V010_0024",
+          "video_id": "K16_V010",
+          "window_index": 24,
+          "start_s": 1080.0,
+          "end_s": 1140.0,
+          "sample_start": 17280000,
+          "sample_end": 18240000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K16_V010_0025",
+          "video_id": "K16_V010",
+          "window_index": 25,
+          "start_s": 1125.0,
+          "end_s": 1185.0,
+          "sample_start": 18000000,
+          "sample_end": 18960000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K16_V010_0026",
+          "video_id": "K16_V010",
+          "window_index": 26,
+          "start_s": 1170.0,
+          "end_s": 1217.21325,
+          "sample_start": 18720000,
+          "sample_end": 19475412,
+          "duration_samples": 755412
+        }
+      ]
+    },
+    {
+      "video_id": "L30_V057",
+      "mp4_path": "/content/drive/.shortcut-targets-by-id/1OyHW1DoeS_kvHUFLMU9CRsMUqqqHlUGB/aic25/AIC_Video/L30/L30_V057.mp4",
+      "mp4_size": 19031869,
+      "mp4_mtime_ns": 1755773425000000000,
+      "audio_stream_index": 1,
+      "audio_stream_metadata": {
+        "index": 1,
+        "codec_name": "aac",
+        "codec_long_name": "AAC (Advanced Audio Coding)",
+        "profile": "LC",
+        "codec_type": "audio",
+        "codec_tag_string": "mp4a",
+        "codec_tag": "0x6134706d",
+        "sample_fmt": "fltp",
+        "sample_rate": "44100",
+        "channels": 2,
+        "channel_layout": "stereo",
+        "bits_per_sample": 0,
+        "r_frame_rate": "0/0",
+        "avg_frame_rate": "0/0",
+        "time_base": "1/44100",
+        "start_pts": 0,
+        "start_time": "0.000000",
+        "duration_ts": 8229888,
+        "duration": "186.618776",
+        "bit_rate": "127999",
+        "nb_frames": "8037",
+        "disposition": {
+          "default": 1,
+          "dub": 0,
+          "original": 0,
+          "comment": 0,
+          "lyrics": 0,
+          "karaoke": 0,
+          "forced": 0,
+          "hearing_impaired": 0,
+          "visual_impaired": 0,
+          "clean_effects": 0,
+          "attached_pic": 0,
+          "timed_thumbnails": 0
+        },
+        "tags": {
+          "language": "und",
+          "handler_name": "ISO Media file produced by Google Inc.",
+          "vendor_id": "[0][0][0][0]"
+        }
+      },
+      "duration_s": 186.619,
+      "fps": 25.0,
+      "fps_source": "avg_frame_rate",
+      "fps_warning_reasons": [],
+      "fps_confirmed": false,
+      "wav_path": "/content/drive/MyDrive/aic26/asr_model_comparison/data/audio/L30_V057.wav",
+      "wav_meta_path": "/content/drive/MyDrive/aic26/asr_model_comparison/data/audio/L30_V057.wav.meta.json",
+      "previously_inspected": false,
+      "queries": [
+        {
+          "query_id": "R1-11",
+          "query_text": "Trong đoạn clip có là một chàng trai đội mũ lưỡi trai đen, mặc áo thun trắng có dòng chữ tiếng Anh, đang ngồi cạnh một chiếc hộp. Trên hộp, anh sắp xếp nhiều mảnh bìa cắt rời với hình thù ngẫu nhiên.\nNhờ ánh sáng chiếu từ một phía, các mảnh bìa đó đổ bóng lên tường, tạo thành hình chân dung một người đàn ông với khuôn mặt rõ nét, tóc vuốt gọn và mặc vest.",
+          "original_answer": "L30_V057,3075",
+          "frame_id": 3075,
+          "answer_time_s": 123.0,
+          "query_category": "person_organization_location"
+        }
+      ],
+      "wav_hash": "a19392bca66ab37b647843c51b1abad57be42a136ac32b4a9541fd9ee7c757e3",
+      "wav_sample_rate": 16000,
+      "wav_sample_count": 2985901,
+      "windows": [
+        {
+          "window_id": "L30_V057_0000",
+          "video_id": "L30_V057",
+          "window_index": 0,
+          "start_s": 0.0,
+          "end_s": 60.0,
+          "sample_start": 0,
+          "sample_end": 960000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L30_V057_0001",
+          "video_id": "L30_V057",
+          "window_index": 1,
+          "start_s": 45.0,
+          "end_s": 105.0,
+          "sample_start": 720000,
+          "sample_end": 1680000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L30_V057_0002",
+          "video_id": "L30_V057",
+          "window_index": 2,
+          "start_s": 90.0,
+          "end_s": 150.0,
+          "sample_start": 1440000,
+          "sample_end": 2400000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L30_V057_0003",
+          "video_id": "L30_V057",
+          "window_index": 3,
+          "start_s": 135.0,
+          "end_s": 186.6188125,
+          "sample_start": 2160000,
+          "sample_end": 2985901,
+          "duration_samples": 825901
+        }
+      ]
+    },
+    {
+      "video_id": "K18_V002",
+      "mp4_path": "/content/drive/.shortcut-targets-by-id/1OyHW1DoeS_kvHUFLMU9CRsMUqqqHlUGB/aic25/AIC_Video/K18/K18_V002.mp4",
+      "mp4_size": 242583799,
+      "mp4_mtime_ns": 1757126301000000000,
+      "audio_stream_index": 1,
+      "audio_stream_metadata": {
+        "index": 1,
+        "codec_name": "aac",
+        "codec_long_name": "AAC (Advanced Audio Coding)",
+        "profile": "LC",
+        "codec_type": "audio",
+        "codec_tag_string": "mp4a",
+        "codec_tag": "0x6134706d",
+        "sample_fmt": "fltp",
+        "sample_rate": "44100",
+        "channels": 2,
+        "channel_layout": "stereo",
+        "bits_per_sample": 0,
+        "r_frame_rate": "0/0",
+        "avg_frame_rate": "0/0",
+        "time_base": "1/44100",
+        "start_pts": 0,
+        "start_time": "0.000000",
+        "duration_ts": 55597056,
+        "duration": "1260.704218",
+        "bit_rate": "128002",
+        "nb_frames": "54294",
+        "disposition": {
+          "default": 1,
+          "dub": 0,
+          "original": 0,
+          "comment": 0,
+          "lyrics": 0,
+          "karaoke": 0,
+          "forced": 0,
+          "hearing_impaired": 0,
+          "visual_impaired": 0,
+          "clean_effects": 0,
+          "attached_pic": 0,
+          "timed_thumbnails": 0
+        },
+        "tags": {
+          "language": "eng",
+          "handler_name": "ISO Media file produced by Google Inc.",
+          "vendor_id": "[0][0][0][0]"
+        }
+      },
+      "duration_s": 1260.705,
+      "fps": 30.000793273044582,
+      "fps_source": "avg_frame_rate",
+      "fps_warning_reasons": [],
+      "fps_confirmed": false,
+      "wav_path": "/content/drive/MyDrive/aic26/asr_model_comparison/data/audio/K18_V002.wav",
+      "wav_meta_path": "/content/drive/MyDrive/aic26/asr_model_comparison/data/audio/K18_V002.wav.meta.json",
+      "previously_inspected": false,
+      "queries": [
+        {
+          "query_id": "R2-28",
+          "query_text": "Đoạn video chứa hình ảnh của nhiều loại cá cảnh khác nhau, trong đó có cá đĩa, cá rồng, và nhiều loại cá khác. Một vài phân cảnh có hình ảnh của cá la hán với đầu rất to.",
+          "original_answer": "K18_V002,4680",
+          "frame_id": 4680,
+          "answer_time_s": 155.99587508924085,
+          "query_category": "other"
+        }
+      ],
+      "wav_hash": "107fd8e834ae10fbee9f0bdd94b83b395d77a44775fc7722965ac0f89fdb1eae",
+      "wav_sample_rate": 16000,
+      "wav_sample_count": 20171268,
+      "windows": [
+        {
+          "window_id": "K18_V002_0000",
+          "video_id": "K18_V002",
+          "window_index": 0,
+          "start_s": 0.0,
+          "end_s": 60.0,
+          "sample_start": 0,
+          "sample_end": 960000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K18_V002_0001",
+          "video_id": "K18_V002",
+          "window_index": 1,
+          "start_s": 45.0,
+          "end_s": 105.0,
+          "sample_start": 720000,
+          "sample_end": 1680000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K18_V002_0002",
+          "video_id": "K18_V002",
+          "window_index": 2,
+          "start_s": 90.0,
+          "end_s": 150.0,
+          "sample_start": 1440000,
+          "sample_end": 2400000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K18_V002_0003",
+          "video_id": "K18_V002",
+          "window_index": 3,
+          "start_s": 135.0,
+          "end_s": 195.0,
+          "sample_start": 2160000,
+          "sample_end": 3120000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K18_V002_0004",
+          "video_id": "K18_V002",
+          "window_index": 4,
+          "start_s": 180.0,
+          "end_s": 240.0,
+          "sample_start": 2880000,
+          "sample_end": 3840000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K18_V002_0005",
+          "video_id": "K18_V002",
+          "window_index": 5,
+          "start_s": 225.0,
+          "end_s": 285.0,
+          "sample_start": 3600000,
+          "sample_end": 4560000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K18_V002_0006",
+          "video_id": "K18_V002",
+          "window_index": 6,
+          "start_s": 270.0,
+          "end_s": 330.0,
+          "sample_start": 4320000,
+          "sample_end": 5280000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K18_V002_0007",
+          "video_id": "K18_V002",
+          "window_index": 7,
+          "start_s": 315.0,
+          "end_s": 375.0,
+          "sample_start": 5040000,
+          "sample_end": 6000000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K18_V002_0008",
+          "video_id": "K18_V002",
+          "window_index": 8,
+          "start_s": 360.0,
+          "end_s": 420.0,
+          "sample_start": 5760000,
+          "sample_end": 6720000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K18_V002_0009",
+          "video_id": "K18_V002",
+          "window_index": 9,
+          "start_s": 405.0,
+          "end_s": 465.0,
+          "sample_start": 6480000,
+          "sample_end": 7440000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K18_V002_0010",
+          "video_id": "K18_V002",
+          "window_index": 10,
+          "start_s": 450.0,
+          "end_s": 510.0,
+          "sample_start": 7200000,
+          "sample_end": 8160000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K18_V002_0011",
+          "video_id": "K18_V002",
+          "window_index": 11,
+          "start_s": 495.0,
+          "end_s": 555.0,
+          "sample_start": 7920000,
+          "sample_end": 8880000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K18_V002_0012",
+          "video_id": "K18_V002",
+          "window_index": 12,
+          "start_s": 540.0,
+          "end_s": 600.0,
+          "sample_start": 8640000,
+          "sample_end": 9600000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K18_V002_0013",
+          "video_id": "K18_V002",
+          "window_index": 13,
+          "start_s": 585.0,
+          "end_s": 645.0,
+          "sample_start": 9360000,
+          "sample_end": 10320000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K18_V002_0014",
+          "video_id": "K18_V002",
+          "window_index": 14,
+          "start_s": 630.0,
+          "end_s": 690.0,
+          "sample_start": 10080000,
+          "sample_end": 11040000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K18_V002_0015",
+          "video_id": "K18_V002",
+          "window_index": 15,
+          "start_s": 675.0,
+          "end_s": 735.0,
+          "sample_start": 10800000,
+          "sample_end": 11760000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K18_V002_0016",
+          "video_id": "K18_V002",
+          "window_index": 16,
+          "start_s": 720.0,
+          "end_s": 780.0,
+          "sample_start": 11520000,
+          "sample_end": 12480000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K18_V002_0017",
+          "video_id": "K18_V002",
+          "window_index": 17,
+          "start_s": 765.0,
+          "end_s": 825.0,
+          "sample_start": 12240000,
+          "sample_end": 13200000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K18_V002_0018",
+          "video_id": "K18_V002",
+          "window_index": 18,
+          "start_s": 810.0,
+          "end_s": 870.0,
+          "sample_start": 12960000,
+          "sample_end": 13920000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K18_V002_0019",
+          "video_id": "K18_V002",
+          "window_index": 19,
+          "start_s": 855.0,
+          "end_s": 915.0,
+          "sample_start": 13680000,
+          "sample_end": 14640000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K18_V002_0020",
+          "video_id": "K18_V002",
+          "window_index": 20,
+          "start_s": 900.0,
+          "end_s": 960.0,
+          "sample_start": 14400000,
+          "sample_end": 15360000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K18_V002_0021",
+          "video_id": "K18_V002",
+          "window_index": 21,
+          "start_s": 945.0,
+          "end_s": 1005.0,
+          "sample_start": 15120000,
+          "sample_end": 16080000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K18_V002_0022",
+          "video_id": "K18_V002",
+          "window_index": 22,
+          "start_s": 990.0,
+          "end_s": 1050.0,
+          "sample_start": 15840000,
+          "sample_end": 16800000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K18_V002_0023",
+          "video_id": "K18_V002",
+          "window_index": 23,
+          "start_s": 1035.0,
+          "end_s": 1095.0,
+          "sample_start": 16560000,
+          "sample_end": 17520000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K18_V002_0024",
+          "video_id": "K18_V002",
+          "window_index": 24,
+          "start_s": 1080.0,
+          "end_s": 1140.0,
+          "sample_start": 17280000,
+          "sample_end": 18240000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K18_V002_0025",
+          "video_id": "K18_V002",
+          "window_index": 25,
+          "start_s": 1125.0,
+          "end_s": 1185.0,
+          "sample_start": 18000000,
+          "sample_end": 18960000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K18_V002_0026",
+          "video_id": "K18_V002",
+          "window_index": 26,
+          "start_s": 1170.0,
+          "end_s": 1230.0,
+          "sample_start": 18720000,
+          "sample_end": 19680000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K18_V002_0027",
+          "video_id": "K18_V002",
+          "window_index": 27,
+          "start_s": 1215.0,
+          "end_s": 1260.70425,
+          "sample_start": 19440000,
+          "sample_end": 20171268,
+          "duration_samples": 731268
+        }
+      ]
+    },
+    {
+      "video_id": "K05_V018",
+      "mp4_path": "/content/drive/.shortcut-targets-by-id/1OyHW1DoeS_kvHUFLMU9CRsMUqqqHlUGB/aic25/AIC_Video/K05/K05_V018.mp4",
+      "mp4_size": 310773537,
+      "mp4_mtime_ns": 1757119603000000000,
+      "audio_stream_index": 1,
+      "audio_stream_metadata": {
+        "index": 1,
+        "codec_name": "aac",
+        "codec_long_name": "AAC (Advanced Audio Coding)",
+        "profile": "LC",
+        "codec_type": "audio",
+        "codec_tag_string": "mp4a",
+        "codec_tag": "0x6134706d",
+        "sample_fmt": "fltp",
+        "sample_rate": "44100",
+        "channels": 2,
+        "channel_layout": "stereo",
+        "bits_per_sample": 0,
+        "r_frame_rate": "0/0",
+        "avg_frame_rate": "0/0",
+        "time_base": "1/44100",
+        "start_pts": 0,
+        "start_time": "0.000000",
+        "duration_ts": 37336064,
+        "duration": "846.622766",
+        "bit_rate": "128004",
+        "nb_frames": "36461",
+        "disposition": {
+          "default": 1,
+          "dub": 0,
+          "original": 0,
+          "comment": 0,
+          "lyrics": 0,
+          "karaoke": 0,
+          "forced": 0,
+          "hearing_impaired": 0,
+          "visual_impaired": 0,
+          "clean_effects": 0,
+          "attached_pic": 0,
+          "timed_thumbnails": 0
+        },
+        "tags": {
+          "language": "eng",
+          "handler_name": "ISO Media file produced by Google Inc.",
+          "vendor_id": "[0][0][0][0]"
+        }
+      },
+      "duration_s": 846.623,
+      "fps": 30.0,
+      "fps_source": "avg_frame_rate",
+      "fps_warning_reasons": [],
+      "fps_confirmed": false,
+      "wav_path": "/content/drive/MyDrive/aic26/asr_model_comparison/data/audio/K05_V018.wav",
+      "wav_meta_path": "/content/drive/MyDrive/aic26/asr_model_comparison/data/audio/K05_V018.wav.meta.json",
+      "previously_inspected": false,
+      "queries": [
+        {
+          "query_id": "R2-25",
+          "query_text": "Một con robot có 4 chân gắn với 4 bánh xe chạy trên đồng cỏ. Cảnh sau có những con bò đứng kế bên con robot. Đoán clip kết thúc bằng cảnh phỏng vấn người trong nhóm làm ra con robot để mô tả các phương thức hoạt động và sự hữu ích của nó.",
+          "original_answer": "K05_V018,18690",
+          "frame_id": 18690,
+          "answer_time_s": 623.0,
+          "query_category": "number_or_measurement"
+        }
+      ],
+      "wav_hash": "b4cd5304b4bc74fa7bf20102df6439acb7f16b26cdcb2b67ad380822e453c04c",
+      "wav_sample_rate": 16000,
+      "wav_sample_count": 13545964,
+      "windows": [
+        {
+          "window_id": "K05_V018_0000",
+          "video_id": "K05_V018",
+          "window_index": 0,
+          "start_s": 0.0,
+          "end_s": 60.0,
+          "sample_start": 0,
+          "sample_end": 960000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K05_V018_0001",
+          "video_id": "K05_V018",
+          "window_index": 1,
+          "start_s": 45.0,
+          "end_s": 105.0,
+          "sample_start": 720000,
+          "sample_end": 1680000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K05_V018_0002",
+          "video_id": "K05_V018",
+          "window_index": 2,
+          "start_s": 90.0,
+          "end_s": 150.0,
+          "sample_start": 1440000,
+          "sample_end": 2400000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K05_V018_0003",
+          "video_id": "K05_V018",
+          "window_index": 3,
+          "start_s": 135.0,
+          "end_s": 195.0,
+          "sample_start": 2160000,
+          "sample_end": 3120000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K05_V018_0004",
+          "video_id": "K05_V018",
+          "window_index": 4,
+          "start_s": 180.0,
+          "end_s": 240.0,
+          "sample_start": 2880000,
+          "sample_end": 3840000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K05_V018_0005",
+          "video_id": "K05_V018",
+          "window_index": 5,
+          "start_s": 225.0,
+          "end_s": 285.0,
+          "sample_start": 3600000,
+          "sample_end": 4560000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K05_V018_0006",
+          "video_id": "K05_V018",
+          "window_index": 6,
+          "start_s": 270.0,
+          "end_s": 330.0,
+          "sample_start": 4320000,
+          "sample_end": 5280000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K05_V018_0007",
+          "video_id": "K05_V018",
+          "window_index": 7,
+          "start_s": 315.0,
+          "end_s": 375.0,
+          "sample_start": 5040000,
+          "sample_end": 6000000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K05_V018_0008",
+          "video_id": "K05_V018",
+          "window_index": 8,
+          "start_s": 360.0,
+          "end_s": 420.0,
+          "sample_start": 5760000,
+          "sample_end": 6720000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K05_V018_0009",
+          "video_id": "K05_V018",
+          "window_index": 9,
+          "start_s": 405.0,
+          "end_s": 465.0,
+          "sample_start": 6480000,
+          "sample_end": 7440000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K05_V018_0010",
+          "video_id": "K05_V018",
+          "window_index": 10,
+          "start_s": 450.0,
+          "end_s": 510.0,
+          "sample_start": 7200000,
+          "sample_end": 8160000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K05_V018_0011",
+          "video_id": "K05_V018",
+          "window_index": 11,
+          "start_s": 495.0,
+          "end_s": 555.0,
+          "sample_start": 7920000,
+          "sample_end": 8880000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K05_V018_0012",
+          "video_id": "K05_V018",
+          "window_index": 12,
+          "start_s": 540.0,
+          "end_s": 600.0,
+          "sample_start": 8640000,
+          "sample_end": 9600000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K05_V018_0013",
+          "video_id": "K05_V018",
+          "window_index": 13,
+          "start_s": 585.0,
+          "end_s": 645.0,
+          "sample_start": 9360000,
+          "sample_end": 10320000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K05_V018_0014",
+          "video_id": "K05_V018",
+          "window_index": 14,
+          "start_s": 630.0,
+          "end_s": 690.0,
+          "sample_start": 10080000,
+          "sample_end": 11040000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K05_V018_0015",
+          "video_id": "K05_V018",
+          "window_index": 15,
+          "start_s": 675.0,
+          "end_s": 735.0,
+          "sample_start": 10800000,
+          "sample_end": 11760000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K05_V018_0016",
+          "video_id": "K05_V018",
+          "window_index": 16,
+          "start_s": 720.0,
+          "end_s": 780.0,
+          "sample_start": 11520000,
+          "sample_end": 12480000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K05_V018_0017",
+          "video_id": "K05_V018",
+          "window_index": 17,
+          "start_s": 765.0,
+          "end_s": 825.0,
+          "sample_start": 12240000,
+          "sample_end": 13200000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "K05_V018_0018",
+          "video_id": "K05_V018",
+          "window_index": 18,
+          "start_s": 810.0,
+          "end_s": 846.62275,
+          "sample_start": 12960000,
+          "sample_end": 13545964,
+          "duration_samples": 585964
+        }
+      ]
+    },
+    {
+      "video_id": "L27_V014",
+      "mp4_path": "/content/drive/.shortcut-targets-by-id/1OyHW1DoeS_kvHUFLMU9CRsMUqqqHlUGB/aic25/AIC_Video/L27/L27_V014.mp4",
+      "mp4_size": 167426944,
+      "mp4_mtime_ns": 1755773365000000000,
+      "audio_stream_index": 1,
+      "audio_stream_metadata": {
+        "index": 1,
+        "codec_name": "aac",
+        "codec_long_name": "AAC (Advanced Audio Coding)",
+        "profile": "LC",
+        "codec_type": "audio",
+        "codec_tag_string": "mp4a",
+        "codec_tag": "0x6134706d",
+        "sample_fmt": "fltp",
+        "sample_rate": "44100",
+        "channels": 2,
+        "channel_layout": "stereo",
+        "bits_per_sample": 0,
+        "r_frame_rate": "0/0",
+        "avg_frame_rate": "0/0",
+        "time_base": "1/44100",
+        "start_pts": 0,
+        "start_time": "0.000000",
+        "duration_ts": 25561088,
+        "duration": "579.616508",
+        "bit_rate": "128003",
+        "nb_frames": "24962",
+        "disposition": {
+          "default": 1,
+          "dub": 0,
+          "original": 0,
+          "comment": 0,
+          "lyrics": 0,
+          "karaoke": 0,
+          "forced": 0,
+          "hearing_impaired": 0,
+          "visual_impaired": 0,
+          "clean_effects": 0,
+          "attached_pic": 0,
+          "timed_thumbnails": 0
+        },
+        "tags": {
+          "language": "und",
+          "handler_name": "ISO Media file produced by Google Inc.",
+          "vendor_id": "[0][0][0][0]"
+        }
+      },
+      "duration_s": 579.617,
+      "fps": 25.0,
+      "fps_source": "avg_frame_rate",
+      "fps_warning_reasons": [],
+      "fps_confirmed": false,
+      "wav_path": "/content/drive/MyDrive/aic26/asr_model_comparison/data/audio/L27_V014.wav",
+      "wav_meta_path": "/content/drive/MyDrive/aic26/asr_model_comparison/data/audio/L27_V014.wav.meta.json",
+      "previously_inspected": false,
+      "queries": [
+        {
+          "query_id": "R1-5",
+          "query_text": "Đoạn clip cần tìm là cảnh hai người phụ nữ đang cho dê ăn: một người mặc áo thun trắng quàng áo đỏ trên vai, người kia mặc áo dài tay kẻ sọc tím truyền thống. Cả hai đều mỉm cười, tỏ vẻ thích thú. Không gian trại rộng rãi, có mái che bằng tôn và hàng rào gỗ chia thành nhiều dãy chuồng, trong đó có hàng dài dê được nuôi nhốt.",
+          "original_answer": "L27_V014,7297",
+          "frame_id": 7297,
+          "answer_time_s": 291.88,
+          "query_category": "person_organization_location"
+        }
+      ],
+      "wav_hash": "efc25e3643bdf9412fdd5736ae4dc85dcaf12f645133558f574572fa0a28b323",
+      "wav_sample_rate": 16000,
+      "wav_sample_count": 9273864,
+      "windows": [
+        {
+          "window_id": "L27_V014_0000",
+          "video_id": "L27_V014",
+          "window_index": 0,
+          "start_s": 0.0,
+          "end_s": 60.0,
+          "sample_start": 0,
+          "sample_end": 960000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L27_V014_0001",
+          "video_id": "L27_V014",
+          "window_index": 1,
+          "start_s": 45.0,
+          "end_s": 105.0,
+          "sample_start": 720000,
+          "sample_end": 1680000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L27_V014_0002",
+          "video_id": "L27_V014",
+          "window_index": 2,
+          "start_s": 90.0,
+          "end_s": 150.0,
+          "sample_start": 1440000,
+          "sample_end": 2400000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L27_V014_0003",
+          "video_id": "L27_V014",
+          "window_index": 3,
+          "start_s": 135.0,
+          "end_s": 195.0,
+          "sample_start": 2160000,
+          "sample_end": 3120000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L27_V014_0004",
+          "video_id": "L27_V014",
+          "window_index": 4,
+          "start_s": 180.0,
+          "end_s": 240.0,
+          "sample_start": 2880000,
+          "sample_end": 3840000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L27_V014_0005",
+          "video_id": "L27_V014",
+          "window_index": 5,
+          "start_s": 225.0,
+          "end_s": 285.0,
+          "sample_start": 3600000,
+          "sample_end": 4560000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L27_V014_0006",
+          "video_id": "L27_V014",
+          "window_index": 6,
+          "start_s": 270.0,
+          "end_s": 330.0,
+          "sample_start": 4320000,
+          "sample_end": 5280000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L27_V014_0007",
+          "video_id": "L27_V014",
+          "window_index": 7,
+          "start_s": 315.0,
+          "end_s": 375.0,
+          "sample_start": 5040000,
+          "sample_end": 6000000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L27_V014_0008",
+          "video_id": "L27_V014",
+          "window_index": 8,
+          "start_s": 360.0,
+          "end_s": 420.0,
+          "sample_start": 5760000,
+          "sample_end": 6720000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L27_V014_0009",
+          "video_id": "L27_V014",
+          "window_index": 9,
+          "start_s": 405.0,
+          "end_s": 465.0,
+          "sample_start": 6480000,
+          "sample_end": 7440000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L27_V014_0010",
+          "video_id": "L27_V014",
+          "window_index": 10,
+          "start_s": 450.0,
+          "end_s": 510.0,
+          "sample_start": 7200000,
+          "sample_end": 8160000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L27_V014_0011",
+          "video_id": "L27_V014",
+          "window_index": 11,
+          "start_s": 495.0,
+          "end_s": 555.0,
+          "sample_start": 7920000,
+          "sample_end": 8880000,
+          "duration_samples": 960000
+        },
+        {
+          "window_id": "L27_V014_0012",
+          "video_id": "L27_V014",
+          "window_index": 12,
+          "start_s": 540.0,
+          "end_s": 579.6165,
+          "sample_start": 8640000,
+          "sample_end": 9273864,
+          "duration_samples": 633864
+        }
+      ]
+    }
+  ],
+  "selection_hash": "06948d867ae0f28823412d155e4967393405f7a9d55e39ab065f951075eccbaf",
+  "window_policy": {
+    "sample_rate": 16000,
+    "window_seconds": 60.0,
+    "stride_seconds": 45.0,
+    "minimum_tail_seconds": 15.0
+  },
+  "window_policy_hash": "02f41c37cc9024a1b11fc04e35d9656df3357928355f33f1ebe48d2fd0aa5d29"
+}

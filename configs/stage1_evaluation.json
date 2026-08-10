@@ -1,0 +1,217 @@
+{
+  "schema_version": "1.0",
+  "evaluation_id": "stage1_asr_parakeet_vs_whisper_large_v3",
+  "evaluation_frozen": false,
+  "frozen_at_utc": null,
+  "reference_model_id": "whisper_large_v3",
+  "candidate_model_ids": [
+    "parakeet_ctc_0_6b_vietnamese"
+  ],
+  "models": {
+    "whisper_large_v3": {
+      "role": "reference_baseline",
+      "core10_output": "outputs/whisper_large_v3",
+      "extension40_output": "outputs/stage1_extension40/whisper_large_v3",
+      "core10_run_summary": "reports/full_inference/whisper_large_v3.json",
+      "extension40_run_summary": "reports/stage1_extension40/full_inference/whisper_large_v3.json"
+    },
+    "parakeet_ctc_0_6b_vietnamese": {
+      "role": "candidate",
+      "core10_output": "outputs/stage1_core10_additions/parakeet_ctc_0_6b_vietnamese",
+      "extension40_output": "outputs/stage1_extension40/parakeet_ctc_0_6b_vietnamese",
+      "core10_run_summary": "reports/stage1_core10_additions/full_inference/parakeet_ctc_0_6b_vietnamese.json",
+      "extension40_run_summary": "reports/stage1_extension40/full_inference/parakeet_ctc_0_6b_vietnamese.json"
+    }
+  },
+  "benchmarks": {
+    "core10": {
+      "path": "data/benchmark_manifest.json",
+      "expected_stage_id": "stage1_10_video",
+      "expected_video_count": 10,
+      "expected_query_count": 10,
+      "expected_window_count": 219,
+      "expected_benchmark_content_hash": "a606d209e1b09fafa77d6f430ad68bf94e3d3bca8e77de2833fe74ece37c4bac"
+    },
+    "extension40": {
+      "path": "data/stage1_extension40/benchmark_manifest.json",
+      "expected_stage_id": "stage1_extension40",
+      "expected_video_count": 40,
+      "expected_query_count": 40,
+      "expected_window_count": 775,
+      "expected_benchmark_content_hash": "c1c986ab306c7b42d0ebcafc4832bd5e46b3f51b91444c58a3b0a3ceba835b6c"
+    }
+  },
+  "query_sets": {
+    "regression_core10": {
+      "corpus": "core10",
+      "sources": [
+        {
+          "benchmark": "core10",
+          "split": "all"
+        }
+      ]
+    },
+    "development20": {
+      "corpus": "all50",
+      "sources": [
+        {
+          "benchmark": "extension40",
+          "split": "development20"
+        }
+      ]
+    },
+    "non_holdout30": {
+      "corpus": "all50",
+      "sources": [
+        {
+          "benchmark": "core10",
+          "split": "all"
+        },
+        {
+          "benchmark": "extension40",
+          "split": "development20"
+        }
+      ]
+    },
+    "holdout20": {
+      "corpus": "all50",
+      "sources": [
+        {
+          "benchmark": "extension40",
+          "split": "holdout20"
+        }
+      ]
+    },
+    "extension40": {
+      "corpus": "all50",
+      "sources": [
+        {
+          "benchmark": "extension40",
+          "split": "all"
+        }
+      ]
+    },
+    "all50": {
+      "corpus": "all50",
+      "sources": [
+        {
+          "benchmark": "core10",
+          "split": "all"
+        },
+        {
+          "benchmark": "extension40",
+          "split": "all"
+        }
+      ]
+    }
+  },
+  "modes": {
+    "regression": {
+      "query_sets": [
+        "regression_core10"
+      ],
+      "analysis_scope": "core10",
+      "requires_frozen_evaluation": false
+    },
+    "development": {
+      "query_sets": [
+        "regression_core10",
+        "development20",
+        "non_holdout30"
+      ],
+      "analysis_scope": "non_holdout30",
+      "requires_frozen_evaluation": false
+    },
+    "holdout": {
+      "query_sets": [
+        "regression_core10",
+        "holdout20"
+      ],
+      "analysis_scope": "holdout20",
+      "requires_frozen_evaluation": true
+    },
+    "final": {
+      "query_sets": [
+        "regression_core10",
+        "development20",
+        "non_holdout30",
+        "holdout20",
+        "extension40",
+        "all50"
+      ],
+      "analysis_scope": "all50",
+      "requires_frozen_evaluation": true
+    }
+  },
+  "semantic_model": {
+    "model_name": "intfloat/multilingual-e5-small",
+    "revision": "614241f622f53c4eeff9890bdc4f31cfecc418b3",
+    "query_prefix": "query: ",
+    "passage_prefix": "passage: "
+  },
+  "retrieval": {
+    "lexical_analyzer": "char_wb",
+    "lexical_ngram_min": 3,
+    "lexical_ngram_max": 5,
+    "lexical_weight": 0.5,
+    "semantic_weight": 0.5,
+    "silver_radius_s": 60.0,
+    "minimum_overlap_s": 30.0,
+    "video_aggregation": "max_window",
+    "tie_policy": "worst_rank_within_exact_or_1e-12_tie",
+    "text_views": {
+      "raw": {
+        "text_field": "raw_text",
+        "rejection_field": "canonical_rejection_reasons"
+      },
+      "processed": {
+        "text_field": "canonical_retrieval_text",
+        "rejection_field": "canonical_rejection_reasons"
+      }
+    }
+  },
+  "diagnostics": {
+    "repetition_ngram_sizes": [
+      3,
+      4,
+      5
+    ],
+    "repetition_flag_threshold": null,
+    "duplicate_text_field": "raw_text",
+    "near_duplicate_similarity_threshold": 0.9,
+    "include_adjacent_duplicate_pairs": true,
+    "maximum_duplicate_pairs_per_model": 2500,
+    "phrase_min_tokens": 4,
+    "phrase_max_tokens": 8,
+    "minimum_phrase_video_count": 2,
+    "maximum_repeated_phrases_per_model": 500,
+    "maximum_inspection_cases": 20
+  },
+  "regression_gate": {
+    "model_id": "whisper_large_v3",
+    "query_set": "regression_core10",
+    "tolerance": 1e-09,
+    "expected": {
+      "processed": {
+        "story_recall_at_1": 0.8,
+        "story_recall_at_3": 0.9,
+        "story_mrr": 0.8583333333333332,
+        "video_recall_at_1": 0.8,
+        "video_mrr": 0.8699999999999999
+      },
+      "raw": {
+        "story_recall_at_1": 0.8,
+        "story_recall_at_3": 0.9,
+        "story_mrr": 0.8533333333333333,
+        "video_recall_at_1": 0.9,
+        "video_mrr": 0.9166666666666667
+      }
+    }
+  },
+  "reports": {
+    "root": "reports/stage1/full_evaluation",
+    "save_window_scores": false,
+    "top_repeated_phrases_in_bundle": 20,
+    "top_suspicious_windows_in_bundle": 20
+  }
+}

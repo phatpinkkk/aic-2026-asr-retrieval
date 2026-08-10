@@ -1,0 +1,63 @@
+﻿# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+
+# Local environments
+.venv/
+venv/
+env/
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+service-account*.json
+
+# Local-only research artifacts
+reports/
+outputs/
+model_cache/
+cache/
+backups/
+.local/
+
+# Audio and video
+*.wav
+*.mp3
+*.m4a
+*.flac
+*.mp4
+*.avi
+*.mov
+*.mkv
+
+# Model weights
+*.pt
+*.pth
+*.ckpt
+*.nemo
+*.safetensors
+*.onnx
+*.bin
+
+# Generated embeddings and indexes
+*.npy
+*.npz
+*.faiss
+*.index
+
+# Logs and temporary files
+*.log
+*.tmp
