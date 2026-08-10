@@ -14,7 +14,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from postprocess import accent_fold, normalize_for_matching
 
 
-RETRIEVAL_V2_VERSION = "1.1.0"
+RETRIEVAL_V2_VERSION = "1.2.0"
 
 
 @dataclass
@@ -683,6 +683,152 @@ def weighted_score_bundle(
     )
 
 
+
+
+def normalized_weighted_score_bundle(
+    sparse : ScoreBundle,
+    dense : ScoreBundle,
+    sparse_weight : float,
+    dense_weight : float,
+    method_id : str,
+    normalization_policy : str = "per_query_eligible_minmax_v1",
+    constant_tolerance : float = 1e-12,
+) -> ScoreBundle :
+    if (sparse.query_ids != dense.query_ids) :
+        raise ValueError("Normalized fusion query IDs differ")
+
+    if (sparse.window_ids != dense.window_ids) :
+        raise ValueError("Normalized fusion window IDs differ")
+
+    if (sparse.model_id != dense.model_id or sparse.view != dense.view) :
+        raise ValueError("Normalized fusion channel identities differ")
+
+    if (not np.array_equal(sparse.eligibility_mask, dense.eligibility_mask)) :
+        raise ValueError("Normalized fusion eligibility masks differ")
+
+    if (normalization_policy != "per_query_eligible_minmax_v1") :
+        raise ValueError(f"Unsupported normalized fusion policy: {normalization_policy!r}")
+
+    if (constant_tolerance < 0) :
+        raise ValueError("constant_tolerance must be nonnegative")
+
+    sparse_weight = float(sparse_weight)
+    dense_weight  = float(dense_weight)
+
+    if (sparse_weight < 0 or dense_weight < 0) :
+        raise ValueError("Normalized fusion weights must be nonnegative")
+
+    total = sparse_weight + dense_weight
+
+    if (total <= 0) :
+        raise ValueError("Normalized fusion weights must have positive sum")
+
+    sparse_weight /= total
+    dense_weight  /= total
+
+    eligible = sparse.eligibility_mask
+    sparse_norm = np.zeros(sparse.scores.shape, dtype = np.float64)
+    dense_norm  = np.zeros(dense.scores.shape, dtype = np.float64)
+
+    sparse_min = []
+    sparse_max = []
+    sparse_range = []
+    sparse_constant = []
+    dense_min = []
+    dense_max = []
+    dense_range = []
+    dense_constant = []
+
+    if (not eligible.any()) :
+        raise ValueError("Normalized fusion requires at least one eligible window")
+
+    for query_index in range(len(sparse.query_ids)) :
+        for source, target, minimums, maximums, ranges, constants in [
+            (
+                sparse.scores,
+                sparse_norm,
+                sparse_min,
+                sparse_max,
+                sparse_range,
+                sparse_constant,
+            ),
+            (
+                dense.scores,
+                dense_norm,
+                dense_min,
+                dense_max,
+                dense_range,
+                dense_constant,
+            ),
+        ] :
+            values = np.asarray(source[query_index, eligible], dtype = np.float64)
+
+            if (not np.isfinite(values).all()) :
+                raise ValueError("Normalized fusion source contains NaN or infinite scores")
+
+            minimum = float(values.min())
+            maximum = float(values.max())
+            score_range = maximum - minimum
+            constant = score_range <= float(constant_tolerance)
+
+            if (not constant) :
+                target[query_index, eligible] = (values - minimum) / score_range
+
+            minimums.append(minimum)
+            maximums.append(maximum)
+            ranges.append(score_range)
+            constants.append(bool(constant))
+
+    fused = (
+        sparse_weight * sparse_norm
+        + dense_weight * dense_norm
+    ).astype(np.float32, copy = False)
+
+    if (not np.isfinite(fused).all()) :
+        raise ValueError("Normalized fusion produced NaN or infinite scores")
+
+    sparse_coverage = list(
+        sparse.metadata.get("query_coverage", [0.0] * len(sparse.query_ids))
+    )
+    dense_coverage = list(
+        dense.metadata.get("query_coverage", [0.0] * len(dense.query_ids))
+    )
+
+    return ScoreBundle(
+        method_id = method_id,
+        model_id = sparse.model_id,
+        view = sparse.view,
+        query_ids = sparse.query_ids,
+        window_ids = sparse.window_ids,
+        scores = fused,
+        eligibility_mask = sparse.eligibility_mask,
+        component_scores = {
+            "sparse_normalized" : sparse_norm.astype(np.float32, copy = False),
+            "dense_normalized"  : dense_norm.astype(np.float32, copy = False),
+        },
+        metadata = {
+            "fusion_type"          : "normalized_weighted",
+            "normalization_policy" : normalization_policy,
+            "constant_tolerance"   : float(constant_tolerance),
+            "sparse_weight"        : sparse_weight,
+            "dense_weight"         : dense_weight,
+            "sparse_method"        : sparse.method_id,
+            "dense_method"         : dense.method_id,
+            "ineligible_score"     : 0.0,
+            "sparse_min"           : sparse_min,
+            "sparse_max"           : sparse_max,
+            "sparse_range"         : sparse_range,
+            "sparse_constant"      : sparse_constant,
+            "dense_min"            : dense_min,
+            "dense_max"            : dense_max,
+            "dense_range"          : dense_range,
+            "dense_constant"       : dense_constant,
+            "query_coverage"       : [
+                max(left, right)
+                for left, right in zip(sparse_coverage, dense_coverage)
+            ],
+        },
+    )
 
 def score_dense_embeddings(
     query_ids : Sequence[str],

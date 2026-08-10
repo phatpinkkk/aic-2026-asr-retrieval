@@ -5,13 +5,14 @@ from __future__ import annotations
 
 import math
 from collections import Counter
+from dataclasses import dataclass
 from typing import Any, Sequence
 
 import numpy as np
 import pandas as pd
 
 
-RETRIEVAL_V2_EVALUATION_VERSION = "1.0.0"
+RETRIEVAL_V2_EVALUATION_VERSION = "1.2.0"
 SUCCESS_STATUSES = {"ok", "success"}
 
 
@@ -845,3 +846,1507 @@ def compare_regression_fixture(
         "aggregate_checks"                : metric_checks,
         "errors"                          : errors,
     }
+
+
+# -----------------------------------------------------------------------------
+# Stage 3 video and temporal evidence aggregation
+# -----------------------------------------------------------------------------
+
+
+@dataclass(frozen = True)
+class VideoAggregationSpec :
+    method_id : str
+    kind : str
+    k : int | None = None
+    span : int | None = None
+
+    def __post_init__(self) -> None :
+        if (self.kind not in {"max", "topk_mean", "contiguous_mean"}) :
+            raise ValueError(f"Unsupported video aggregation kind: {self.kind!r}")
+
+        if (self.kind == "max" and (self.k is not None or self.span is not None)) :
+            raise ValueError("max aggregation must not define k/span")
+
+        if (self.kind == "topk_mean") :
+            if (self.k is None or int(self.k) < 1) :
+                raise ValueError("topk_mean requires k >= 1")
+            if (self.span is not None) :
+                raise ValueError("topk_mean must not define span")
+
+        if (self.kind == "contiguous_mean") :
+            if (self.span is None or int(self.span) < 1) :
+                raise ValueError("contiguous_mean requires span >= 1")
+            if (self.k is not None) :
+                raise ValueError("contiguous_mean must not define k")
+
+
+def build_video_window_groups(
+    windows : pd.DataFrame,
+) -> tuple[list[str], dict[str, np.ndarray]] :
+    required = {"window_id", "video_id", "start_s", "end_s"}
+    missing = sorted(required - set(windows.columns))
+
+    if (missing) :
+        raise KeyError(f"Windows are missing Stage 3 fields: {missing}")
+
+    if (windows["window_id"].astype(str).duplicated().any()) :
+        raise ValueError("Stage 3 physical window axis contains duplicate window IDs")
+
+    starts = pd.to_numeric(windows["start_s"], errors = "coerce").to_numpy(dtype = float)
+    ends   = pd.to_numeric(windows["end_s"], errors = "coerce").to_numpy(dtype = float)
+
+    if (not np.isfinite(starts).all() or not np.isfinite(ends).all()) :
+        raise ValueError("Stage 3 physical window axis contains invalid timestamps")
+
+    if ((ends < starts).any()) :
+        raise ValueError("Stage 3 physical window axis contains end_s < start_s")
+
+    groups = {}
+    working = windows.reset_index(drop = True).copy()
+    working["_physical_index"] = np.arange(len(working), dtype = np.int64)
+    working["_window_id"] = working["window_id"].astype(str)
+    working["_video_id"]  = working["video_id"].astype(str)
+    working["_start_s"]   = pd.to_numeric(working["start_s"], errors = "coerce")
+
+    for video_id, group in working.groupby("_video_id", sort = True) :
+        ordered = group.sort_values(
+            ["_start_s", "_window_id"],
+            ascending = [True, True],
+            kind = "mergesort",
+        )
+        indices = ordered["_physical_index"].to_numpy(dtype = np.int64)
+
+        if (len(indices) == 0) :
+            raise ValueError(f"Video {video_id!r} has no physical windows")
+
+        groups[str(video_id)] = indices
+
+    return sorted(groups), groups
+
+
+def _topk_support_indices(
+    scores : np.ndarray,
+    windows : pd.DataFrame,
+    indices : np.ndarray,
+    k : int,
+) -> list[int] :
+    count = min(int(k), len(indices))
+
+    if (count <= 0) :
+        return []
+
+    frame = pd.DataFrame({
+        "_index"    : indices,
+        "score"     : np.asarray(scores, dtype = float)[indices],
+        "start_s"   : pd.to_numeric(windows.iloc[indices]["start_s"], errors = "coerce").to_numpy(dtype = float),
+        "window_id" : windows.iloc[indices]["window_id"].astype(str).to_numpy(),
+    }).sort_values(
+        ["score", "start_s", "window_id"],
+        ascending = [False, True, True],
+        kind = "mergesort",
+    )
+
+    return frame.head(count)["_index"].astype(int).tolist()
+
+
+def _contiguous_support_indices(
+    scores : np.ndarray,
+    windows : pd.DataFrame,
+    indices : np.ndarray,
+    span : int,
+) -> list[int] :
+    use_span = min(int(span), len(indices))
+
+    if (use_span <= 0) :
+        return []
+
+    values = np.asarray(scores, dtype = float)
+    candidates = []
+
+    for start in range(0, len(indices) - use_span + 1) :
+        support = indices[start : start + use_span]
+        score = float(values[support].mean(dtype = np.float64))
+        first = int(support[0])
+        candidates.append((
+            -score,
+            float(windows.iloc[first]["start_s"]),
+            str(windows.iloc[first]["window_id"]),
+            start,
+            support,
+        ))
+
+    candidates.sort(key = lambda item : item[:4])
+    return candidates[0][4].astype(int).tolist()
+
+
+def aggregate_video_scores_for_query(
+    window_scores : np.ndarray,
+    windows : pd.DataFrame,
+    specification : VideoAggregationSpec,
+    video_ids : Sequence[str] | None = None,
+    groups : dict[str, np.ndarray] | None = None,
+) -> tuple[np.ndarray, list[list[int]]] :
+    values = np.asarray(window_scores, dtype = np.float64)
+
+    if (values.ndim != 1 or values.shape[0] != len(windows)) :
+        raise ValueError("Stage 3 query scores must match the physical window axis")
+
+    if (not np.isfinite(values).all()) :
+        raise ValueError("Stage 3 query scores contain NaN or infinite values")
+
+    if (groups is None or video_ids is None) :
+        resolved_video_ids, resolved_groups = build_video_window_groups(windows)
+        video_ids = resolved_video_ids
+        groups = resolved_groups
+    else :
+        video_ids = [str(value) for value in video_ids]
+
+    video_scores = np.empty(len(video_ids), dtype = np.float64)
+    support_rows = []
+
+    for video_index, video_id in enumerate(video_ids) :
+        indices = np.asarray(groups[str(video_id)], dtype = np.int64)
+
+        if (specification.kind == "max") :
+            support = _topk_support_indices(values, windows, indices, 1)
+        elif (specification.kind == "topk_mean") :
+            support = _topk_support_indices(values, windows, indices, int(specification.k))
+        else :
+            support = _contiguous_support_indices(values, windows, indices, int(specification.span))
+
+        if (not support) :
+            raise ValueError(f"Video {video_id!r} has no support windows")
+
+        video_scores[video_index] = float(values[support].mean(dtype = np.float64))
+        support_rows.append(support)
+
+    return video_scores, support_rows
+
+
+def aggregate_video_score_matrix(
+    window_scores : np.ndarray,
+    windows : pd.DataFrame,
+    specification : VideoAggregationSpec,
+) -> tuple[np.ndarray, list[str], list[list[list[int]]]] :
+    values = np.asarray(window_scores)
+
+    if (values.ndim != 2 or values.shape[1] != len(windows)) :
+        raise ValueError("Stage 3 score matrix must be queries x physical windows")
+
+    if (not np.isfinite(values).all()) :
+        raise ValueError("Stage 3 score matrix contains NaN or infinite values")
+
+    video_ids, groups = build_video_window_groups(windows)
+    video_scores = np.empty((values.shape[0], len(video_ids)), dtype = np.float64)
+    supports = []
+
+    for query_index in range(values.shape[0]) :
+        row_scores, row_supports = aggregate_video_scores_for_query(
+            values[query_index],
+            windows,
+            specification,
+            video_ids = video_ids,
+            groups = groups,
+        )
+        video_scores[query_index] = row_scores
+        supports.append(row_supports)
+
+    return video_scores, video_ids, supports
+
+
+def peak_support_statistics(
+    window_scores : np.ndarray,
+    windows : pd.DataFrame,
+    indices : Sequence[int],
+) -> dict[str, Any] :
+    physical = np.asarray(indices, dtype = np.int64)
+
+    if (len(physical) == 0) :
+        raise ValueError("Peak statistics require at least one physical window")
+
+    values = np.asarray(window_scores, dtype = np.float64)
+    ordered = _topk_support_indices(values, windows, physical, min(3, len(physical)))
+    padded = ordered + [None] * (3 - len(ordered))
+    peak = int(padded[0])
+
+    local_position = int(np.flatnonzero(physical == peak)[0])
+    left_index  = int(physical[local_position - 1]) if local_position > 0 else None
+    right_index = int(physical[local_position + 1]) if local_position + 1 < len(physical) else None
+
+    neighbor_scores = [
+        float(values[index])
+        for index in [left_index, right_index]
+        if index is not None
+    ]
+    strongest_neighbor = max(neighbor_scores) if neighbor_scores else None
+    isolation_gap = (
+        float(values[peak]) - strongest_neighbor
+        if strongest_neighbor is not None
+        else None
+    )
+
+    return {
+        "window_count"             : int(len(physical)),
+        "peak_score"               : float(values[peak]),
+        "second_score"             : float(values[padded[1]]) if padded[1] is not None else None,
+        "third_score"              : float(values[padded[2]]) if padded[2] is not None else None,
+        "peak_window_id"           : str(windows.iloc[peak]["window_id"]),
+        "peak_start_s"             : float(windows.iloc[peak]["start_s"]),
+        "peak_end_s"               : float(windows.iloc[peak]["end_s"]),
+        "left_neighbor_score"      : float(values[left_index]) if left_index is not None else None,
+        "right_neighbor_score"     : float(values[right_index]) if right_index is not None else None,
+        "strongest_neighbor_score" : strongest_neighbor,
+        "isolation_gap"            : isolation_gap,
+    }
+
+
+def evaluate_stage3_video_scores(
+    video_scores : np.ndarray,
+    video_ids : Sequence[str],
+    supports : list[list[list[int]]],
+    window_scores : np.ndarray,
+    queries : pd.DataFrame,
+    windows : pd.DataFrame,
+    source_query_results : pd.DataFrame,
+    source_id : str,
+    source_method_id : str,
+    model_id : str,
+    view : str,
+    aggregation_id : str,
+    query_set : str,
+    corpus_id : str,
+    tie_tolerance : float = 1e-12,
+) -> tuple[pd.DataFrame, pd.DataFrame] :
+    scores = np.asarray(video_scores, dtype = np.float64)
+    source_windows = np.asarray(window_scores)
+    video_ids = [str(value) for value in video_ids]
+
+    if (scores.shape != (len(queries), len(video_ids))) :
+        raise ValueError("Stage 3 video score matrix shape mismatch")
+
+    if (source_windows.shape != (len(queries), len(windows))) :
+        raise ValueError("Stage 3 source window score matrix shape mismatch")
+
+    if (not np.isfinite(scores).all() or not np.isfinite(source_windows).all()) :
+        raise ValueError("Stage 3 scores contain NaN or infinite values")
+
+    if (len(supports) != len(queries)) :
+        raise ValueError("Stage 3 support metadata query count mismatch")
+
+    video_id_to_index = {video_id : index for index, video_id in enumerate(video_ids)}
+
+    if (len(video_id_to_index) != len(video_ids)) :
+        raise ValueError("Stage 3 video axis contains duplicates")
+
+    physical_video_ids = windows["video_id"].astype(str).to_numpy()
+    _, groups = build_video_window_groups(windows)
+    source_lookup = source_query_results.copy()
+
+    required_source = {
+        "query_id", "first_relevant_rank", "story_recall_at_1", "story_recall_at_3",
+        "story_recall_at_5", "story_recall_at_10", "story_rr", "best_relevant_score",
+        "best_irrelevant_score", "story_score_margin", "top_story_window_id",
+        "top_story_start_s", "top_story_end_s", "top_story_score", "eligible_window_count",
+        "positive_window_count", "positive_window_fraction", "positive_video_count",
+        "correct_video_positive_windows", "query_coverage", "zero_evidence",
+    }
+    missing = sorted(required_source - set(source_lookup.columns))
+
+    if (missing) :
+        raise KeyError(f"Source query results are missing Stage 3 story fields: {missing}")
+
+    source_lookup["query_id"] = source_lookup["query_id"].astype(str)
+
+    if (source_lookup["query_id"].duplicated().any()) :
+        raise ValueError("Stage 3 source query results contain duplicate query IDs")
+
+    source_lookup = source_lookup.set_index("query_id", drop = False)
+    query_rows = []
+    diagnostics = []
+
+    for query_index, (_, query) in enumerate(queries.reset_index(drop = True).iterrows()) :
+        query_id = str(query["query_id"])
+
+        if (query_id not in source_lookup.index) :
+            raise ValueError(f"Stage 3 source query result missing query {query_id!r}")
+
+        source = source_lookup.loc[query_id]
+        row_scores = scores[query_index]
+        metric_ranks = worst_tied_ranks_array(row_scores, tolerance = tie_tolerance)
+        display_order = sorted(
+            range(len(video_ids)),
+            key = lambda index : (-row_scores[index], video_ids[index]),
+        )
+
+        correct_video = str(query["video_id"])
+
+        if (correct_video not in video_id_to_index) :
+            raise ValueError(f"Correct video {correct_video!r} is absent from the Stage 3 video axis")
+
+        correct_index = video_id_to_index[correct_video]
+        video_rank = int(metric_ranks[correct_index])
+        wrong_indices = [index for index in display_order if index != correct_index]
+        best_wrong_index = wrong_indices[0] if wrong_indices else None
+        correct_score = float(row_scores[correct_index])
+        best_wrong_score = float(row_scores[best_wrong_index]) if best_wrong_index is not None else None
+        margin = correct_score - best_wrong_score if best_wrong_score is not None else None
+        top_index = display_order[0]
+
+        query_rows.append({
+            "query_set"                  : query_set,
+            "corpus_id"                  : corpus_id,
+            "source_id"                  : source_id,
+            "source_method_id"           : source_method_id,
+            "method_id"                  : aggregation_id,
+            "aggregation_id"             : aggregation_id,
+            "model_id"                   : model_id,
+            "view"                       : view,
+            "query_id"                   : query_id,
+            "query_text"                 : query["query_text"],
+            "query_category"             : query.get("query_category", "other"),
+            "task_type"                  : query.get("task_type", "KIS"),
+            "difficulty"                 : query.get("difficulty", "unknown"),
+            "evaluation_split"           : query.get("evaluation_split", "unspecified"),
+            "answer_text"                : query.get("answer_text"),
+            "correct_video"              : correct_video,
+            "frame_id"                   : query.get("frame_id"),
+            "answer_time_s"              : query["answer_time_s"],
+            "first_relevant_rank"        : source["first_relevant_rank"],
+            "story_recall_at_1"          : int(source["story_recall_at_1"]),
+            "story_recall_at_3"          : int(source["story_recall_at_3"]),
+            "story_recall_at_5"          : int(source["story_recall_at_5"]),
+            "story_recall_at_10"         : int(source["story_recall_at_10"]),
+            "story_rr"                   : float(source["story_rr"]),
+            "best_relevant_score"        : source["best_relevant_score"],
+            "best_irrelevant_score"      : source["best_irrelevant_score"],
+            "story_score_margin"         : source["story_score_margin"],
+            "video_rank"                 : video_rank,
+            "video_recall_at_1"          : int(video_rank <= 1),
+            "video_recall_at_3"          : int(video_rank <= 3),
+            "video_recall_at_5"          : int(video_rank <= 5),
+            "video_recall_at_10"         : int(video_rank <= 10),
+            "video_recall_at_20"         : int(video_rank <= 20),
+            "video_rr"                   : 1.0 / video_rank,
+            "correct_video_score"        : correct_score,
+            "best_wrong_video_id"        : video_ids[best_wrong_index] if best_wrong_index is not None else None,
+            "best_wrong_video_score"     : best_wrong_score,
+            "video_score_margin"         : margin,
+            "top_story_window_id"        : source["top_story_window_id"],
+            "top_story_start_s"          : source["top_story_start_s"],
+            "top_story_end_s"            : source["top_story_end_s"],
+            "top_story_score"            : source["top_story_score"],
+            "top_video_id"               : video_ids[top_index],
+            "top_video_score"            : float(row_scores[top_index]),
+            "physical_window_count"      : len(windows),
+            "eligible_window_count"      : int(source["eligible_window_count"]),
+            "positive_window_count"      : int(source["positive_window_count"]),
+            "positive_window_fraction"   : float(source["positive_window_fraction"]),
+            "positive_video_count"       : int(source["positive_video_count"]),
+            "correct_video_positive_windows" : int(source["correct_video_positive_windows"]),
+            "query_coverage"             : source["query_coverage"],
+            "zero_evidence"              : bool(source["zero_evidence"]),
+        })
+
+        correct_physical = groups[correct_video]
+        correct_stats = peak_support_statistics(
+            source_windows[query_index],
+            windows,
+            correct_physical,
+        )
+        wrong_video = video_ids[best_wrong_index] if best_wrong_index is not None else None
+        wrong_stats = (
+            peak_support_statistics(source_windows[query_index], windows, groups[wrong_video])
+            if wrong_video is not None
+            else {}
+        )
+
+        diagnostics.append({
+            "query_set"                        : query_set,
+            "corpus_id"                        : corpus_id,
+            "source_id"                        : source_id,
+            "source_method_id"                 : source_method_id,
+            "aggregation_id"                   : aggregation_id,
+            "model_id"                         : model_id,
+            "view"                             : view,
+            "query_id"                         : query_id,
+            "correct_video_id"                 : correct_video,
+            "correct_video_rank"               : video_rank,
+            "correct_video_window_count"       : correct_stats["window_count"],
+            "correct_video_peak_score"         : correct_stats["peak_score"],
+            "correct_video_second_score"       : correct_stats["second_score"],
+            "correct_video_third_score"        : correct_stats["third_score"],
+            "correct_video_peak_window_id"     : correct_stats["peak_window_id"],
+            "correct_video_peak_start_s"       : correct_stats["peak_start_s"],
+            "correct_video_peak_end_s"         : correct_stats["peak_end_s"],
+            "correct_video_left_neighbor_score": correct_stats["left_neighbor_score"],
+            "correct_video_right_neighbor_score": correct_stats["right_neighbor_score"],
+            "correct_video_isolation_gap"      : correct_stats["isolation_gap"],
+            "correct_video_support_window_ids" : "|".join(
+                str(windows.iloc[index]["window_id"])
+                for index in supports[query_index][correct_index]
+            ),
+            "best_wrong_video_id"              : wrong_video,
+            "best_wrong_video_window_count"    : wrong_stats.get("window_count"),
+            "best_wrong_video_peak_score"      : wrong_stats.get("peak_score"),
+            "best_wrong_video_second_score"    : wrong_stats.get("second_score"),
+            "best_wrong_video_third_score"     : wrong_stats.get("third_score"),
+            "best_wrong_video_peak_window_id"  : wrong_stats.get("peak_window_id"),
+            "best_wrong_video_peak_start_s"    : wrong_stats.get("peak_start_s"),
+            "best_wrong_video_peak_end_s"      : wrong_stats.get("peak_end_s"),
+            "best_wrong_video_left_neighbor_score" : wrong_stats.get("left_neighbor_score"),
+            "best_wrong_video_right_neighbor_score": wrong_stats.get("right_neighbor_score"),
+            "best_wrong_video_isolation_gap"   : wrong_stats.get("isolation_gap"),
+            "best_wrong_video_support_window_ids" : (
+                "|".join(
+                    str(windows.iloc[index]["window_id"])
+                    for index in supports[query_index][best_wrong_index]
+                )
+                if best_wrong_index is not None
+                else None
+            ),
+            "correct_video_aggregated_score"   : correct_score,
+            "best_wrong_video_aggregated_score": best_wrong_score,
+            "margin"                           : margin,
+        })
+
+    return pd.DataFrame(query_rows), pd.DataFrame(diagnostics)
+
+
+def summarize_stage3_metrics(query_results : pd.DataFrame) -> pd.DataFrame :
+    if (query_results.empty) :
+        return pd.DataFrame()
+
+    group_columns = [
+        "query_set", "corpus_id", "source_id", "source_method_id",
+        "aggregation_id", "model_id", "view",
+    ]
+    rows = []
+
+    for keys, group in query_results.groupby(group_columns, dropna = False, sort = True) :
+        row = dict(zip(group_columns, keys))
+        first_ranks = pd.to_numeric(group["first_relevant_rank"], errors = "coerce")
+        video_ranks = pd.to_numeric(group["video_rank"], errors = "coerce")
+        row.update({
+            "query_count"               : len(group),
+            "story_recall_at_1"         : float(group["story_recall_at_1"].mean()),
+            "story_recall_at_3"         : float(group["story_recall_at_3"].mean()),
+            "story_recall_at_5"         : float(group["story_recall_at_5"].mean()),
+            "story_recall_at_10"        : float(group["story_recall_at_10"].mean()),
+            "story_mrr"                 : float(group["story_rr"].mean()),
+            "story_first_rank_mean"     : float(first_ranks.mean()) if first_ranks.notna().any() else None,
+            "story_first_rank_median"   : float(first_ranks.median()) if first_ranks.notna().any() else None,
+            "video_recall_at_1"         : float(group["video_recall_at_1"].mean()),
+            "video_recall_at_3"         : float(group["video_recall_at_3"].mean()),
+            "video_recall_at_5"         : float(group["video_recall_at_5"].mean()),
+            "video_recall_at_10"        : float(group["video_recall_at_10"].mean()),
+            "video_recall_at_20"        : float(group["video_recall_at_20"].mean()),
+            "video_mrr"                 : float(group["video_rr"].mean()),
+            "video_rank_mean"           : float(video_ranks.mean()) if video_ranks.notna().any() else None,
+            "video_rank_median"         : float(video_ranks.median()) if video_ranks.notna().any() else None,
+            "story_score_margin_mean"   : float(pd.to_numeric(group["story_score_margin"], errors = "coerce").mean()),
+            "video_score_margin_mean"   : float(pd.to_numeric(group["video_score_margin"], errors = "coerce").mean()),
+            "zero_evidence_query_count" : int(group["zero_evidence"].sum()),
+            "query_coverage_mean"       : float(pd.to_numeric(group["query_coverage"], errors = "coerce").mean()),
+        })
+        rows.append(row)
+
+    return pd.DataFrame(rows)
+
+
+def compare_stage3_aggregations(
+    query_results : pd.DataFrame,
+    reference_aggregation : str = "P0_max",
+) -> pd.DataFrame :
+    if (query_results.empty) :
+        return pd.DataFrame()
+
+    key_columns = ["source_id", "model_id", "view", "query_id"]
+    reference = query_results[
+        query_results["aggregation_id"] == reference_aggregation
+    ][key_columns + ["video_rank", "video_rr", "top_video_id"]].rename(columns={
+        "video_rank"   : "reference_video_rank",
+        "video_rr"     : "reference_video_rr",
+        "top_video_id" : "reference_top_video_id",
+    })
+
+    rows = []
+
+    for aggregation_id in sorted(set(query_results["aggregation_id"]) - {reference_aggregation}) :
+        candidate = query_results[
+            query_results["aggregation_id"] == aggregation_id
+        ].merge(reference, on = key_columns, how = "inner")
+
+        for _, item in candidate.iterrows() :
+            rows.append({
+                "source_id"                 : item["source_id"],
+                "source_method_id"          : item["source_method_id"],
+                "aggregation_id"            : aggregation_id,
+                "reference_aggregation_id"  : reference_aggregation,
+                "model_id"                  : item["model_id"],
+                "view"                      : item["view"],
+                "query_id"                  : item["query_id"],
+                "reference_video_rank"      : int(item["reference_video_rank"]),
+                "candidate_video_rank"      : int(item["video_rank"]),
+                "reference_video_rr"        : float(item["reference_video_rr"]),
+                "candidate_video_rr"        : float(item["video_rr"]),
+                "video_rank_delta"          : int(item["video_rank"] - item["reference_video_rank"]),
+                "video_rr_delta"            : float(item["video_rr"] - item["reference_video_rr"]),
+                "outcome"                   : rank_relation(item["video_rank"], item["reference_video_rank"]),
+                "top_video_changed"         : bool(item["top_video_id"] != item["reference_top_video_id"]),
+            })
+
+    return pd.DataFrame(rows)
+
+
+def summarize_stage3_aggregations(
+    query_results : pd.DataFrame,
+    source_labels : dict[str, str],
+    reference_aggregation : str = "P0_max",
+    bootstrap_samples : int = 10000,
+    confidence : float = 0.90,
+    seed : int = 20260811,
+) -> pd.DataFrame :
+    if (query_results.empty) :
+        return pd.DataFrame()
+
+    per_source_query = (
+        query_results.groupby(
+            ["source_id", "aggregation_id", "query_id"],
+            as_index = False,
+        )
+        .agg(video_rr = ("video_rr", "mean"))
+    )
+    aggregations = sorted(query_results["aggregation_id"].unique().tolist())
+    rows = []
+
+    for aggregation_id in aggregations :
+        row = {"aggregation_id" : aggregation_id}
+
+        for source_id, label in source_labels.items() :
+            candidate = per_source_query[
+                (per_source_query["source_id"] == source_id)
+                & (per_source_query["aggregation_id"] == aggregation_id)
+            ][["query_id", "video_rr"]]
+            reference = per_source_query[
+                (per_source_query["source_id"] == source_id)
+                & (per_source_query["aggregation_id"] == reference_aggregation)
+            ][["query_id", "video_rr"]].rename(columns={"video_rr" : "reference_rr"})
+            merged = candidate.merge(reference, on = "query_id", how = "inner")
+            delta = (merged["video_rr"] - merged["reference_rr"]).to_numpy(dtype = float)
+            low, high = _bootstrap_interval(delta, confidence, bootstrap_samples, seed)
+
+            row.update({
+                f"{label}_video_rr_mean"              : float(merged["video_rr"].mean()) if len(merged) else None,
+                f"{label}_delta_mean_vs_P0"           : float(delta.mean()) if len(delta) else None,
+                f"{label}_delta_median_vs_P0"         : float(np.median(delta)) if len(delta) else None,
+                f"{label}_better"                     : int((delta > 0).sum()),
+                f"{label}_tie"                        : int((delta == 0).sum()),
+                f"{label}_worse"                      : int((delta < 0).sum()),
+                f"{label}_bootstrap_90_low"           : low,
+                f"{label}_bootstrap_90_high"          : high,
+            })
+
+        cross = (
+            per_source_query[
+                per_source_query["aggregation_id"] == aggregation_id
+            ]
+            .groupby("query_id", as_index = False)
+            .agg(video_rr = ("video_rr", "mean"))
+        )
+        cross_reference = (
+            per_source_query[
+                per_source_query["aggregation_id"] == reference_aggregation
+            ]
+            .groupby("query_id", as_index = False)
+            .agg(reference_rr = ("video_rr", "mean"))
+        )
+        cross_merged = cross.merge(cross_reference, on = "query_id", how = "inner")
+        cross_delta = (cross_merged["video_rr"] - cross_merged["reference_rr"]).to_numpy(dtype = float)
+        low, high = _bootstrap_interval(cross_delta, confidence, bootstrap_samples, seed)
+        row.update({
+            "cross_source_video_rr_mean"      : float(cross_merged["video_rr"].mean()) if len(cross_merged) else None,
+            "cross_source_delta_mean_vs_P0"   : float(cross_delta.mean()) if len(cross_delta) else None,
+            "cross_source_delta_median_vs_P0" : float(np.median(cross_delta)) if len(cross_delta) else None,
+            "cross_source_better"             : int((cross_delta > 0).sum()),
+            "cross_source_tie"                : int((cross_delta == 0).sum()),
+            "cross_source_worse"              : int((cross_delta < 0).sum()),
+            "cross_source_bootstrap_90_low"   : low,
+            "cross_source_bootstrap_90_high"  : high,
+        })
+        rows.append(row)
+
+    return pd.DataFrame(rows)
+
+
+def validate_stage3_p0_reproduction(
+    stage3_query_results : pd.DataFrame,
+    source_query_results : dict[str, pd.DataFrame],
+    tolerance : float = 1e-12,
+) -> dict[str, Any] :
+    errors = []
+    checks = []
+    exact_fields = ["video_rank", "top_video_id"]
+    score_fields = [
+        "correct_video_score",
+        "best_wrong_video_score",
+        "video_score_margin",
+    ]
+
+    p0 = stage3_query_results[stage3_query_results["aggregation_id"] == "P0_max"]
+
+    for source_id, reference in source_query_results.items() :
+        candidate = p0[p0["source_id"] == source_id]
+        keys = ["model_id", "view", "query_id"]
+        merged = candidate.merge(
+            reference[keys + exact_fields + score_fields],
+            on = keys,
+            how = "outer",
+            suffixes = ("", "_reference"),
+            indicator = True,
+        )
+
+        for _, item in merged.iterrows() :
+            key = {field : item.get(field) for field in keys}
+            passed = item["_merge"] == "both"
+            field_checks = []
+
+            if (not passed) :
+                errors.append(f"{source_id}: missing P0/source row {key}")
+                checks.append({"source_id" : source_id, "key" : key, "passed" : False})
+                continue
+
+            for field in exact_fields :
+                same = _fixture_exact_equal(item[field], item[f"{field}_reference"])
+                field_checks.append({"field" : field, "passed" : same})
+
+                if (not same) :
+                    passed = False
+                    errors.append(f"{source_id}/{key}/{field}: P0 reproduction mismatch")
+
+            for field in score_fields :
+                difference = _fixture_numeric_difference(
+                    item[field],
+                    item[f"{field}_reference"],
+                )
+                same = difference <= float(tolerance)
+                field_checks.append({
+                    "field" : field,
+                    "difference" : difference,
+                    "tolerance" : float(tolerance),
+                    "passed" : same,
+                })
+
+                if (not same) :
+                    passed = False
+                    errors.append(
+                        f"{source_id}/{key}/{field}: "
+                        f"difference={difference:.9g} > {float(tolerance):.9g}"
+                    )
+
+            checks.append({
+                "source_id" : source_id,
+                "key" : key,
+                "passed" : passed,
+                "fields" : field_checks,
+            })
+
+    return {
+        "passed" : not errors,
+        "check_count" : len(checks),
+        "failed_count" : sum(not item["passed"] for item in checks),
+        "errors" : errors,
+        "checks" : checks,
+    }
+
+
+def validate_stage3_story_invariance(
+    query_results : pd.DataFrame,
+) -> dict[str, Any] :
+    errors = []
+    checked = 0
+    story_fields = [
+        "first_relevant_rank",
+        "story_recall_at_1",
+        "story_recall_at_3",
+        "story_recall_at_5",
+        "story_recall_at_10",
+        "story_rr",
+        "top_story_window_id",
+    ]
+
+    group_fields = ["source_id", "model_id", "view", "query_id"]
+
+    for keys, group in query_results.groupby(group_fields, sort = True, dropna = False) :
+        reference = group.sort_values("aggregation_id", kind = "mergesort").iloc[0]
+
+        for _, item in group.iterrows() :
+            checked += 1
+
+            for field in story_fields :
+                if (not _fixture_exact_equal(item[field], reference[field])) :
+                    errors.append(
+                        f"Story invariance mismatch {dict(zip(group_fields, keys))}/{field}"
+                    )
+
+    return {
+        "passed" : not errors,
+        "check_count" : checked,
+        "errors" : errors,
+    }
+# -----------------------------------------------------------------------------
+# Stage 4 sparse + dense hybrid retrieval
+# -----------------------------------------------------------------------------
+
+
+def _stage4_reference_frame(
+    query_results : pd.DataFrame,
+    method_id : str,
+) -> pd.DataFrame :
+    columns = [
+        "model_id",
+        "view",
+        "query_id",
+        "first_relevant_rank",
+        "story_rr",
+        "video_rank",
+        "video_rr",
+        "top_story_window_id",
+        "top_video_id",
+        "correct_video_score",
+        "video_score_margin",
+    ]
+    frame = query_results[query_results["method_id"] == method_id][columns].copy()
+
+    if (frame.empty) :
+        raise ValueError(f"Stage 4 reference method is missing: {method_id}")
+
+    keys = ["model_id", "view", "query_id"]
+
+    if (frame.duplicated(keys).any()) :
+        raise ValueError(f"Stage 4 reference method contains duplicate rows: {method_id}")
+
+    return frame
+
+
+def compare_stage4_methods(
+    query_results : pd.DataFrame,
+    sparse_reference : str = "H0_sparse_only",
+    dense_reference : str = "H1_dense_only",
+    minimum_rank_drop : int = 10,
+    result_rank_above : int = 10,
+    flag_reference_rank_1_candidate_above : int = 20,
+) -> pd.DataFrame :
+    if (query_results.empty) :
+        return pd.DataFrame()
+
+    keys = ["model_id", "view", "query_id"]
+    references = {
+        sparse_reference : _stage4_reference_frame(query_results, sparse_reference),
+        dense_reference  : _stage4_reference_frame(query_results, dense_reference),
+    }
+    rows = []
+
+    for reference_method, reference in references.items() :
+        renamed = reference.rename(columns={
+            column : f"reference_{column}"
+            for column in reference.columns
+            if column not in keys
+        })
+
+        for method_id in sorted(query_results["method_id"].astype(str).unique()) :
+            if (method_id == reference_method) :
+                continue
+
+            candidate = query_results[
+                query_results["method_id"].astype(str) == method_id
+            ].copy()
+            merged = candidate.merge(renamed, on = keys, how = "inner")
+
+            for _, item in merged.iterrows() :
+                video_rank_delta = int(
+                    item["video_rank"] - item["reference_video_rank"]
+                )
+                story_rank = (
+                    int(item["first_relevant_rank"])
+                    if pd.notna(item["first_relevant_rank"])
+                    else None
+                )
+                reference_story_rank = (
+                    int(item["reference_first_relevant_rank"])
+                    if pd.notna(item["reference_first_relevant_rank"])
+                    else None
+                )
+
+                rows.append({
+                    "reference_method" : reference_method,
+                    "candidate_method" : method_id,
+                    "model_id" : item["model_id"],
+                    "view" : item["view"],
+                    "query_id" : item["query_id"],
+                    "reference_story_rank" : reference_story_rank,
+                    "candidate_story_rank" : story_rank,
+                    "story_relation" : rank_relation(
+                        item["first_relevant_rank"],
+                        item["reference_first_relevant_rank"],
+                    ),
+                    "story_rr_delta" : float(
+                        item["story_rr"] - item["reference_story_rr"]
+                    ),
+                    "reference_video_rank" : int(item["reference_video_rank"]),
+                    "candidate_video_rank" : int(item["video_rank"]),
+                    "video_rank_delta" : video_rank_delta,
+                    "video_relation" : rank_relation(
+                        item["video_rank"],
+                        item["reference_video_rank"],
+                    ),
+                    "video_rr_delta" : float(
+                        item["video_rr"] - item["reference_video_rr"]
+                    ),
+                    "reference_top_story_window_id" : item["reference_top_story_window_id"],
+                    "candidate_top_story_window_id" : item["top_story_window_id"],
+                    "top_story_changed" : bool(
+                        item["top_story_window_id"]
+                        != item["reference_top_story_window_id"]
+                    ),
+                    "reference_top_video_id" : item["reference_top_video_id"],
+                    "candidate_top_video_id" : item["top_video_id"],
+                    "top_video_changed" : bool(
+                        item["top_video_id"] != item["reference_top_video_id"]
+                    ),
+                    "large_regression" : bool(
+                        video_rank_delta >= int(minimum_rank_drop)
+                        and int(item["video_rank"]) > int(result_rank_above)
+                    ),
+                    "top1_catastrophe" : bool(
+                        int(item["reference_video_rank"]) == 1
+                        and int(item["video_rank"])
+                        > int(flag_reference_rank_1_candidate_above)
+                    ),
+                })
+
+    return pd.DataFrame(rows)
+
+
+def summarize_stage4_methods(
+    query_results : pd.DataFrame,
+    sparse_reference : str = "H0_sparse_only",
+    dense_reference : str = "H1_dense_only",
+    bootstrap_samples : int = 10000,
+    confidence : float = 0.90,
+    seed : int = 20260811,
+) -> pd.DataFrame :
+    if (query_results.empty) :
+        return pd.DataFrame()
+
+    per_query = (
+        query_results.groupby(["method_id", "query_id"], as_index = False)
+        .agg(
+            video_rr = ("video_rr", "mean"),
+            story_rr = ("story_rr", "mean"),
+            video_recall_at_1 = ("video_recall_at_1", "mean"),
+            video_recall_at_5 = ("video_recall_at_5", "mean"),
+            video_recall_at_10 = ("video_recall_at_10", "mean"),
+            story_recall_at_1 = ("story_recall_at_1", "mean"),
+        )
+    )
+
+    references = {}
+
+    for method_id, prefix in [
+        (sparse_reference, "sparse"),
+        (dense_reference, "dense"),
+    ] :
+        frame = per_query[per_query["method_id"] == method_id][
+            ["query_id", "video_rr", "story_rr"]
+        ].rename(columns={
+            "video_rr" : f"{prefix}_reference_video_rr",
+            "story_rr" : f"{prefix}_reference_story_rr",
+        })
+
+        if (frame.empty) :
+            raise ValueError(f"Stage 4 summary reference is missing: {method_id}")
+
+        references[prefix] = frame
+
+    rows = []
+
+    for method_id, group in per_query.groupby("method_id", sort = True) :
+        row = {
+            "method_id" : method_id,
+            "query_count" : len(group),
+            "composite_video_mrr" : float(group["video_rr"].mean()),
+            "composite_video_recall_at_1" : float(group["video_recall_at_1"].mean()),
+            "composite_video_recall_at_5" : float(group["video_recall_at_5"].mean()),
+            "composite_video_recall_at_10" : float(group["video_recall_at_10"].mean()),
+            "composite_story_mrr" : float(group["story_rr"].mean()),
+            "composite_story_recall_at_1" : float(group["story_recall_at_1"].mean()),
+        }
+
+        for prefix, reference in references.items() :
+            merged = group.merge(reference, on = "query_id", how = "inner")
+            video_delta = (
+                merged["video_rr"] - merged[f"{prefix}_reference_video_rr"]
+            ).to_numpy(dtype = float)
+            story_delta = (
+                merged["story_rr"] - merged[f"{prefix}_reference_story_rr"]
+            ).to_numpy(dtype = float)
+            low, high = _bootstrap_interval(
+                video_delta,
+                confidence,
+                bootstrap_samples,
+                seed,
+            )
+
+            row.update({
+                f"video_rr_delta_mean_vs_{prefix}" : float(video_delta.mean()),
+                f"video_rr_delta_median_vs_{prefix}" : float(np.median(video_delta)),
+                f"story_rr_delta_mean_vs_{prefix}" : float(story_delta.mean()),
+                f"video_better_vs_{prefix}" : int((video_delta > 0).sum()),
+                f"video_tie_vs_{prefix}" : int((video_delta == 0).sum()),
+                f"video_worse_vs_{prefix}" : int((video_delta < 0).sum()),
+                f"video_rr_bootstrap_90_low_vs_{prefix}" : low,
+                f"video_rr_bootstrap_90_high_vs_{prefix}" : high,
+            })
+
+        rows.append(row)
+
+    return pd.DataFrame(rows)
+
+
+def build_stage4_fusion_diagnostics(
+    query_results : pd.DataFrame,
+    normalization_stats : pd.DataFrame | None = None,
+    sparse_reference : str = "H0_sparse_only",
+    dense_reference : str = "H1_dense_only",
+    minimum_rank_drop : int = 10,
+    result_rank_above : int = 10,
+    flag_reference_rank_1_candidate_above : int = 20,
+) -> pd.DataFrame :
+    if (query_results.empty) :
+        return pd.DataFrame()
+
+    keys = ["model_id", "view", "query_id"]
+    fields = [
+        "first_relevant_rank",
+        "story_rr",
+        "video_rank",
+        "video_rr",
+        "top_video_id",
+        "correct_video_score",
+        "video_score_margin",
+    ]
+    sparse = query_results[
+        query_results["method_id"] == sparse_reference
+    ][keys + fields].rename(columns={
+        field : f"sparse_{field}"
+        for field in fields
+    })
+    dense = query_results[
+        query_results["method_id"] == dense_reference
+    ][keys + fields].rename(columns={
+        field : f"dense_{field}"
+        for field in fields
+    })
+    base = sparse.merge(dense, on = keys, how = "inner")
+    rows = []
+
+    hybrid_methods = sorted(
+        set(query_results["method_id"].astype(str))
+        - {sparse_reference, dense_reference}
+    )
+
+    for method_id in hybrid_methods :
+        hybrid = query_results[
+            query_results["method_id"] == method_id
+        ][keys + fields].rename(columns={
+            field : f"hybrid_{field}"
+            for field in fields
+        })
+        merged = base.merge(hybrid, on = keys, how = "inner")
+
+        for _, item in merged.iterrows() :
+            sparse_rank = int(item["sparse_video_rank"])
+            dense_rank = int(item["dense_video_rank"])
+            hybrid_rank = int(item["hybrid_video_rank"])
+            delta_sparse = hybrid_rank - sparse_rank
+            delta_dense = hybrid_rank - dense_rank
+
+            rows.append({
+                "method_id" : method_id,
+                "model_id" : item["model_id"],
+                "view" : item["view"],
+                "query_id" : item["query_id"],
+                "sparse_story_rank" : item["sparse_first_relevant_rank"],
+                "dense_story_rank" : item["dense_first_relevant_rank"],
+                "hybrid_story_rank" : item["hybrid_first_relevant_rank"],
+                "sparse_video_rank" : sparse_rank,
+                "dense_video_rank" : dense_rank,
+                "hybrid_video_rank" : hybrid_rank,
+                "sparse_video_rr" : float(item["sparse_video_rr"]),
+                "dense_video_rr" : float(item["dense_video_rr"]),
+                "hybrid_video_rr" : float(item["hybrid_video_rr"]),
+                "video_rank_delta_vs_sparse" : delta_sparse,
+                "video_rank_delta_vs_dense" : delta_dense,
+                "video_rr_delta_vs_sparse" : float(
+                    item["hybrid_video_rr"] - item["sparse_video_rr"]
+                ),
+                "video_rr_delta_vs_dense" : float(
+                    item["hybrid_video_rr"] - item["dense_video_rr"]
+                ),
+                "sparse_top_video_id" : item["sparse_top_video_id"],
+                "dense_top_video_id" : item["dense_top_video_id"],
+                "hybrid_top_video_id" : item["hybrid_top_video_id"],
+                "sparse_correct_video_score" : item["sparse_correct_video_score"],
+                "dense_correct_video_score" : item["dense_correct_video_score"],
+                "hybrid_correct_video_score" : item["hybrid_correct_video_score"],
+                "sparse_video_margin" : item["sparse_video_score_margin"],
+                "dense_video_margin" : item["dense_video_score_margin"],
+                "hybrid_video_margin" : item["hybrid_video_score_margin"],
+                "sparse_dense_top1_agree" : bool(
+                    item["sparse_top_video_id"] == item["dense_top_video_id"]
+                ),
+                "hybrid_beats_both" : bool(
+                    hybrid_rank < sparse_rank and hybrid_rank < dense_rank
+                ),
+                "hybrid_worse_than_both" : bool(
+                    hybrid_rank > sparse_rank and hybrid_rank > dense_rank
+                ),
+                "large_regression_vs_sparse" : bool(
+                    delta_sparse >= int(minimum_rank_drop)
+                    and hybrid_rank > int(result_rank_above)
+                ),
+                "large_regression_vs_dense" : bool(
+                    delta_dense >= int(minimum_rank_drop)
+                    and hybrid_rank > int(result_rank_above)
+                ),
+                "top1_catastrophe_vs_sparse" : bool(
+                    sparse_rank == 1
+                    and hybrid_rank > int(flag_reference_rank_1_candidate_above)
+                ),
+                "top1_catastrophe_vs_dense" : bool(
+                    dense_rank == 1
+                    and hybrid_rank > int(flag_reference_rank_1_candidate_above)
+                ),
+            })
+
+    result = pd.DataFrame(rows)
+
+    if (
+        normalization_stats is not None
+        and not normalization_stats.empty
+        and not result.empty
+    ) :
+        result = result.merge(
+            normalization_stats,
+            on = ["method_id", "model_id", "view", "query_id"],
+            how = "left",
+        )
+
+    return result
+
+
+def validate_stage4_control_reproduction(
+    stage4_query_results : pd.DataFrame,
+    source_query_results : dict[str, pd.DataFrame],
+    control_map : dict[str, str],
+    tolerance : float = 1e-12,
+) -> dict[str, Any] :
+    errors = []
+    checks = []
+    keys = ["model_id", "view", "query_id"]
+    exact_fields = [
+        "first_relevant_rank",
+        "video_rank",
+        "top_story_window_id",
+        "top_video_id",
+        "story_recall_at_1",
+        "story_recall_at_3",
+        "story_recall_at_5",
+        "story_recall_at_10",
+        "video_recall_at_1",
+        "video_recall_at_3",
+        "video_recall_at_5",
+        "video_recall_at_10",
+        "video_recall_at_20",
+    ]
+    score_fields = [
+        "story_rr",
+        "video_rr",
+        "best_relevant_score",
+        "best_irrelevant_score",
+        "story_score_margin",
+        "correct_video_score",
+        "best_wrong_video_score",
+        "video_score_margin",
+        "top_story_score",
+        "top_video_score",
+    ]
+
+    for control_method, source_id in control_map.items() :
+        if (source_id not in source_query_results) :
+            raise KeyError(f"Stage 4 source results missing {source_id!r}")
+
+        candidate = stage4_query_results[
+            stage4_query_results["method_id"] == control_method
+        ]
+        reference = source_query_results[source_id]
+        merged = candidate.merge(
+            reference[keys + exact_fields + score_fields],
+            on = keys,
+            how = "outer",
+            suffixes = ("", "_reference"),
+            indicator = True,
+        )
+
+        for _, item in merged.iterrows() :
+            key = {field : item.get(field) for field in keys}
+            passed = item["_merge"] == "both"
+            fields = []
+
+            if (not passed) :
+                errors.append(f"{control_method}: missing control/source row {key}")
+                checks.append({
+                    "method_id" : control_method,
+                    "key" : key,
+                    "passed" : False,
+                })
+                continue
+
+            for field in exact_fields :
+                same = _fixture_exact_equal(
+                    item[field],
+                    item[f"{field}_reference"],
+                )
+                fields.append({"field" : field, "passed" : same})
+
+                if (not same) :
+                    passed = False
+                    errors.append(
+                        f"{control_method}/{key}/{field}: control reproduction mismatch"
+                    )
+
+            for field in score_fields :
+                difference = _fixture_numeric_difference(
+                    item[field],
+                    item[f"{field}_reference"],
+                )
+                same = difference <= float(tolerance)
+                fields.append({
+                    "field" : field,
+                    "difference" : difference,
+                    "tolerance" : float(tolerance),
+                    "passed" : same,
+                })
+
+                if (not same) :
+                    passed = False
+                    errors.append(
+                        f"{control_method}/{key}/{field}: "
+                        f"difference={difference:.9g} > {float(tolerance):.9g}"
+                    )
+
+            checks.append({
+                "method_id" : control_method,
+                "key" : key,
+                "passed" : passed,
+                "fields" : fields,
+            })
+
+    return {
+        "passed" : not errors,
+        "check_count" : len(checks),
+        "failed_count" : sum(not item["passed"] for item in checks),
+        "errors" : errors,
+        "checks" : checks,
+    }
+
+
+# -----------------------------------------------------------------------------
+# Stage 5 ASR and transcript-view selection
+# -----------------------------------------------------------------------------
+
+
+def compare_stage5_views(
+    query_results : pd.DataFrame,
+) -> pd.DataFrame :
+    if (query_results.empty) :
+        return pd.DataFrame()
+
+    rows = []
+    keys = ["model_id", "query_id"]
+    fields = [
+        "first_relevant_rank",
+        "story_rr",
+        "video_rank",
+        "video_rr",
+        "top_story_window_id",
+        "top_video_id",
+    ]
+
+    for model_id, group in query_results.groupby("model_id", sort = True) :
+        raw = group[group["view"] == "raw"][keys + fields].rename(columns={
+            field : f"raw_{field}"
+            for field in fields
+        })
+        processed = group[group["view"] == "processed"][keys + fields].rename(columns={
+            field : f"processed_{field}"
+            for field in fields
+        })
+        merged = processed.merge(raw, on = keys, how = "inner")
+
+        for _, item in merged.iterrows() :
+            rows.append({
+                "model_id" : model_id,
+                "query_id" : item["query_id"],
+                "raw_story_rank" : item["raw_first_relevant_rank"],
+                "processed_story_rank" : item["processed_first_relevant_rank"],
+                "story_relation_processed_vs_raw" : rank_relation(
+                    item["processed_first_relevant_rank"],
+                    item["raw_first_relevant_rank"],
+                ),
+                "story_rr_delta_processed_vs_raw" : float(
+                    item["processed_story_rr"] - item["raw_story_rr"]
+                ),
+                "raw_video_rank" : int(item["raw_video_rank"]),
+                "processed_video_rank" : int(item["processed_video_rank"]),
+                "video_relation_processed_vs_raw" : rank_relation(
+                    item["processed_video_rank"],
+                    item["raw_video_rank"],
+                ),
+                "video_rank_delta_processed_minus_raw" : int(
+                    item["processed_video_rank"] - item["raw_video_rank"]
+                ),
+                "video_rr_delta_processed_vs_raw" : float(
+                    item["processed_video_rr"] - item["raw_video_rr"]
+                ),
+                "top_story_changed" : bool(
+                    item["processed_top_story_window_id"]
+                    != item["raw_top_story_window_id"]
+                ),
+                "top_video_changed" : bool(
+                    item["processed_top_video_id"]
+                    != item["raw_top_video_id"]
+                ),
+            })
+
+    return pd.DataFrame(rows)
+
+
+def summarize_stage5_views(
+    view_comparison : pd.DataFrame,
+) -> pd.DataFrame :
+    if (view_comparison.empty) :
+        return pd.DataFrame()
+
+    rows = []
+
+    for model_id, group in view_comparison.groupby("model_id", sort = True) :
+        video_delta = group["video_rr_delta_processed_vs_raw"].to_numpy(dtype = float)
+        story_delta = group["story_rr_delta_processed_vs_raw"].to_numpy(dtype = float)
+
+        rows.append({
+            "model_id" : model_id,
+            "query_count" : len(group),
+            "video_rr_delta_mean_processed_vs_raw" : float(video_delta.mean()),
+            "video_rr_delta_median_processed_vs_raw" : float(np.median(video_delta)),
+            "video_better_processed" : int((video_delta > 0).sum()),
+            "video_tie" : int((video_delta == 0).sum()),
+            "video_worse_processed" : int((video_delta < 0).sum()),
+            "story_rr_delta_mean_processed_vs_raw" : float(story_delta.mean()),
+            "story_better_processed" : int((story_delta > 0).sum()),
+            "story_tie" : int((story_delta == 0).sum()),
+            "story_worse_processed" : int((story_delta < 0).sum()),
+        })
+
+    return pd.DataFrame(rows)
+
+
+def compare_stage5_asr_pairs(
+    query_results : pd.DataFrame,
+    quality_thresholds : dict[str, float],
+    catastrophic_failure : dict[str, int],
+) -> tuple[pd.DataFrame, pd.DataFrame] :
+    if (query_results.empty) :
+        return pd.DataFrame(), pd.DataFrame()
+
+    whisper_model = "whisper_large_v3"
+    parakeet_model = "parakeet_ctc_0_6b_vietnamese"
+    views = ["raw", "processed"]
+    query_rows = []
+    summary_rows = []
+
+    metrics = summarize_retrieval_metrics(query_results)
+
+    for whisper_view in views :
+        whisper = query_results[
+            (query_results["model_id"] == whisper_model)
+            & (query_results["view"] == whisper_view)
+        ].copy()
+
+        if (whisper.empty) :
+            raise ValueError(f"Stage 5 Whisper view is missing: {whisper_view}")
+
+        for parakeet_view in views :
+            parakeet = query_results[
+                (query_results["model_id"] == parakeet_model)
+                & (query_results["view"] == parakeet_view)
+            ].copy()
+
+            if (parakeet.empty) :
+                raise ValueError(f"Stage 5 Parakeet view is missing: {parakeet_view}")
+
+            pair_id = f"whisper_{whisper_view}__vs__parakeet_{parakeet_view}"
+            fields = [
+                "query_id",
+                "query_text",
+                "first_relevant_rank",
+                "story_rr",
+                "video_rank",
+                "video_rr",
+                "video_score_margin",
+                "top_video_id",
+            ]
+            left = whisper[fields].rename(columns={
+                field : f"whisper_{field}"
+                for field in fields
+                if field not in {"query_id", "query_text"}
+            })
+            right = parakeet[fields].rename(columns={
+                field : f"parakeet_{field}"
+                for field in fields
+                if field not in {"query_id", "query_text"}
+            })
+            merged = left.merge(
+                right,
+                on = ["query_id", "query_text"],
+                how = "inner",
+            )
+
+            catastrophic_count = 0
+            hard_count = 0
+
+            for _, item in merged.iterrows() :
+                whisper_rank = int(item["whisper_video_rank"])
+                parakeet_rank = int(item["parakeet_video_rank"])
+                rank_delta = parakeet_rank - whisper_rank
+                catastrophic = bool(
+                    rank_delta >= int(catastrophic_failure["minimum_rank_drop"])
+                    and parakeet_rank > int(catastrophic_failure["result_rank_above"])
+                )
+                hard = bool(
+                    whisper_rank == 1
+                    and parakeet_rank
+                    > int(catastrophic_failure["flag_reference_rank_1_candidate_above"])
+                )
+                catastrophic_count += int(catastrophic)
+                hard_count += int(hard)
+
+                query_rows.append({
+                    "pair_id" : pair_id,
+                    "whisper_view" : whisper_view,
+                    "parakeet_view" : parakeet_view,
+                    "query_id" : item["query_id"],
+                    "query_text" : item["query_text"],
+                    "whisper_story_rank" : item["whisper_first_relevant_rank"],
+                    "parakeet_story_rank" : item["parakeet_first_relevant_rank"],
+                    "story_rank_delta_parakeet_minus_whisper" : (
+                        float(item["parakeet_first_relevant_rank"])
+                        - float(item["whisper_first_relevant_rank"])
+                        if pd.notna(item["parakeet_first_relevant_rank"])
+                        and pd.notna(item["whisper_first_relevant_rank"])
+                        else None
+                    ),
+                    "whisper_story_rr" : float(item["whisper_story_rr"]),
+                    "parakeet_story_rr" : float(item["parakeet_story_rr"]),
+                    "story_rr_delta_parakeet_minus_whisper" : float(
+                        item["parakeet_story_rr"] - item["whisper_story_rr"]
+                    ),
+                    "whisper_video_rank" : whisper_rank,
+                    "parakeet_video_rank" : parakeet_rank,
+                    "video_rank_delta_parakeet_minus_whisper" : rank_delta,
+                    "whisper_video_rr" : float(item["whisper_video_rr"]),
+                    "parakeet_video_rr" : float(item["parakeet_video_rr"]),
+                    "video_rr_delta_parakeet_minus_whisper" : float(
+                        item["parakeet_video_rr"] - item["whisper_video_rr"]
+                    ),
+                    "whisper_video_margin" : item["whisper_video_score_margin"],
+                    "parakeet_video_margin" : item["parakeet_video_score_margin"],
+                    "whisper_top_video_id" : item["whisper_top_video_id"],
+                    "parakeet_top_video_id" : item["parakeet_top_video_id"],
+                    "catastrophic_regression" : catastrophic,
+                    "hard_top1_regression" : hard,
+                })
+
+            whisper_metric = metrics[
+                (metrics["model_id"] == whisper_model)
+                & (metrics["view"] == whisper_view)
+            ].iloc[0]
+            parakeet_metric = metrics[
+                (metrics["model_id"] == parakeet_model)
+                & (metrics["view"] == parakeet_view)
+            ].iloc[0]
+
+            checks = {}
+
+            for metric_name, threshold_key in [
+                ("video_recall_at_1", "video_recall_at_1_max_deficit"),
+                ("video_mrr", "video_mrr_max_deficit"),
+                ("video_recall_at_5", "video_recall_at_5_max_deficit"),
+                ("video_recall_at_10", "video_recall_at_10_max_deficit"),
+                ("story_recall_at_1", "story_recall_at_1_max_deficit"),
+                ("story_mrr", "story_mrr_max_deficit"),
+            ] :
+                deficit = max(
+                    0.0,
+                    float(whisper_metric[metric_name])
+                    - float(parakeet_metric[metric_name]),
+                )
+                threshold = float(quality_thresholds[threshold_key])
+                checks[metric_name] = {
+                    "whisper" : float(whisper_metric[metric_name]),
+                    "parakeet" : float(parakeet_metric[metric_name]),
+                    "deficit" : deficit,
+                    "threshold" : threshold,
+                    "passed" : deficit <= threshold,
+                }
+
+            summary_rows.append({
+                "pair_id" : pair_id,
+                "whisper_view" : whisper_view,
+                "parakeet_view" : parakeet_view,
+                "whisper_video_recall_at_1" : checks["video_recall_at_1"]["whisper"],
+                "parakeet_video_recall_at_1" : checks["video_recall_at_1"]["parakeet"],
+                "video_recall_at_1_deficit" : checks["video_recall_at_1"]["deficit"],
+                "video_recall_at_1_passed" : checks["video_recall_at_1"]["passed"],
+                "whisper_video_mrr" : checks["video_mrr"]["whisper"],
+                "parakeet_video_mrr" : checks["video_mrr"]["parakeet"],
+                "video_mrr_deficit" : checks["video_mrr"]["deficit"],
+                "video_mrr_passed" : checks["video_mrr"]["passed"],
+                "whisper_video_recall_at_5" : checks["video_recall_at_5"]["whisper"],
+                "parakeet_video_recall_at_5" : checks["video_recall_at_5"]["parakeet"],
+                "video_recall_at_5_deficit" : checks["video_recall_at_5"]["deficit"],
+                "video_recall_at_5_passed" : checks["video_recall_at_5"]["passed"],
+                "whisper_video_recall_at_10" : checks["video_recall_at_10"]["whisper"],
+                "parakeet_video_recall_at_10" : checks["video_recall_at_10"]["parakeet"],
+                "video_recall_at_10_deficit" : checks["video_recall_at_10"]["deficit"],
+                "video_recall_at_10_passed" : checks["video_recall_at_10"]["passed"],
+                "whisper_story_recall_at_1" : checks["story_recall_at_1"]["whisper"],
+                "parakeet_story_recall_at_1" : checks["story_recall_at_1"]["parakeet"],
+                "story_recall_at_1_deficit" : checks["story_recall_at_1"]["deficit"],
+                "story_recall_at_1_passed" : checks["story_recall_at_1"]["passed"],
+                "whisper_story_mrr" : checks["story_mrr"]["whisper"],
+                "parakeet_story_mrr" : checks["story_mrr"]["parakeet"],
+                "story_mrr_deficit" : checks["story_mrr"]["deficit"],
+                "story_mrr_passed" : checks["story_mrr"]["passed"],
+                "quality_thresholds_passed" : all(
+                    item["passed"] for item in checks.values()
+                ),
+                "catastrophic_regression_count" : catastrophic_count,
+                "hard_top1_regression_count" : hard_count,
+                "catastrophic_gate_passed" : catastrophic_count <= int(
+                    catastrophic_failure["maximum_additional_failures"]
+                ),
+                "manual_inspection_required" : hard_count > 0,
+            })
+
+    return pd.DataFrame(query_rows), pd.DataFrame(summary_rows)

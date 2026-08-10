@@ -1,5 +1,5 @@
 # Relative path: src/07_evaluate_retrieval_v2.py
-# Purpose: Orchestrate Retrieval v2 Stage 0 baseline, Stage 1 lexical, and Stage 2 dense retrieval experiments.
+# Purpose: Orchestrate Retrieval v2 Stage 0 baseline through Stage 5 transcript-pipeline selection.
 
 from __future__ import annotations
 
@@ -45,16 +45,33 @@ from retrieval_v2 import (
     score_query_fitted_dual_tfidf,
     score_dense_embeddings,
     weighted_score_bundle,
+    normalized_weighted_score_bundle,
 )
 from retrieval_backends import DenseBackendSpec, DenseEmbeddingBundle, SentenceTransformerDenseBackend
 from retrieval_v2_evaluation import (
+    VideoAggregationSpec,
+    aggregate_video_scores_for_query,
+    build_video_window_groups,
     classify_eligibility,
     compare_expected_metrics,
     compare_methods,
     compare_regression_fixture,
+    compare_stage3_aggregations,
     evaluate_score_matrix,
+    evaluate_stage3_video_scores,
     summarize_retrieval_metrics,
     summarize_stage1_methods,
+    summarize_stage3_aggregations,
+    summarize_stage3_metrics,
+    validate_stage3_p0_reproduction,
+    validate_stage3_story_invariance,
+    compare_stage4_methods,
+    summarize_stage4_methods,
+    build_stage4_fusion_diagnostics,
+    validate_stage4_control_reproduction,
+    compare_stage5_views,
+    summarize_stage5_views,
+    compare_stage5_asr_pairs,
 )
 
 
@@ -68,11 +85,11 @@ CONFIG_PATH = Path(
 
 def parse_args() -> argparse.Namespace :
     parser = argparse.ArgumentParser(
-        description = "Run AIC 2026 Retrieval v2 Stage 0, Stage 1, or Stage 2.",
+        description = "Run AIC 2026 Retrieval v2 Stage 0 through Stage 5.",
     )
     parser.add_argument(
         "--stage",
-        choices = ["stage00_baseline", "stage01_lexical", "stage02_dense"],
+        choices = ["stage00_baseline", "stage01_lexical", "stage02_dense", "stage03_aggregation", "stage04_hybrid", "stage05_selection"],
         default = os.environ.get("AIC_RETRIEVAL_STAGE", "stage00_baseline"),
     )
     return parser.parse_args()
@@ -380,6 +397,9 @@ def load_retrieval_config() -> dict[str, Any] :
         "stage00_baseline",
         "stage01_lexical",
         "stage02_dense",
+        "stage03_aggregation",
+        "stage04_hybrid",
+        "stage05_selection",
         "evaluation_policy",
         "regression",
         "selection",
@@ -1609,6 +1629,9 @@ def build_manifest(
         "stage00_baseline" : config["stage00_baseline"],
         "stage01_lexical"  : config["stage01_lexical"],
         "stage02_dense"    : config["stage02_dense"],
+        "stage03_aggregation": config["stage03_aggregation"],
+        "stage04_hybrid"     : config["stage04_hybrid"],
+        "stage05_selection"  : config["stage05_selection"],
         "evaluation_policy": config["evaluation_policy"],
         "regression"       : config["regression"],
         "cache"            : cache_records,
@@ -1649,6 +1672,2112 @@ def stage01_prerequisite(config : dict[str, Any], artifacts : Path) -> dict[str,
     decision = config["selection"].get("stage01_decision", {})
     if (decision.get("lexical_default") != config["stage02_dense"]["lexical_reference"]) : raise RuntimeError("Stage 1 lexical decision does not match the Stage 2 lexical reference")
     return summary
+
+def stage02_prerequisite(config : dict[str, Any], artifacts : Path) -> dict[str, Any] :
+    return _stage_prerequisite(
+        config,
+        artifacts,
+        "stage02_dense",
+        ["stage02_dense", "evaluation_policy"],
+    )
+
+
+
+
+def validate_stage03_contract(config : dict[str, Any]) -> dict[str, Any] :
+    stage_config = config["stage03_aggregation"]
+    errors = []
+    expected_methods = {
+        "P0_max" : {"kind" : "max"},
+        "P1_top2_mean" : {"kind" : "topk_mean", "k" : 2},
+        "P2_top3_mean" : {"kind" : "topk_mean", "k" : 3},
+        "P3_adjacent2_mean" : {"kind" : "contiguous_mean", "span" : 2},
+        "P4_contiguous3_mean" : {"kind" : "contiguous_mean", "span" : 3},
+    }
+
+    if (stage_config.get("query_set") != "development20") :
+        errors.append("Stage 3 query_set must be development20")
+
+    if (stage_config.get("corpus") != "all50") :
+        errors.append("Stage 3 corpus must be all50")
+
+    if (stage_config.get("reference_aggregation") != "P0_max") :
+        errors.append("Stage 3 reference_aggregation must be P0_max")
+
+    sources = stage_config.get("sources", {})
+
+    if (set(sources) != {"S0_bm25_preserving", "S1_e5_large_instruct"}) :
+        errors.append("Stage 3 must define exactly the frozen BM25 and E5-large sources")
+
+    for source_id, expected_method in [
+        ("S0_bm25_preserving", "L2_bm25_preserving"),
+        ("S1_e5_large_instruct", "D1_e5_large_instruct"),
+    ] :
+        source = sources.get(source_id, {})
+
+        if (source.get("method_id") != expected_method) :
+            errors.append(f"{source_id}: method_id must be {expected_method}")
+
+        if (source.get("summary_label") not in {"bm25", "dense"}) :
+            errors.append(f"{source_id}: summary_label must be bm25 or dense")
+
+    methods = stage_config.get("methods", {})
+
+    if (set(methods) != set(expected_methods)) :
+        errors.append(f"Stage 3 aggregation methods mismatch: {sorted(methods)}")
+
+    for method_id, expected in expected_methods.items() :
+        actual = methods.get(method_id, {})
+
+        for key, value in expected.items() :
+            if (actual.get(key) != value) :
+                errors.append(f"{method_id}: {key} must be {value!r}")
+
+    if (str(stage_config.get("aggregation_dtype")) != "float64") :
+        errors.append("Stage 3 aggregation_dtype must be float64")
+
+    if (stage_config.get("ineligible_window_policy") != "zero_before_aggregation") :
+        errors.append("Stage 3 ineligible_window_policy must be zero_before_aggregation")
+
+    if (float(stage_config.get("ineligible_window_score", math.nan)) != 0.0) :
+        errors.append("Stage 3 ineligible_window_score must be 0.0")
+
+    return {
+        "passed" : not errors,
+        "errors" : errors,
+        "query_set" : stage_config.get("query_set"),
+        "corpus" : stage_config.get("corpus"),
+        "sources" : sources,
+        "methods" : methods,
+    }
+
+
+def _stage3_physical_windows(
+    benchmarks : dict[str, dict[str, Any]],
+) -> pd.DataFrame :
+    records = []
+
+    # Reproduce the exact physical-window ordering used when Stage 1/2
+    # score caches were created: benchmark order, then sorted video ID,
+    # then original manifest order within each video.
+    for benchmark_key in ["core10", "extension40"] :
+        benchmark_windows = benchmarks[benchmark_key]["windows"]
+        video_ids = sorted({
+            str(item["video_id"])
+            for item in benchmark_windows
+        })
+
+        for video_id in video_ids :
+            records.extend([
+                item
+                for item in benchmark_windows
+                if str(item["video_id"]) == video_id
+            ])
+
+    frame = pd.DataFrame(records).reset_index(drop = True)
+    required = ["window_id", "video_id", "start_s", "end_s"]
+    missing = [column for column in required if column not in frame.columns]
+
+    if (missing) :
+        raise KeyError(f"Stage 3 benchmark windows are missing: {missing}")
+
+    if (frame["window_id"].astype(str).duplicated().any()) :
+        raise ValueError("Stage 3 benchmark union contains duplicate window IDs")
+
+    return frame
+
+def _source_cache_expected_hash(
+    source_summary : dict[str, Any],
+    record_key : str,
+    configured : str | None,
+) -> str | None :
+    if (configured) :
+        return str(configured)
+
+    return (
+        source_summary
+        .get("cache", {})
+        .get(record_key, {})
+        .get("sha256")
+    )
+
+
+def _load_stage3_source(
+    config : dict[str, Any],
+    artifacts : Path,
+    source_id : str,
+    query_ids : list[str],
+    physical_window_ids : list[str],
+) -> tuple[dict[str, ScoreBundle], pd.DataFrame, dict[str, Any]] :
+    stage_config = config["stage03_aggregation"]
+    specification = stage_config["sources"][source_id]
+    source_stage = str(specification["source_stage"])
+    source_summary = _stage_prerequisite(
+        config,
+        artifacts,
+        source_stage,
+        (
+            ["stage01_lexical", "evaluation_policy"]
+            if source_stage == "stage01_lexical"
+            else ["stage02_dense", "evaluation_policy"]
+        ),
+    )
+    npz_path = resolve_artifact_path(artifacts, specification["window_scores_path"])
+    axes_path = resolve_artifact_path(artifacts, specification["score_axes_path"])
+
+    if (not npz_path.exists()) :
+        raise FileNotFoundError(f"{source_id}: window-score cache is missing: {npz_path}")
+
+    if (not axes_path.exists()) :
+        raise FileNotFoundError(f"{source_id}: score-axis cache is missing: {axes_path}")
+
+    actual_npz_hash = sha256_file(npz_path)
+    actual_axes_hash = sha256_file(axes_path)
+    expected_npz_hash = _source_cache_expected_hash(
+        source_summary,
+        "window_scores",
+        specification.get("expected_window_scores_sha256"),
+    )
+    expected_axes_hash = _source_cache_expected_hash(
+        source_summary,
+        "score_axes",
+        specification.get("expected_score_axes_sha256"),
+    )
+
+    if (expected_npz_hash and actual_npz_hash != expected_npz_hash) :
+        raise RuntimeError(
+            f"{source_id}: window_scores SHA-256 mismatch "
+            f"({actual_npz_hash} != {expected_npz_hash})"
+        )
+
+    if (expected_axes_hash and actual_axes_hash != expected_axes_hash) :
+        raise RuntimeError(
+            f"{source_id}: score_axes SHA-256 mismatch "
+            f"({actual_axes_hash} != {expected_axes_hash})"
+        )
+
+    axes = load_json(axes_path)
+
+    if (axes.get("schema_version") != "1.0") :
+        raise ValueError(f"{source_id}: unsupported score cache schema")
+
+    if (axes.get("stage") != source_stage) :
+        raise ValueError(
+            f"{source_id}: cache stage {axes.get('stage')!r} != {source_stage!r}"
+        )
+
+    query_set = stage_config["query_set"]
+    method_id = specification["method_id"]
+    bundles = {}
+
+    with np.load(npz_path, allow_pickle = False) as payload :
+        for channel_id, channel_spec in config["channels"].items() :
+            matches = [
+                item
+                for item in axes.get("bundles", [])
+                if item.get("query_set") == query_set
+                and item.get("method_id") == method_id
+                and item.get("model_id") == channel_spec["model_id"]
+                and item.get("view") == channel_spec["view"]
+            ]
+
+            if (len(matches) != 1) :
+                raise ValueError(
+                    f"{source_id}/{channel_id}: expected exactly one cache bundle, "
+                    f"found {len(matches)}"
+                )
+
+            record = matches[0]
+            array_key = record["array_key"]
+            eligibility_key = record["eligibility_key"]
+
+            if (array_key not in payload or eligibility_key not in payload) :
+                raise KeyError(f"{source_id}/{channel_id}: cache arrays are missing")
+
+            scores = np.asarray(payload[array_key])
+            eligibility = np.asarray(payload[eligibility_key], dtype = bool)
+            bundle = ScoreBundle(
+                method_id = method_id,
+                model_id = str(record["model_id"]),
+                view = str(record["view"]),
+                query_ids = [str(value) for value in record["query_ids"]],
+                window_ids = [str(value) for value in record["window_ids"]],
+                scores = scores,
+                eligibility_mask = eligibility,
+                metadata = dict(record.get("metadata", {})),
+            )
+
+            if (bundle.query_ids != query_ids) :
+                raise ValueError(f"{source_id}/{channel_id}: query axis mismatch")
+
+            if (bundle.window_ids != physical_window_ids) :
+                raise ValueError(f"{source_id}/{channel_id}: physical window axis mismatch")
+
+            bundles[channel_id] = bundle
+
+    report_root = resolve_artifact_path(
+        artifacts,
+        config["paths"]["reports_root"],
+    ) / source_stage
+    query_results_path = report_root / "query_results.csv"
+
+    if (not query_results_path.exists()) :
+        raise FileNotFoundError(
+            f"{source_id}: source query results are missing: {query_results_path}"
+        )
+
+    source_results = pd.read_csv(query_results_path)
+    source_results = source_results[
+        source_results["method_id"].astype(str) == method_id
+    ].copy()
+
+    expected_rows = len(query_ids) * len(config["channels"])
+
+    if (len(source_results) != expected_rows) :
+        raise ValueError(
+            f"{source_id}: expected {expected_rows} source query rows, "
+            f"found {len(source_results)}"
+        )
+
+    record = {
+        "source_id" : source_id,
+        "source_stage" : source_stage,
+        "method_id" : method_id,
+        "window_scores_path" : str(npz_path),
+        "window_scores_sha256" : actual_npz_hash,
+        "expected_window_scores_sha256" : expected_npz_hash,
+        "score_axes_path" : str(axes_path),
+        "score_axes_sha256" : actual_axes_hash,
+        "expected_score_axes_sha256" : expected_axes_hash,
+        "query_results_path" : str(query_results_path),
+        "query_results_sha256" : sha256_file(query_results_path),
+        "bundle_count" : len(bundles),
+        "query_count" : len(query_ids),
+        "window_count" : len(physical_window_ids),
+        "passed" : True,
+    }
+    return bundles, source_results, record
+
+
+def _stage3_specs(
+    config : dict[str, Any],
+) -> list[VideoAggregationSpec] :
+    result = []
+
+    for method_id, item in config["stage03_aggregation"]["methods"].items() :
+        result.append(
+            VideoAggregationSpec(
+                method_id = method_id,
+                kind = str(item["kind"]),
+                k = int(item["k"]) if item.get("k") is not None else None,
+                span = int(item["span"]) if item.get("span") is not None else None,
+            )
+        )
+
+    return result
+
+
+def _stage3_latency_summary(
+    query_latency : pd.DataFrame,
+    percentiles : list[int],
+) -> pd.DataFrame :
+    if (query_latency.empty) :
+        return pd.DataFrame()
+
+    rows = []
+
+    for (source_id, aggregation_id, model_id, view), group in query_latency.groupby(
+        ["source_id", "aggregation_id", "model_id", "view"],
+        sort = True,
+    ) :
+        values = group["aggregation_ms"].to_numpy(dtype = float)
+        row = {
+            "source_id" : source_id,
+            "aggregation_id" : aggregation_id,
+            "model_id" : model_id,
+            "view" : view,
+            "query_count" : len(group),
+            "aggregation_mean_ms" : float(values.mean()),
+        }
+
+        for percentile in percentiles :
+            row[f"aggregation_p{int(percentile)}_ms"] = float(
+                np.percentile(values, percentile)
+            )
+
+        rows.append(row)
+
+    return pd.DataFrame(rows)
+
+
+def _stage3_temporal_axis_validation(
+    windows : pd.DataFrame,
+    expected_window_count : int,
+    expected_video_count : int,
+) -> dict[str, Any] :
+    errors = []
+    video_ids, groups = build_video_window_groups(windows)
+
+    if (len(windows) != expected_window_count) :
+        errors.append(
+            f"physical window count {len(windows)} != {expected_window_count}"
+        )
+
+    if (len(video_ids) != expected_video_count) :
+        errors.append(
+            f"video count {len(video_ids)} != {expected_video_count}"
+        )
+
+    for video_id, indices in groups.items() :
+        starts = pd.to_numeric(
+            windows.iloc[indices]["start_s"],
+            errors = "coerce",
+        ).to_numpy(dtype = float)
+
+        if (len(starts) > 1 and (np.diff(starts) < 0).any()) :
+            errors.append(f"{video_id}: temporal order is not monotonic")
+
+    return {
+        "passed" : not errors,
+        "window_count" : len(windows),
+        "video_count" : len(video_ids),
+        "errors" : errors,
+    }
+
+
+def _save_stage3_video_cache(
+    records : list[dict[str, Any]],
+    cache_root : Path,
+    config : dict[str, Any],
+) -> dict[str, Any] :
+    target = cache_root / "stage03_aggregation"
+    target.mkdir(parents = True, exist_ok = True)
+    arrays = {}
+    axes = {
+        "schema_version" : "1.0",
+        "stage" : "stage03_aggregation",
+        "aggregation_policy_hash" : canonical_json_hash(
+            config["stage03_aggregation"]["methods"]
+        ),
+        "bundles" : [],
+    }
+
+    for index, record in enumerate(records) :
+        key = _safe_key(
+            f"{index:03d}__{record['source_id']}__{record['model_id']}__"
+            f"{record['view']}__{record['aggregation_id']}"
+        )
+        array_key = f"{key}__video_scores"
+        arrays[array_key] = np.asarray(record["scores"], dtype = np.float64)
+        axes["bundles"].append({
+            "array_key" : array_key,
+            "source_id" : record["source_id"],
+            "source_stage" : record["source_stage"],
+            "source_method_id" : record["source_method_id"],
+            "aggregation_id" : record["aggregation_id"],
+            "aggregation_kind" : record["aggregation_kind"],
+            "k" : record.get("k"),
+            "span" : record.get("span"),
+            "model_id" : record["model_id"],
+            "view" : record["view"],
+            "query_set" : record["query_set"],
+            "corpus_id" : record["corpus_id"],
+            "query_ids" : record["query_ids"],
+            "video_ids" : record["video_ids"],
+            "source_window_scores_sha256" : record["source_window_scores_sha256"],
+            "source_score_axes_sha256" : record["source_score_axes_sha256"],
+            "score_dtype" : "float64",
+        })
+
+    npz_path = target / "video_scores.npz"
+    axes_path = target / "video_score_axes.json"
+    np.savez_compressed(npz_path, **arrays)
+    write_json(axes_path, axes)
+
+    return {
+        "video_scores" : {
+            "path" : str(npz_path),
+            "sha256" : sha256_file(npz_path),
+        },
+        "video_score_axes" : {
+            "path" : str(axes_path),
+            "sha256" : sha256_file(axes_path),
+        },
+        "aggregation_policy_hash" : axes["aggregation_policy_hash"],
+    }
+
+
+def run_stage03(
+    config : dict[str, Any],
+    query_frames : dict[str, pd.DataFrame],
+    benchmarks : dict[str, dict[str, Any]],
+    artifacts : Path,
+    cache_root : Path,
+) -> tuple[
+    pd.DataFrame,
+    pd.DataFrame,
+    pd.DataFrame,
+    pd.DataFrame,
+    pd.DataFrame,
+    pd.DataFrame,
+    list[dict[str, Any]],
+    dict[str, pd.DataFrame],
+    list[dict[str, Any]],
+    dict[str, Any],
+] :
+    stage_config = config["stage03_aggregation"]
+    query_set = stage_config["query_set"]
+    corpus_id = stage_config["corpus"]
+    query_frame = query_frames[query_set].reset_index(drop = True)
+    query_ids = query_frame["query_id"].astype(str).tolist()
+    windows = _stage3_physical_windows(benchmarks)
+    physical_window_ids = windows["window_id"].astype(str).tolist()
+    video_ids, groups = build_video_window_groups(windows)
+    source_records = []
+    source_query_results = {}
+    sources = {}
+
+    for source_id in stage_config["sources"] :
+        bundles, source_results, source_record = _load_stage3_source(
+            config,
+            artifacts,
+            source_id,
+            query_ids,
+            physical_window_ids,
+        )
+        sources[source_id] = bundles
+        source_query_results[source_id] = source_results
+        source_records.append(source_record)
+
+    result_frames = []
+    diagnostic_frames = []
+    latency_rows = []
+    cache_records = []
+    specifications = _stage3_specs(config)
+
+    for source_id, bundles in sources.items() :
+        source_spec = stage_config["sources"][source_id]
+        source_results = source_query_results[source_id]
+        source_record = next(
+            item for item in source_records if item["source_id"] == source_id
+        )
+
+        for channel_id, bundle in bundles.items() :
+            aggregation_scores = np.asarray(bundle.scores, dtype = np.float64).copy()
+            aggregation_scores[:, ~bundle.eligibility_mask] = float(
+                stage_config["ineligible_window_score"]
+            )
+
+            channel_source_results = source_results[
+                (source_results["model_id"].astype(str) == bundle.model_id)
+                & (source_results["view"].astype(str) == bundle.view)
+            ].copy()
+
+            if (len(channel_source_results) != len(query_frame)) :
+                raise ValueError(
+                    f"{source_id}/{channel_id}: source query result count mismatch"
+                )
+
+            channel_source_results["query_id"] = channel_source_results["query_id"].astype(str)
+            channel_source_results = channel_source_results.set_index("query_id").loc[query_ids].reset_index()
+
+            for specification in specifications :
+                matrix = np.empty((len(query_frame), len(video_ids)), dtype = np.float64)
+                supports = []
+
+                for query_index, query_id in enumerate(query_ids) :
+                    started = time.perf_counter()
+                    row_scores, row_supports = aggregate_video_scores_for_query(
+                        aggregation_scores[query_index],
+                        windows,
+                        specification,
+                        video_ids = video_ids,
+                        groups = groups,
+                    )
+                    aggregation_ms = (time.perf_counter() - started) * 1000.0
+                    matrix[query_index] = row_scores
+                    supports.append(row_supports)
+                    latency_rows.append({
+                        "source_id" : source_id,
+                        "source_method_id" : source_spec["method_id"],
+                        "aggregation_id" : specification.method_id,
+                        "model_id" : bundle.model_id,
+                        "view" : bundle.view,
+                        "query_id" : query_id,
+                        "aggregation_ms" : aggregation_ms,
+                    })
+
+                results, diagnostics = evaluate_stage3_video_scores(
+                    video_scores = matrix,
+                    video_ids = video_ids,
+                    supports = supports,
+                    window_scores = aggregation_scores,
+                    queries = query_frame,
+                    windows = windows,
+                    source_query_results = channel_source_results,
+                    source_id = source_id,
+                    source_method_id = source_spec["method_id"],
+                    model_id = bundle.model_id,
+                    view = bundle.view,
+                    aggregation_id = specification.method_id,
+                    query_set = query_set,
+                    corpus_id = corpus_id,
+                    tie_tolerance = float(config["evaluation_policy"]["tie_tolerance"]),
+                )
+                result_frames.append(results)
+                diagnostic_frames.append(diagnostics)
+                cache_records.append({
+                    "source_id" : source_id,
+                    "source_stage" : source_spec["source_stage"],
+                    "source_method_id" : source_spec["method_id"],
+                    "aggregation_id" : specification.method_id,
+                    "aggregation_kind" : specification.kind,
+                    "k" : specification.k,
+                    "span" : specification.span,
+                    "model_id" : bundle.model_id,
+                    "view" : bundle.view,
+                    "query_set" : query_set,
+                    "corpus_id" : corpus_id,
+                    "query_ids" : query_ids,
+                    "video_ids" : video_ids,
+                    "scores" : matrix,
+                    "source_window_scores_sha256" : source_record["window_scores_sha256"],
+                    "source_score_axes_sha256" : source_record["score_axes_sha256"],
+                })
+
+    query_results = pd.concat(result_frames, ignore_index = True)
+    diagnostics = pd.concat(diagnostic_frames, ignore_index = True)
+    query_latency = pd.DataFrame(latency_rows)
+    latency_summary = _stage3_latency_summary(
+        query_latency,
+        [int(value) for value in stage_config["runtime"]["latency_percentiles"]],
+    )
+    metrics = summarize_stage3_metrics(query_results)
+    comparisons = compare_stage3_aggregations(
+        query_results,
+        reference_aggregation = stage_config["reference_aggregation"],
+    )
+    source_labels = {
+        source_id : item["summary_label"]
+        for source_id, item in stage_config["sources"].items()
+    }
+    selection = stage_config["selection"]
+    method_summary = summarize_stage3_aggregations(
+        query_results,
+        source_labels = source_labels,
+        reference_aggregation = stage_config["reference_aggregation"],
+        bootstrap_samples = int(selection["bootstrap_samples"]),
+        confidence = float(selection["bootstrap_confidence"]),
+        seed = int(selection["bootstrap_seed"]),
+    )
+    validations = {
+        "p0_reproduction" : validate_stage3_p0_reproduction(
+            query_results,
+            source_query_results,
+            tolerance = float(stage_config["p0_score_tolerance"]),
+        ),
+        "story_invariance" : validate_stage3_story_invariance(query_results),
+        "temporal_axis" : _stage3_temporal_axis_validation(
+            windows,
+            int(config["corpora"][corpus_id]["expected_window_count"]),
+            int(config["corpora"][corpus_id]["expected_video_count"]),
+        ),
+    }
+
+    return (
+        query_results,
+        metrics,
+        comparisons,
+        diagnostics,
+        method_summary,
+        query_latency,
+        source_records,
+        source_query_results,
+        cache_records,
+        {
+            **validations,
+            "latency_summary" : latency_summary,
+        },
+    )
+
+
+def run_stage03_main(
+    config : dict[str, Any],
+    artifacts : Path,
+) -> None :
+    stage = "stage03_aggregation"
+    reports_root = resolve_artifact_path(
+        artifacts,
+        config["paths"]["reports_root"],
+    ) / stage
+    cache_root = resolve_artifact_path(artifacts, config["paths"]["cache_root"])
+    reports_root.mkdir(parents = True, exist_ok = True)
+
+    print("=" * 88)
+    print("AIC 2026 RETRIEVAL V2")
+    print("=" * 88)
+    print(f"Stage:         {stage}")
+    print(f"Code root:     {CODE_ROOT}")
+    print(f"Artifact root: {artifacts}")
+    print(f"Reports:       {reports_root}")
+    print()
+
+    total = 6
+
+    start = log_stage(1, total, "Validating Stage 3 contract and benchmark identities...")
+    contract_validation = validate_stage03_contract(config)
+
+    if (not contract_validation["passed"]) :
+        raise RuntimeError(
+            f"Stage 3 config validation failed: {contract_validation['errors']}"
+        )
+
+    source_validation = validate_source_contract(config)
+    benchmarks, benchmark_paths, benchmark_validations = load_benchmarks(config)
+
+    if (not source_validation["passed"]) :
+        raise RuntimeError("Frozen Stage 1 source contract failed")
+
+    if (any(not item.get("passed", False) for item in benchmark_validations)) :
+        raise RuntimeError("Benchmark validation failed")
+
+    stage1_config = load_stage1_config(config)
+    log_done(start)
+
+    start = log_stage(2, total, "Validating development20, All50, and prerequisites...")
+    query_frames, query_validation = validate_query_and_corpus_contract(
+        config,
+        benchmarks,
+    )
+
+    if (not query_validation["passed"]) :
+        raise RuntimeError(
+            f"Query/corpus validation failed: {query_validation['errors']}"
+        )
+
+    prerequisite_stage0 = stage00_prerequisite(config, artifacts)
+    prerequisite_stage1 = stage01_prerequisite(config, artifacts)
+    prerequisite_stage2 = stage02_prerequisite(config, artifacts)
+    log_done(start)
+
+    start = log_stage(3, total, "Loading frozen L2/D1 window-score caches and aggregating videos...")
+    (
+        query_results,
+        metrics,
+        comparisons,
+        diagnostics,
+        method_summary,
+        query_latency,
+        source_records,
+        source_query_results,
+        video_cache_records,
+        stage3_validation,
+    ) = run_stage03(
+        config,
+        query_frames,
+        benchmarks,
+        artifacts,
+        cache_root,
+    )
+    latency_summary = stage3_validation.pop("latency_summary")
+    log_done(start)
+
+    start = log_stage(4, total, "Checking P0 reproduction, story invariance, and holdout exclusion...")
+    holdout_ids = set(query_validation["holdout_ids"])
+    result_query_ids = set(query_results["query_id"].astype(str))
+    holdout_overlap = sorted(result_query_ids & holdout_ids)
+
+    validation_summary = {
+        "passed" : bool(
+            contract_validation["passed"]
+            and source_validation["passed"]
+            and query_validation["passed"]
+            and stage3_validation["p0_reproduction"]["passed"]
+            and stage3_validation["story_invariance"]["passed"]
+            and stage3_validation["temporal_axis"]["passed"]
+            and not holdout_overlap
+        ),
+        "stage03_contract" : contract_validation,
+        "source_contract" : source_validation,
+        "benchmarks" : benchmark_validations,
+        "query_and_corpus" : query_validation,
+        "prerequisites" : {
+            "stage00_baseline" : {"passed" : bool(prerequisite_stage0.get("passed"))},
+            "stage01_lexical" : {"passed" : bool(prerequisite_stage1.get("passed"))},
+            "stage02_dense" : {"passed" : bool(prerequisite_stage2.get("passed"))},
+        },
+        "source_caches" : source_records,
+        "p0_reproduction" : stage3_validation["p0_reproduction"],
+        "story_invariance" : stage3_validation["story_invariance"],
+        "temporal_axis" : stage3_validation["temporal_axis"],
+        "holdout_query_overlap" : holdout_overlap,
+    }
+    write_json(reports_root / "validation_summary.json", validation_summary)
+
+    if (not validation_summary["passed"]) :
+        raise RuntimeError("Stage 3 validation failed")
+
+    log_done(start)
+
+    start = log_stage(5, total, "Writing Stage 3 reports and derived video-score cache...")
+    video_cache = _save_stage3_video_cache(
+        video_cache_records,
+        cache_root,
+        config,
+    )
+    cache_records = {
+        **video_cache,
+        "sources" : source_records,
+    }
+
+    write_csv(reports_root / "retrieval_metrics.csv", metrics)
+    write_csv(reports_root / "query_results.csv", query_results)
+    write_csv(reports_root / "query_comparison.csv", comparisons)
+    write_csv(reports_root / "method_summary.csv", method_summary)
+    write_csv(reports_root / "aggregation_diagnostics.csv", diagnostics)
+    write_csv(reports_root / "query_latency.csv", query_latency)
+    write_csv(reports_root / "latency_summary.csv", latency_summary)
+    log_done(start)
+
+    start = log_stage(6, total, "Finalizing Stage 3 manifest and stage status...")
+    manifest = build_manifest(
+        stage,
+        config,
+        benchmarks,
+        benchmark_paths,
+        artifacts,
+        stage1_config,
+        query_validation,
+        {
+            "passed" : True,
+            "note" : "Stage 3 consumes frozen Stage 1/2 score caches; ASR outputs are not reloaded.",
+            "source_caches" : source_records,
+        },
+        {},
+        cache_records,
+    )
+    manifest["stage03_sources"] = source_records
+    manifest["stage03_aggregation_policy_hash"] = canonical_json_hash(
+        config["stage03_aggregation"]["methods"]
+    )
+    write_json(reports_root / "retrieval_manifest.json", manifest)
+
+    summary = {
+        "schema_version" : "1.0",
+        "retrieval_id" : config["retrieval_id"],
+        "stage" : stage,
+        "generated_at_utc" : utc_now(),
+        "passed" : validation_summary["passed"],
+        "retrieval_config_sha256" : sha256_file(CONFIG_PATH),
+        "holdout_query_overlap" : holdout_overlap,
+        "source_validation_passed" : all(
+            item.get("passed", False) for item in source_records
+        ),
+        "p0_regression_passed" : stage3_validation["p0_reproduction"]["passed"],
+        "story_invariance_passed" : stage3_validation["story_invariance"]["passed"],
+        "temporal_axis_validation_passed" : stage3_validation["temporal_axis"]["passed"],
+        "sources_evaluated" : list(config["stage03_aggregation"]["sources"]),
+        "methods_evaluated" : list(config["stage03_aggregation"]["methods"]),
+        "method_summary" : method_summary.to_dict(orient = "records"),
+        "latency_summary" : latency_summary.to_dict(orient = "records"),
+        "reports_root" : str(reports_root),
+        "cache" : cache_records,
+        "provisional_default" : None,
+        "retained_alternative" : None,
+        "decision_required" : True,
+        "decision_note" : (
+            "Review P1-P4 against P0 across both frozen BM25 and E5-large "
+            "sources. No video aggregation policy is selected automatically."
+        ),
+    }
+    write_json(reports_root / "stage_summary.json", summary)
+    log_done(start)
+
+    print()
+    print("=" * 88)
+    print("RETRIEVAL V2 COMPLETE")
+    print("=" * 88)
+    print(f"Stage:   {stage}")
+    print("Status:  PASS")
+    print(f"Reports: {reports_root}")
+    print(f"Summary: {reports_root / 'stage_summary.json'}")
+
+
+
+
+# -----------------------------------------------------------------------------
+# Stage 4 sparse + dense hybrid retrieval
+# -----------------------------------------------------------------------------
+
+
+def validate_stage04_contract(config : dict[str, Any]) -> dict[str, Any] :
+    stage_config = config["stage04_hybrid"]
+    errors = []
+    expected_methods = {
+        "H0_sparse_only" : {"kind" : "identity", "source" : "sparse"},
+        "H1_dense_only" : {"kind" : "identity", "source" : "dense"},
+        "H2_rrf_k60" : {"kind" : "rrf", "k" : 60, "positive_evidence_only" : True},
+        "H3_norm_25_75" : {"kind" : "normalized_weighted", "sparse_weight" : 0.25, "dense_weight" : 0.75},
+        "H4_norm_50_50" : {"kind" : "normalized_weighted", "sparse_weight" : 0.50, "dense_weight" : 0.50},
+        "H5_norm_75_25" : {"kind" : "normalized_weighted", "sparse_weight" : 0.75, "dense_weight" : 0.25},
+    }
+
+    if (stage_config.get("query_set") != "development20") :
+        errors.append("Stage 4 query_set must be development20")
+
+    if (stage_config.get("corpus") != "all50") :
+        errors.append("Stage 4 corpus must be all50")
+
+    if (stage_config.get("sparse_source_id") != "S0_bm25_preserving") :
+        errors.append("Stage 4 sparse source must be S0_bm25_preserving")
+
+    if (stage_config.get("dense_source_id") != "S1_e5_large_instruct") :
+        errors.append("Stage 4 dense source must be S1_e5_large_instruct")
+
+    if (stage_config.get("video_aggregation") != "P0_max") :
+        errors.append("Stage 4 video aggregation must be frozen to P0_max")
+
+    methods = stage_config.get("methods", {})
+
+    if (set(methods) != set(expected_methods)) :
+        errors.append(f"Stage 4 methods mismatch: {sorted(methods)}")
+
+    for method_id, expected in expected_methods.items() :
+        actual = methods.get(method_id, {})
+
+        for key, value in expected.items() :
+            if (actual.get(key) != value) :
+                errors.append(f"{method_id}: {key} must be {value!r}")
+
+    normalization = stage_config.get("normalization", {})
+
+    if (normalization.get("policy") != "per_query_eligible_minmax_v1") :
+        errors.append("Stage 4 normalization policy must be per_query_eligible_minmax_v1")
+
+    if (float(normalization.get("constant_tolerance", math.nan)) != 1e-12) :
+        errors.append("Stage 4 normalization constant_tolerance must be 1e-12")
+
+    if (float(normalization.get("ineligible_score", math.nan)) != 0.0) :
+        errors.append("Stage 4 normalized ineligible score must be 0.0")
+
+    if (normalization.get("output_dtype") != "float32") :
+        errors.append("Stage 4 normalized output dtype must be float32")
+
+    stage02_decision = config.get("selection", {}).get("stage02_decision", {})
+
+    if (
+        stage02_decision.get("status") != "frozen_after_review"
+        or stage02_decision.get("dense_default") != "D1_e5_large_instruct"
+    ) :
+        errors.append("Stage 4 requires frozen Stage 2 decision D1_e5_large_instruct")
+
+    stage03_decision = config.get("selection", {}).get("stage03_decision", {})
+
+    if (
+        stage03_decision.get("status") != "frozen_after_review"
+        or stage03_decision.get("selected_aggregation") != "P0_max"
+    ) :
+        errors.append("Stage 4 requires frozen Stage 3 decision P0_max")
+
+    return {
+        "passed" : not errors,
+        "errors" : errors,
+        "methods" : methods,
+        "normalization" : normalization,
+        "stage02_decision" : stage02_decision,
+        "stage03_decision" : stage03_decision,
+    }
+
+
+def _stage4_clone_control(
+    source : ScoreBundle,
+    method_id : str,
+    source_role : str,
+) -> ScoreBundle :
+    return ScoreBundle(
+        method_id = method_id,
+        model_id = source.model_id,
+        view = source.view,
+        query_ids = source.query_ids,
+        window_ids = source.window_ids,
+        scores = source.scores.copy(),
+        eligibility_mask = source.eligibility_mask.copy(),
+        metadata = {
+            **source.metadata,
+            "fusion_type" : "identity_control",
+            "source_role" : source_role,
+            "source_method" : source.method_id,
+        },
+    )
+
+
+def _stage4_source_compatibility(
+    sparse_bundles : dict[str, ScoreBundle],
+    dense_bundles : dict[str, ScoreBundle],
+    config : dict[str, Any],
+) -> dict[str, Any] :
+    checks = []
+    errors = []
+
+    for channel_id in config["channels"] :
+        sparse = sparse_bundles.get(channel_id)
+        dense = dense_bundles.get(channel_id)
+
+        if (sparse is None or dense is None) :
+            errors.append(f"{channel_id}: sparse/dense source bundle is missing")
+            continue
+
+        fields = {
+            "query_ids" : sparse.query_ids == dense.query_ids,
+            "window_ids" : sparse.window_ids == dense.window_ids,
+            "model_id" : sparse.model_id == dense.model_id,
+            "view" : sparse.view == dense.view,
+            "eligibility_mask" : np.array_equal(
+                sparse.eligibility_mask,
+                dense.eligibility_mask,
+            ),
+            "sparse_finite" : bool(np.isfinite(sparse.scores).all()),
+            "dense_finite" : bool(np.isfinite(dense.scores).all()),
+        }
+        passed = all(fields.values())
+        checks.append({
+            "channel_id" : channel_id,
+            "model_id" : sparse.model_id,
+            "view" : sparse.view,
+            "query_count" : len(sparse.query_ids),
+            "window_count" : len(sparse.window_ids),
+            "checks" : fields,
+            "passed" : passed,
+        })
+
+        if (not passed) :
+            errors.append(f"{channel_id}: sparse/dense score-source identity mismatch")
+
+    return {
+        "passed" : not errors,
+        "checks" : checks,
+        "errors" : errors,
+    }
+
+
+def _stage4_normalization_stats(
+    bundle : ScoreBundle,
+) -> pd.DataFrame :
+    required = [
+        "sparse_min",
+        "sparse_max",
+        "sparse_range",
+        "sparse_constant",
+        "dense_min",
+        "dense_max",
+        "dense_range",
+        "dense_constant",
+    ]
+
+    if (not all(key in bundle.metadata for key in required)) :
+        return pd.DataFrame()
+
+    rows = []
+
+    for query_index, query_id in enumerate(bundle.query_ids) :
+        row = {
+            "method_id" : bundle.method_id,
+            "model_id" : bundle.model_id,
+            "view" : bundle.view,
+            "query_id" : query_id,
+        }
+
+        for key in required :
+            row[key] = bundle.metadata[key][query_index]
+
+        rows.append(row)
+
+    return pd.DataFrame(rows)
+
+
+def _stage4_latency_summary(
+    rows : list[dict[str, Any]],
+) -> pd.DataFrame :
+    if (not rows) :
+        return pd.DataFrame()
+
+    return pd.DataFrame(rows).sort_values(
+        ["method_id", "model_id", "view"],
+        kind = "mergesort",
+    ).reset_index(drop = True)
+
+
+def run_stage04(
+    config : dict[str, Any],
+    query_frames : dict[str, pd.DataFrame],
+    benchmarks : dict[str, dict[str, Any]],
+    artifacts : Path,
+    cache_root : Path,
+) -> tuple[
+    list[ScoreBundle],
+    pd.DataFrame,
+    pd.DataFrame,
+    pd.DataFrame,
+    pd.DataFrame,
+    pd.DataFrame,
+    pd.DataFrame,
+    list[dict[str, Any]],
+    dict[str, pd.DataFrame],
+    dict[str, Any],
+] :
+    stage_config = config["stage04_hybrid"]
+    query_set = stage_config["query_set"]
+    corpus_id = stage_config["corpus"]
+    query_frame = query_frames[query_set].reset_index(drop = True)
+    query_ids = query_frame["query_id"].astype(str).tolist()
+    windows = _stage3_physical_windows(benchmarks)
+    physical_window_ids = windows["window_id"].astype(str).tolist()
+
+    sparse_id = stage_config["sparse_source_id"]
+    dense_id = stage_config["dense_source_id"]
+    sparse_bundles, sparse_results, sparse_record = _load_stage3_source(
+        config,
+        artifacts,
+        sparse_id,
+        query_ids,
+        physical_window_ids,
+    )
+    dense_bundles, dense_results, dense_record = _load_stage3_source(
+        config,
+        artifacts,
+        dense_id,
+        query_ids,
+        physical_window_ids,
+    )
+    source_results = {
+        sparse_id : sparse_results,
+        dense_id : dense_results,
+    }
+    source_records = [sparse_record, dense_record]
+    compatibility = _stage4_source_compatibility(
+        sparse_bundles,
+        dense_bundles,
+        config,
+    )
+
+    if (not compatibility["passed"]) :
+        raise RuntimeError(
+            f"Stage 4 sparse/dense source compatibility failed: {compatibility['errors']}"
+        )
+
+    methods_config = stage_config["methods"]
+    normalization = stage_config["normalization"]
+    policy = config["evaluation_policy"]
+    bundles = []
+    result_frames = []
+    normalization_frames = []
+    latency_rows = []
+
+    for channel_id, channel_spec in config["channels"].items() :
+        sparse = sparse_bundles[channel_id]
+        dense = dense_bundles[channel_id]
+        methods = {}
+
+        for method_id, specification in methods_config.items() :
+            started = time.perf_counter()
+
+            if (specification["kind"] == "identity") :
+                source = sparse if specification["source"] == "sparse" else dense
+                bundle = _stage4_clone_control(
+                    source,
+                    method_id,
+                    specification["source"],
+                )
+            elif (specification["kind"] == "rrf") :
+                bundle = positive_evidence_rrf(
+                    sparse,
+                    dense,
+                    k = int(specification["k"]),
+                    tie_tolerance = float(policy["tie_tolerance"]),
+                    method_id = method_id,
+                )
+            elif (specification["kind"] == "normalized_weighted") :
+                bundle = normalized_weighted_score_bundle(
+                    sparse,
+                    dense,
+                    sparse_weight = float(specification["sparse_weight"]),
+                    dense_weight = float(specification["dense_weight"]),
+                    method_id = method_id,
+                    normalization_policy = normalization["policy"],
+                    constant_tolerance = float(normalization["constant_tolerance"]),
+                )
+            else :
+                raise ValueError(
+                    f"Unsupported Stage 4 method kind: {specification['kind']!r}"
+                )
+
+            fusion_ms = (time.perf_counter() - started) * 1000.0
+            bundle.metadata["query_set"] = query_set
+            bundle.metadata["corpus_id"] = corpus_id
+            bundle.metadata["channel_id"] = channel_id
+            bundle.metadata["video_aggregation"] = stage_config["video_aggregation"]
+            methods[method_id] = bundle
+            bundles.append(bundle)
+
+            normalization_frame = _stage4_normalization_stats(bundle)
+
+            if (not normalization_frame.empty) :
+                normalization_frames.append(normalization_frame)
+
+            started = time.perf_counter()
+            zero_reasons = [
+                None if eligible else "ineligible_source"
+                for eligible in bundle.eligibility_mask.tolist()
+            ]
+            results, _ = evaluate_score_matrix(
+                scores = bundle.scores,
+                queries = query_frame,
+                windows = windows,
+                model_id = bundle.model_id,
+                view = bundle.view,
+                method_id = bundle.method_id,
+                query_set = query_set,
+                corpus_id = corpus_id,
+                silver_radius_s = float(policy["silver_radius_s"]),
+                minimum_overlap_s = float(policy["minimum_overlap_s"]),
+                tie_tolerance = float(policy["tie_tolerance"]),
+                eligibility_mask = bundle.eligibility_mask,
+                zero_reasons = zero_reasons,
+                query_coverage = bundle.metadata.get("query_coverage"),
+            )
+            evaluation_ms = (time.perf_counter() - started) * 1000.0
+            result_frames.append(results)
+
+            latency_rows.append({
+                "method_id" : method_id,
+                "model_id" : bundle.model_id,
+                "view" : bundle.view,
+                "query_count" : len(query_ids),
+                "fusion_total_ms" : fusion_ms,
+                "fusion_per_query_ms" : fusion_ms / len(query_ids),
+                "aggregation_and_ranking_total_ms" : evaluation_ms,
+                "aggregation_and_ranking_per_query_ms" : evaluation_ms / len(query_ids),
+                "cached_score_stage_total_ms" : fusion_ms + evaluation_ms,
+                "cached_score_stage_per_query_ms" : (
+                    fusion_ms + evaluation_ms
+                ) / len(query_ids),
+            })
+
+    query_results = pd.concat(result_frames, ignore_index = True)
+    metrics = summarize_retrieval_metrics(query_results)
+    comparison_config = stage_config["catastrophic_failure"]
+    selection = stage_config["selection"]
+    comparisons = compare_stage4_methods(
+        query_results,
+        sparse_reference = selection["reference_sparse"],
+        dense_reference = selection["reference_dense"],
+        minimum_rank_drop = int(comparison_config["minimum_rank_drop"]),
+        result_rank_above = int(comparison_config["result_rank_above"]),
+        flag_reference_rank_1_candidate_above = int(
+            comparison_config["flag_reference_rank_1_candidate_above"]
+        ),
+    )
+    method_summary = summarize_stage4_methods(
+        query_results,
+        sparse_reference = selection["reference_sparse"],
+        dense_reference = selection["reference_dense"],
+        bootstrap_samples = int(selection["bootstrap_samples"]),
+        confidence = float(selection["bootstrap_confidence"]),
+        seed = int(selection["bootstrap_seed"]),
+    )
+    normalization_stats = (
+        pd.concat(normalization_frames, ignore_index = True)
+        if normalization_frames
+        else pd.DataFrame()
+    )
+    diagnostics = build_stage4_fusion_diagnostics(
+        query_results,
+        normalization_stats = normalization_stats,
+        sparse_reference = selection["reference_sparse"],
+        dense_reference = selection["reference_dense"],
+        minimum_rank_drop = int(comparison_config["minimum_rank_drop"]),
+        result_rank_above = int(comparison_config["result_rank_above"]),
+        flag_reference_rank_1_candidate_above = int(
+            comparison_config["flag_reference_rank_1_candidate_above"]
+        ),
+    )
+    latency_summary = _stage4_latency_summary(latency_rows)
+    control_validation = validate_stage4_control_reproduction(
+        query_results,
+        source_results,
+        control_map = {
+            "H0_sparse_only" : sparse_id,
+            "H1_dense_only" : dense_id,
+        },
+        tolerance = float(stage_config["control_score_tolerance"]),
+    )
+
+    return (
+        bundles,
+        query_results,
+        metrics,
+        comparisons,
+        method_summary,
+        diagnostics,
+        latency_summary,
+        source_records,
+        source_results,
+        {
+            "source_compatibility" : compatibility,
+            "control_reproduction" : control_validation,
+        },
+    )
+
+
+def run_stage04_main(
+    config : dict[str, Any],
+    artifacts : Path,
+) -> None :
+    stage = "stage04_hybrid"
+    reports_root = resolve_artifact_path(
+        artifacts,
+        config["paths"]["reports_root"],
+    ) / stage
+    cache_root = resolve_artifact_path(artifacts, config["paths"]["cache_root"])
+    reports_root.mkdir(parents = True, exist_ok = True)
+
+    print("=" * 88)
+    print("AIC 2026 RETRIEVAL V2")
+    print("=" * 88)
+    print(f"Stage:         {stage}")
+    print(f"Code root:     {CODE_ROOT}")
+    print(f"Artifact root: {artifacts}")
+    print(f"Reports:       {reports_root}")
+    print()
+
+    total = 6
+
+    start = log_stage(1, total, "Validating Stage 4 contract and frozen Stage 2/3 decisions...")
+    contract_validation = validate_stage04_contract(config)
+
+    if (not contract_validation["passed"]) :
+        raise RuntimeError(
+            f"Stage 4 config validation failed: {contract_validation['errors']}"
+        )
+
+    source_validation = validate_source_contract(config)
+    benchmarks, benchmark_paths, benchmark_validations = load_benchmarks(config)
+
+    if (not source_validation["passed"]) :
+        raise RuntimeError("Frozen Stage 1 source contract failed")
+
+    if (any(not item.get("passed", False) for item in benchmark_validations)) :
+        raise RuntimeError("Benchmark validation failed")
+
+    stage1_config = load_stage1_config(config)
+    log_done(start)
+
+    start = log_stage(2, total, "Validating development20, All50, and Stage 0-3 prerequisites...")
+    query_frames, query_validation = validate_query_and_corpus_contract(
+        config,
+        benchmarks,
+    )
+
+    if (not query_validation["passed"]) :
+        raise RuntimeError(
+            f"Query/corpus validation failed: {query_validation['errors']}"
+        )
+
+    prerequisite_stage0 = stage00_prerequisite(config, artifacts)
+    prerequisite_stage1 = stage01_prerequisite(config, artifacts)
+    prerequisite_stage2 = stage02_prerequisite(config, artifacts)
+    prerequisite_stage3 = _stage_prerequisite(
+        config,
+        artifacts,
+        "stage03_aggregation",
+        ["stage03_aggregation", "evaluation_policy"],
+    )
+    log_done(start)
+
+    start = log_stage(3, total, "Loading frozen L2/D1 score caches and evaluating H0-H5...")
+    (
+        bundles,
+        query_results,
+        metrics,
+        comparisons,
+        method_summary,
+        diagnostics,
+        latency_summary,
+        source_records,
+        source_query_results,
+        stage4_validation,
+    ) = run_stage04(
+        config,
+        query_frames,
+        benchmarks,
+        artifacts,
+        cache_root,
+    )
+    log_done(start)
+
+    start = log_stage(4, total, "Checking source compatibility, controls, and holdout exclusion...")
+    holdout_ids = set(query_validation["holdout_ids"])
+    result_query_ids = set(query_results["query_id"].astype(str))
+    holdout_overlap = sorted(result_query_ids & holdout_ids)
+    validation_summary = {
+        "passed" : bool(
+            contract_validation["passed"]
+            and source_validation["passed"]
+            and query_validation["passed"]
+            and stage4_validation["source_compatibility"]["passed"]
+            and stage4_validation["control_reproduction"]["passed"]
+            and not holdout_overlap
+        ),
+        "stage04_contract" : contract_validation,
+        "source_contract" : source_validation,
+        "benchmarks" : benchmark_validations,
+        "query_and_corpus" : query_validation,
+        "prerequisites" : {
+            "stage00_baseline" : {"passed" : bool(prerequisite_stage0.get("passed"))},
+            "stage01_lexical" : {"passed" : bool(prerequisite_stage1.get("passed"))},
+            "stage02_dense" : {"passed" : bool(prerequisite_stage2.get("passed"))},
+            "stage03_aggregation" : {"passed" : bool(prerequisite_stage3.get("passed"))},
+        },
+        "source_caches" : source_records,
+        "source_compatibility" : stage4_validation["source_compatibility"],
+        "control_reproduction" : stage4_validation["control_reproduction"],
+        "holdout_query_overlap" : holdout_overlap,
+    }
+    write_json(reports_root / "validation_summary.json", validation_summary)
+
+    if (not validation_summary["passed"]) :
+        raise RuntimeError("Stage 4 validation failed")
+
+    log_done(start)
+
+    start = log_stage(5, total, "Writing Stage 4 reports and hybrid window-score cache...")
+    cache_records = save_score_cache(
+        bundles,
+        query_results,
+        cache_root,
+        stage,
+    )
+    write_csv(reports_root / "retrieval_metrics.csv", metrics)
+    write_csv(reports_root / "query_results.csv", query_results)
+    write_csv(reports_root / "query_comparison.csv", comparisons)
+    write_csv(reports_root / "method_summary.csv", method_summary)
+    write_csv(reports_root / "fusion_diagnostics.csv", diagnostics)
+    write_csv(reports_root / "latency_summary.csv", latency_summary)
+    log_done(start)
+
+    start = log_stage(6, total, "Finalizing Stage 4 manifest and manual-decision status...")
+    manifest = build_manifest(
+        stage,
+        config,
+        benchmarks,
+        benchmark_paths,
+        artifacts,
+        stage1_config,
+        query_validation,
+        {
+            "passed" : True,
+            "note" : "Stage 4 consumes frozen Stage 1/2 window-score caches; ASR outputs and neural models are not reloaded.",
+            "source_caches" : source_records,
+        },
+        {},
+        cache_records,
+    )
+    manifest["stage04_sources"] = source_records
+    manifest["stage04_fusion_policy_hash"] = canonical_json_hash(
+        config["stage04_hybrid"]["methods"]
+    )
+    manifest["stage04_normalization_policy_hash"] = canonical_json_hash(
+        config["stage04_hybrid"]["normalization"]
+    )
+    write_json(reports_root / "retrieval_manifest.json", manifest)
+
+    summary = {
+        "schema_version" : "1.0",
+        "retrieval_id" : config["retrieval_id"],
+        "stage" : stage,
+        "generated_at_utc" : utc_now(),
+        "passed" : validation_summary["passed"],
+        "retrieval_config_sha256" : sha256_file(CONFIG_PATH),
+        "holdout_query_overlap" : holdout_overlap,
+        "source_validation_passed" : all(
+            item.get("passed", False) for item in source_records
+        ),
+        "source_compatibility_passed" : stage4_validation["source_compatibility"]["passed"],
+        "control_reproduction_passed" : stage4_validation["control_reproduction"]["passed"],
+        "methods_evaluated" : list(config["stage04_hybrid"]["methods"]),
+        "video_aggregation" : config["stage04_hybrid"]["video_aggregation"],
+        "method_summary" : method_summary.to_dict(orient = "records"),
+        "latency_summary" : latency_summary.to_dict(orient = "records"),
+        "reports_root" : str(reports_root),
+        "cache" : cache_records,
+        "provisional_default" : None,
+        "retained_alternative" : None,
+        "decision_required" : True,
+        "decision_note" : (
+            "Review H2-H5 against both H0 sparse and H1 dense using video quality, "
+            "paired query behavior, story guardrails, catastrophic failures, and simplicity. "
+            "No Stage 4 method is selected automatically."
+        ),
+    }
+    write_json(reports_root / "stage_summary.json", summary)
+    log_done(start)
+
+    print()
+    print("=" * 88)
+    print("RETRIEVAL V2 COMPLETE")
+    print("=" * 88)
+    print(f"Stage:   {stage}")
+    print("Status:  PASS")
+    print(f"Reports: {reports_root}")
+    print(f"Summary: {reports_root / 'stage_summary.json'}")
+
+
+# -----------------------------------------------------------------------------
+# Stage 5 ASR and transcript-view selection
+# -----------------------------------------------------------------------------
+
+
+def validate_stage05_contract(config : dict[str, Any]) -> dict[str, Any] :
+    stage_config = config["stage05_selection"]
+    errors = []
+    expected_channels = {
+        "whisper_raw",
+        "whisper_processed",
+        "parakeet_raw",
+        "parakeet_processed",
+    }
+
+    if (stage_config.get("query_set") != "development20") :
+        errors.append("Stage 5 query_set must be development20")
+
+    if (stage_config.get("corpus") != "all50") :
+        errors.append("Stage 5 corpus must be all50")
+
+    if (stage_config.get("source_stage") != "stage04_hybrid") :
+        errors.append("Stage 5 source_stage must be stage04_hybrid")
+
+    if (set(stage_config.get("required_channels", [])) != expected_channels) :
+        errors.append("Stage 5 must evaluate exactly the four frozen transcript channels")
+
+    thresholds = stage_config.get("quality_thresholds", {})
+    expected_thresholds = {
+        "video_recall_at_1_max_deficit" : 0.05,
+        "video_mrr_max_deficit" : 0.03,
+        "video_recall_at_5_max_deficit" : 0.05,
+        "video_recall_at_10_max_deficit" : 0.05,
+        "story_recall_at_1_max_deficit" : 0.10,
+        "story_mrr_max_deficit" : 0.05,
+    }
+
+    for key, value in expected_thresholds.items() :
+        if (float(thresholds.get(key, math.nan)) != value) :
+            errors.append(f"Stage 5 threshold {key} must be {value}")
+
+    cost_threshold = float(
+        stage_config.get("cost_thresholds", {}).get(
+            "minimum_rtf_speedup",
+            math.nan,
+        )
+    )
+
+    if (cost_threshold != 10.0) :
+        errors.append("Stage 5 minimum_rtf_speedup must be 10.0")
+
+    stage04_decision = config.get("selection", {}).get("stage04_decision", {})
+    selected_method = stage04_decision.get("selected_method")
+
+    if (stage04_decision.get("status") != "frozen_after_review") :
+        errors.append(
+            "Stage 5 is blocked until selection.stage04_decision.status is frozen_after_review"
+        )
+
+    if (selected_method not in config["stage04_hybrid"]["methods"]) :
+        errors.append(
+            "Stage 5 requires selection.stage04_decision.selected_method to be one Stage 4 method"
+        )
+
+    return {
+        "passed" : not errors,
+        "errors" : errors,
+        "selected_method" : selected_method,
+        "stage04_decision" : stage04_decision,
+        "quality_thresholds" : thresholds,
+        "cost_thresholds" : stage_config.get("cost_thresholds", {}),
+    }
+
+
+def _validate_stage5_cache(
+    config : dict[str, Any],
+    artifacts : Path,
+    stage4_summary : dict[str, Any],
+    selected_method : str,
+) -> dict[str, Any] :
+    specification = config["stage05_selection"]["stage04_cache"]
+    npz_path = resolve_artifact_path(
+        artifacts,
+        specification["window_scores_path"],
+    )
+    axes_path = resolve_artifact_path(
+        artifacts,
+        specification["score_axes_path"],
+    )
+
+    if (not npz_path.exists() or not axes_path.exists()) :
+        raise FileNotFoundError("Stage 5 Stage 4 score cache is missing")
+
+    actual_npz = sha256_file(npz_path)
+    actual_axes = sha256_file(axes_path)
+    expected_npz = (
+        stage4_summary
+        .get("cache", {})
+        .get("window_scores", {})
+        .get("sha256")
+    )
+    expected_axes = (
+        stage4_summary
+        .get("cache", {})
+        .get("score_axes", {})
+        .get("sha256")
+    )
+
+    if (actual_npz != expected_npz) :
+        raise RuntimeError("Stage 5 Stage 4 window-score cache SHA-256 mismatch")
+
+    if (actual_axes != expected_axes) :
+        raise RuntimeError("Stage 5 Stage 4 score-axis cache SHA-256 mismatch")
+
+    axes = load_json(axes_path)
+    matches = [
+        item
+        for item in axes.get("bundles", [])
+        if item.get("query_set") == config["stage05_selection"]["query_set"]
+        and item.get("method_id") == selected_method
+    ]
+    expected_channels = {
+        (
+            config["channels"][channel_id]["model_id"],
+            config["channels"][channel_id]["view"],
+        )
+        for channel_id in config["stage05_selection"]["required_channels"]
+    }
+    actual_channels = {
+        (str(item.get("model_id")), str(item.get("view")))
+        for item in matches
+    }
+
+    if (actual_channels != expected_channels or len(matches) != 4) :
+        raise ValueError(
+            "Stage 5 selected Stage 4 cache does not contain exactly the four required channels"
+        )
+
+    return {
+        "passed" : True,
+        "window_scores_path" : str(npz_path),
+        "window_scores_sha256" : actual_npz,
+        "score_axes_path" : str(axes_path),
+        "score_axes_sha256" : actual_axes,
+        "selected_method" : selected_method,
+        "bundle_count" : len(matches),
+    }
+
+
+def _load_stage5_operational_summary(
+    config : dict[str, Any],
+    artifacts : Path,
+) -> tuple[pd.DataFrame, pd.DataFrame, dict[str, Any]] :
+    specification = config["stage05_selection"]["operational_summary"]
+    path = resolve_artifact_path(artifacts, specification["path"])
+
+    if (not path.exists()) :
+        raise FileNotFoundError(
+            f"Stage 5 operational summary is missing: {path}"
+        )
+
+    actual_hash = sha256_file(path)
+    expected_hash = specification.get("expected_sha256")
+
+    if (expected_hash and actual_hash != expected_hash) :
+        raise RuntimeError(
+            f"Stage 5 operational summary SHA-256 mismatch: "
+            f"{actual_hash} != {expected_hash}"
+        )
+
+    frame = pd.read_csv(path)
+    required_columns = {
+        "model_id",
+        "stage_id",
+        "expected_window_count",
+        "successful_window_count",
+        "failed_window_count",
+        "empty_window_count",
+        "total_inference_runtime_s",
+        "aggregate_rtf",
+        "median_window_rtf",
+        "p90_window_rtf",
+        "windows_per_hour",
+        "peak_gpu_memory_bytes",
+        "peak_reserved_memory_bytes",
+    }
+    missing = sorted(required_columns - set(frame.columns))
+
+    if (missing) :
+        raise KeyError(f"Stage 5 operational summary is missing columns: {missing}")
+
+    required_models = set(specification["required_model_ids"])
+    required_stages = set(specification["required_stage_ids"])
+    filtered = frame[
+        frame["model_id"].astype(str).isin(required_models)
+        & frame["stage_id"].astype(str).isin(required_stages)
+    ].copy()
+
+    expected_pairs = {
+        (model_id, stage_id)
+        for model_id in required_models
+        for stage_id in required_stages
+    }
+    actual_pairs = set(zip(
+        filtered["model_id"].astype(str),
+        filtered["stage_id"].astype(str),
+    ))
+
+    if (actual_pairs != expected_pairs or len(filtered) != len(expected_pairs)) :
+        raise ValueError(
+            "Stage 5 operational summary does not contain exactly the required model/stage rows"
+        )
+
+    rows = []
+    whisper_id = "whisper_large_v3"
+    parakeet_id = "parakeet_ctc_0_6b_vietnamese"
+
+    for stage_id in sorted(required_stages) :
+        whisper = filtered[
+            (filtered["model_id"] == whisper_id)
+            & (filtered["stage_id"] == stage_id)
+        ].iloc[0]
+        parakeet = filtered[
+            (filtered["model_id"] == parakeet_id)
+            & (filtered["stage_id"] == stage_id)
+        ].iloc[0]
+        speedup = float(whisper["aggregate_rtf"]) / float(parakeet["aggregate_rtf"])
+
+        rows.append({
+            "stage_id" : stage_id,
+            "whisper_aggregate_rtf" : float(whisper["aggregate_rtf"]),
+            "parakeet_aggregate_rtf" : float(parakeet["aggregate_rtf"]),
+            "parakeet_rtf_speedup" : speedup,
+            "whisper_total_inference_runtime_s" : float(
+                whisper["total_inference_runtime_s"]
+            ),
+            "parakeet_total_inference_runtime_s" : float(
+                parakeet["total_inference_runtime_s"]
+            ),
+            "whisper_peak_gpu_memory_bytes" : float(
+                whisper["peak_gpu_memory_bytes"]
+            ),
+            "parakeet_peak_gpu_memory_bytes" : float(
+                parakeet["peak_gpu_memory_bytes"]
+            ),
+            "whisper_to_parakeet_peak_memory_ratio" : (
+                float(whisper["peak_gpu_memory_bytes"])
+                / float(parakeet["peak_gpu_memory_bytes"])
+            ),
+            "whisper_failed_windows" : int(whisper["failed_window_count"]),
+            "parakeet_failed_windows" : int(parakeet["failed_window_count"]),
+            "whisper_empty_windows" : int(whisper["empty_window_count"]),
+            "parakeet_empty_windows" : int(parakeet["empty_window_count"]),
+        })
+
+    comparison = pd.DataFrame(rows)
+    minimum_speedup = float(comparison["parakeet_rtf_speedup"].min())
+    threshold = float(
+        config["stage05_selection"]["cost_thresholds"]["minimum_rtf_speedup"]
+    )
+    record = {
+        "passed" : True,
+        "path" : str(path),
+        "sha256" : actual_hash,
+        "expected_sha256" : expected_hash,
+        "hash_pinned" : bool(expected_hash),
+        "minimum_parakeet_rtf_speedup" : minimum_speedup,
+        "minimum_required_rtf_speedup" : threshold,
+        "cost_gate_passed" : minimum_speedup >= threshold,
+    }
+    return filtered, comparison, record
+
+
+def _stage5_retrieval_latency_context(
+    config : dict[str, Any],
+    artifacts : Path,
+    selected_method : str,
+) -> pd.DataFrame :
+    specification = config["stage05_selection"]["retrieval_latency_context"]
+    rows = []
+
+    stage02_path = resolve_artifact_path(
+        artifacts,
+        specification["stage02_latency_summary_path"],
+    )
+
+    if (stage02_path.exists()) :
+        dense = pd.read_csv(stage02_path)
+        dense = dense[
+            dense["backend_id"].astype(str) == specification["dense_backend_id"]
+        ].copy()
+
+        for _, item in dense.iterrows() :
+            for field in [
+                "query_encode_p50_ms",
+                "query_encode_p90_ms",
+                "retrieval_p50_ms",
+                "retrieval_p90_ms",
+                "end_to_end_p50_ms",
+                "end_to_end_p90_ms",
+            ] :
+                if (field in item.index and pd.notna(item[field])) :
+                    rows.append({
+                        "source" : "stage02_dense_online_reference",
+                        "method_id" : specification["dense_backend_id"],
+                        "channel" : item.get("channel_id"),
+                        "metric" : field,
+                        "value_ms" : float(item[field]),
+                    })
+
+    stage04_path = resolve_artifact_path(
+        artifacts,
+        specification["stage04_latency_summary_path"],
+    )
+
+    if (stage04_path.exists()) :
+        hybrid = pd.read_csv(stage04_path)
+        hybrid = hybrid[
+            hybrid["method_id"].astype(str) == selected_method
+        ].copy()
+
+        for _, item in hybrid.iterrows() :
+            for field in [
+                "fusion_per_query_ms",
+                "aggregation_and_ranking_per_query_ms",
+                "cached_score_stage_per_query_ms",
+            ] :
+                if (field in item.index and pd.notna(item[field])) :
+                    rows.append({
+                        "source" : "stage04_cached_score_reference",
+                        "method_id" : selected_method,
+                        "channel" : f"{item['model_id']}__{item['view']}",
+                        "metric" : field,
+                        "value_ms" : float(item[field]),
+                    })
+
+    return pd.DataFrame(rows)
+
+
+def _stage5_failure_cases(
+    pair_queries : pd.DataFrame,
+) -> pd.DataFrame :
+    if (pair_queries.empty) :
+        return pd.DataFrame()
+
+    selected_indices = set()
+
+    for pair_id, group in pair_queries.groupby("pair_id", sort = True) :
+        notable = group[
+            group["catastrophic_regression"].astype(bool)
+            | group["hard_top1_regression"].astype(bool)
+            | (
+                group["video_rank_delta_parakeet_minus_whisper"]
+                .abs()
+                >= 5
+            )
+        ]
+        selected_indices.update(notable.index.tolist())
+        selected_indices.update(
+            group.nlargest(
+                5,
+                "video_rank_delta_parakeet_minus_whisper",
+            ).index.tolist()
+        )
+        selected_indices.update(
+            group.nsmallest(
+                5,
+                "video_rank_delta_parakeet_minus_whisper",
+            ).index.tolist()
+        )
+
+    result = pair_queries.loc[sorted(selected_indices)].copy()
+    return result.sort_values(
+        [
+            "pair_id",
+            "catastrophic_regression",
+            "hard_top1_regression",
+            "video_rank_delta_parakeet_minus_whisper",
+        ],
+        ascending = [True, False, False, False],
+        kind = "mergesort",
+    ).reset_index(drop = True)
+
+
+def run_stage05_main(
+    config : dict[str, Any],
+    artifacts : Path,
+) -> None :
+    stage = "stage05_selection"
+    reports_root = resolve_artifact_path(
+        artifacts,
+        config["paths"]["reports_root"],
+    ) / stage
+    reports_root.mkdir(parents = True, exist_ok = True)
+
+    print("=" * 88)
+    print("AIC 2026 RETRIEVAL V2")
+    print("=" * 88)
+    print(f"Stage:         {stage}")
+    print(f"Code root:     {CODE_ROOT}")
+    print(f"Artifact root: {artifacts}")
+    print(f"Reports:       {reports_root}")
+    print()
+
+    total = 6
+
+    start = log_stage(1, total, "Validating Stage 5 thresholds and frozen Stage 4 decision...")
+    contract_validation = validate_stage05_contract(config)
+
+    if (not contract_validation["passed"]) :
+        raise RuntimeError(
+            "Stage 5 config validation failed: "
+            f"{contract_validation['errors']}"
+        )
+
+    source_validation = validate_source_contract(config)
+    benchmarks, benchmark_paths, benchmark_validations = load_benchmarks(config)
+
+    if (not source_validation["passed"]) :
+        raise RuntimeError("Frozen Stage 1 source contract failed")
+
+    if (any(not item.get("passed", False) for item in benchmark_validations)) :
+        raise RuntimeError("Benchmark validation failed")
+
+    stage1_config = load_stage1_config(config)
+    log_done(start)
+
+    start = log_stage(2, total, "Validating development20, All50, and Stage 4 prerequisite...")
+    query_frames, query_validation = validate_query_and_corpus_contract(
+        config,
+        benchmarks,
+    )
+
+    if (not query_validation["passed"]) :
+        raise RuntimeError(
+            f"Query/corpus validation failed: {query_validation['errors']}"
+        )
+
+    stage4_summary = _stage_prerequisite(
+        config,
+        artifacts,
+        "stage04_hybrid",
+        ["stage04_hybrid", "evaluation_policy"],
+    )
+    selected_method = str(contract_validation["selected_method"])
+    cache_validation = _validate_stage5_cache(
+        config,
+        artifacts,
+        stage4_summary,
+        selected_method,
+    )
+    log_done(start)
+
+    start = log_stage(3, total, "Loading the frozen Stage 4 winner across four independent channels...")
+    stage4_reports = resolve_artifact_path(
+        artifacts,
+        config["paths"]["reports_root"],
+    ) / "stage04_hybrid"
+    query_results_path = stage4_reports / "query_results.csv"
+
+    if (not query_results_path.exists()) :
+        raise FileNotFoundError(
+            f"Stage 5 source query results are missing: {query_results_path}"
+        )
+
+    source_results = pd.read_csv(query_results_path)
+    query_results = source_results[
+        source_results["method_id"].astype(str) == selected_method
+    ].copy()
+    expected_rows = (
+        int(config["query_sets"]["development20"]["expected_query_count"])
+        * len(config["stage05_selection"]["required_channels"])
+    )
+
+    if (len(query_results) != expected_rows) :
+        raise ValueError(
+            f"Stage 5 expected {expected_rows} selected-method query rows, "
+            f"found {len(query_results)}"
+        )
+
+    metrics = summarize_retrieval_metrics(query_results)
+    view_queries = compare_stage5_views(query_results)
+    view_summary = summarize_stage5_views(view_queries)
+    pair_queries, pair_summary = compare_stage5_asr_pairs(
+        query_results,
+        quality_thresholds = config["stage05_selection"]["quality_thresholds"],
+        catastrophic_failure = config["stage05_selection"]["catastrophic_failure"],
+    )
+    failure_cases = _stage5_failure_cases(pair_queries)
+    operational, operational_comparison, operational_record = (
+        _load_stage5_operational_summary(config, artifacts)
+    )
+    latency_context = _stage5_retrieval_latency_context(
+        config,
+        artifacts,
+        selected_method,
+    )
+
+    pair_summary["minimum_parakeet_rtf_speedup"] = operational_record[
+        "minimum_parakeet_rtf_speedup"
+    ]
+    pair_summary["cost_gate_passed"] = operational_record["cost_gate_passed"]
+    pair_summary["parakeet_equivalence_candidate"] = (
+        pair_summary["quality_thresholds_passed"].astype(bool)
+        & pair_summary["catastrophic_gate_passed"].astype(bool)
+        & pair_summary["cost_gate_passed"].astype(bool)
+        & ~pair_summary["manual_inspection_required"].astype(bool)
+    )
+    log_done(start)
+
+    start = log_stage(4, total, "Checking channel completeness, thresholds, failures, and holdout exclusion...")
+    holdout_ids = set(query_validation["holdout_ids"])
+    result_query_ids = set(query_results["query_id"].astype(str))
+    holdout_overlap = sorted(result_query_ids & holdout_ids)
+    expected_channels = {
+        (
+            config["channels"][channel_id]["model_id"],
+            config["channels"][channel_id]["view"],
+        )
+        for channel_id in config["stage05_selection"]["required_channels"]
+    }
+    actual_channels = set(zip(
+        query_results["model_id"].astype(str),
+        query_results["view"].astype(str),
+    ))
+    channels_complete = actual_channels == expected_channels
+    validation_summary = {
+        "passed" : bool(
+            contract_validation["passed"]
+            and source_validation["passed"]
+            and query_validation["passed"]
+            and cache_validation["passed"]
+            and operational_record["passed"]
+            and channels_complete
+            and not holdout_overlap
+        ),
+        "stage05_contract" : contract_validation,
+        "source_contract" : source_validation,
+        "benchmarks" : benchmark_validations,
+        "query_and_corpus" : query_validation,
+        "stage04_prerequisite" : {
+            "passed" : bool(stage4_summary.get("passed")),
+            "selected_method" : selected_method,
+        },
+        "stage04_cache" : cache_validation,
+        "operational_source" : operational_record,
+        "channels_complete" : channels_complete,
+        "expected_channels" : sorted(expected_channels),
+        "actual_channels" : sorted(actual_channels),
+        "holdout_query_overlap" : holdout_overlap,
+    }
+    write_json(reports_root / "validation_summary.json", validation_summary)
+
+    if (not validation_summary["passed"]) :
+        raise RuntimeError("Stage 5 validation failed")
+
+    log_done(start)
+
+    start = log_stage(5, total, "Writing Stage 5 quality, cost, and failure-analysis reports...")
+    write_csv(reports_root / "retrieval_metrics.csv", metrics)
+    write_csv(reports_root / "query_results.csv", query_results)
+    write_csv(reports_root / "view_query_comparison.csv", view_queries)
+    write_csv(reports_root / "view_summary.csv", view_summary)
+    write_csv(reports_root / "asr_pair_query_comparison.csv", pair_queries)
+    write_csv(reports_root / "asr_pair_summary.csv", pair_summary)
+    write_csv(reports_root / "failure_cases.csv", failure_cases)
+    write_csv(reports_root / "operational_summary.csv", operational)
+    write_csv(
+        reports_root / "operational_comparison.csv",
+        operational_comparison,
+    )
+    write_csv(
+        reports_root / "retrieval_latency_context.csv",
+        latency_context,
+    )
+    log_done(start)
+
+    start = log_stage(6, total, "Finalizing Stage 5 manifest and manual selection status...")
+    manifest = build_manifest(
+        stage,
+        config,
+        benchmarks,
+        benchmark_paths,
+        artifacts,
+        stage1_config,
+        query_validation,
+        {
+            "passed" : True,
+            "note" : "Stage 5 consumes the frozen Stage 4 winner and does not recompute retrieval or fuse transcript channels.",
+            "selected_method" : selected_method,
+        },
+        {},
+        {
+            "stage04_source_cache" : cache_validation,
+            "operational_summary" : operational_record,
+        },
+    )
+    manifest["stage05_selected_stage04_method"] = selected_method
+    manifest["stage05_operational_source"] = operational_record
+    write_json(reports_root / "retrieval_manifest.json", manifest)
+
+    equivalence_candidates = pair_summary[
+        pair_summary["parakeet_equivalence_candidate"].astype(bool)
+    ]["pair_id"].astype(str).tolist()
+    summary = {
+        "schema_version" : "1.0",
+        "retrieval_id" : config["retrieval_id"],
+        "stage" : stage,
+        "generated_at_utc" : utc_now(),
+        "passed" : validation_summary["passed"],
+        "retrieval_config_sha256" : sha256_file(CONFIG_PATH),
+        "selected_stage04_method" : selected_method,
+        "holdout_query_overlap" : holdout_overlap,
+        "quality_thresholds" : config["stage05_selection"]["quality_thresholds"],
+        "catastrophic_failure_policy" : config["stage05_selection"]["catastrophic_failure"],
+        "cost_thresholds" : config["stage05_selection"]["cost_thresholds"],
+        "minimum_parakeet_rtf_speedup" : operational_record[
+            "minimum_parakeet_rtf_speedup"
+        ],
+        "cost_gate_passed" : operational_record["cost_gate_passed"],
+        "parakeet_equivalence_candidates" : equivalence_candidates,
+        "view_summary" : view_summary.to_dict(orient = "records"),
+        "asr_pair_summary" : pair_summary.to_dict(orient = "records"),
+        "reports_root" : str(reports_root),
+        "provisional_default" : None,
+        "selected_asr" : None,
+        "selected_view" : None,
+        "selected_channel_id" : None,
+        "decision_required" : True,
+        "decision_note" : (
+            "Review the four independent channels, raw-vs-processed effects, "
+            "Whisper-vs-Parakeet quality deficits, catastrophic failures, and ASR cost. "
+            "No ASR or transcript view is selected automatically."
+        ),
+    }
+    write_json(reports_root / "stage_summary.json", summary)
+    log_done(start)
+
+    print()
+    print("=" * 88)
+    print("RETRIEVAL V2 COMPLETE")
+    print("=" * 88)
+    print(f"Stage:   {stage}")
+    print("Status:  PASS")
+    print(f"Reports: {reports_root}")
+    print(f"Summary: {reports_root / 'stage_summary.json'}")
 
 def compact_stage00_regression(regression : dict[str, Any] | None) -> dict[str, Any] | None:
     if (regression is None) :
@@ -1691,6 +3820,18 @@ def main() -> None :
     reports_root = resolve_artifact_path(artifacts, config["paths"]["reports_root"]) / args.stage
     cache_root   = resolve_artifact_path(artifacts, config["paths"]["cache_root"])
     reports_root.mkdir(parents = True, exist_ok = True)
+
+    if (args.stage == "stage03_aggregation") :
+        run_stage03_main(config, artifacts)
+        return
+
+    if (args.stage == "stage04_hybrid") :
+        run_stage04_main(config, artifacts)
+        return
+
+    if (args.stage == "stage05_selection") :
+        run_stage05_main(config, artifacts)
+        return
 
     print("=" * 88)
     print("AIC 2026 RETRIEVAL V2")

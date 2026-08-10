@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "retrieval_id": "aic2026_retrieval_v2_stage00_stage02",
+  "retrieval_id": "aic2026_retrieval_v2_stage00_stage05",
   "retrieval_frozen": false,
   "source_stage1": {
     "config_path": "configs/stage1_evaluation.json",
@@ -313,6 +313,41 @@
         "L4_bm25_rrf"
       ],
       "note": "L2 is the only lexical method carried forward; L0 remains a control and L1 a methodological comparison."
+    },
+    "stage02_decision": {
+      "status": "frozen_after_review",
+      "dense_default": "D1_e5_large_instruct",
+      "retained_alternative": null,
+      "rejected_methods": [
+        "D2_qwen3_embedding_0_6b",
+        "D3_bge_m3_dense"
+      ],
+      "note": "D1 E5-large-instruct is the only dense retriever carried forward; D0 remains a historical control."
+    },
+    "stage03_decision": {
+      "status": "frozen_after_review",
+      "selected_aggregation": "P0_max",
+      "retained_alternative": null,
+      "rejected_methods": [
+        "P1_top2_mean",
+        "P2_top3_mean",
+        "P3_adjacent2_mean",
+        "P4_contiguous3_mean"
+      ],
+      "note": "Maximum-window aggregation is retained. Repeated or contiguous fixed-window support was not consistent enough to replace max."
+    },
+    "stage04_decision": {
+        "status": "frozen_after_review",
+        "selected_method": "H3_norm_25_75",
+        "retained_alternative": null,
+        "note": "Selected after Stage 4 review. H3 improved composite Video MRR from 0.7301 for dense-only to 0.7841, improved Video R@1 from 0.6500 to 0.7125, improved Story MRR from 0.8413 to 0.8777, and had a positive 90% bootstrap interval for Video RR improvement versus dense-only."
+    },
+    "stage05_decision": {
+        "status": "frozen_after_review",
+        "selected_asr": "parakeet_ctc_0_6b_vietnamese",
+        "selected_view": "processed",
+        "selected_channel_id": "parakeet_processed",
+        "note": "Selected after Stage 5 review. Under H3_norm_25_75, Parakeet processed achieved the best Video R@1 (0.75) and Video MRR (0.8102), passed all predefined video and story quality thresholds against Whisper processed, had no catastrophic same-view ASR regressions, and was at least 33.83x faster in measured ASR RTF with lower peak GPU memory."
     }
   },
   "paths": {
@@ -418,6 +453,196 @@
         50,
         90
       ]
+    }
+  },
+  "stage03_aggregation": {
+    "query_set": "development20",
+    "corpus": "all50",
+    "sources": {
+      "S0_bm25_preserving": {
+        "summary_label": "bm25",
+        "source_stage": "stage01_lexical",
+        "method_id": "L2_bm25_preserving",
+        "window_scores_path": "cache/retrieval_v2/stage01_lexical/window_scores.npz",
+        "score_axes_path": "cache/retrieval_v2/stage01_lexical/score_axes.json",
+        "expected_window_scores_sha256": null,
+        "expected_score_axes_sha256": null,
+        "note": "Hashes are resolved from the passed Stage 1 stage_summary when null."
+      },
+      "S1_e5_large_instruct": {
+        "summary_label": "dense",
+        "source_stage": "stage02_dense",
+        "method_id": "D1_e5_large_instruct",
+        "window_scores_path": "cache/retrieval_v2/stage02_dense/window_scores.npz",
+        "score_axes_path": "cache/retrieval_v2/stage02_dense/score_axes.json",
+        "expected_window_scores_sha256": null,
+        "expected_score_axes_sha256": null,
+        "note": "Hashes are resolved from the passed Stage 2 stage_summary when null."
+      }
+    },
+    "methods": {
+      "P0_max": {
+        "kind": "max"
+      },
+      "P1_top2_mean": {
+        "kind": "topk_mean",
+        "k": 2
+      },
+      "P2_top3_mean": {
+        "kind": "topk_mean",
+        "k": 3
+      },
+      "P3_adjacent2_mean": {
+        "kind": "contiguous_mean",
+        "span": 2
+      },
+      "P4_contiguous3_mean": {
+        "kind": "contiguous_mean",
+        "span": 3
+      }
+    },
+    "reference_aggregation": "P0_max",
+    "aggregation_dtype": "float64",
+    "ineligible_window_policy": "zero_before_aggregation",
+    "ineligible_window_score": 0.0,
+    "p0_score_tolerance": 1e-12,
+    "selection": {
+      "provisional_default": null,
+      "retained_alternative": null,
+      "policy": "manual_review_after_cross_source_paired_summary",
+      "bootstrap_samples": 10000,
+      "bootstrap_confidence": 0.9,
+      "bootstrap_seed": 20260811,
+      "note": "Select one aggregation only after reviewing BM25 and E5-large independently plus paired query evidence. P0 max remains valid if alternatives are unstable."
+    },
+    "runtime": {
+      "measure_aggregation_latency": true,
+      "latency_percentiles": [
+        50,
+        90
+      ]
+    }
+  },
+  "stage04_hybrid": {
+    "query_set": "development20",
+    "corpus": "all50",
+    "sparse_source_id": "S0_bm25_preserving",
+    "dense_source_id": "S1_e5_large_instruct",
+    "video_aggregation": "P0_max",
+    "methods": {
+      "H0_sparse_only": {
+        "kind": "identity",
+        "source": "sparse"
+      },
+      "H1_dense_only": {
+        "kind": "identity",
+        "source": "dense"
+      },
+      "H2_rrf_k60": {
+        "kind": "rrf",
+        "k": 60,
+        "positive_evidence_only": true
+      },
+      "H3_norm_25_75": {
+        "kind": "normalized_weighted",
+        "sparse_weight": 0.25,
+        "dense_weight": 0.75
+      },
+      "H4_norm_50_50": {
+        "kind": "normalized_weighted",
+        "sparse_weight": 0.5,
+        "dense_weight": 0.5
+      },
+      "H5_norm_75_25": {
+        "kind": "normalized_weighted",
+        "sparse_weight": 0.75,
+        "dense_weight": 0.25
+      }
+    },
+    "normalization": {
+      "policy": "per_query_eligible_minmax_v1",
+      "constant_tolerance": 1e-12,
+      "ineligible_score": 0.0,
+      "output_dtype": "float32"
+    },
+    "control_score_tolerance": 1e-12,
+    "catastrophic_failure": {
+      "minimum_rank_drop": 10,
+      "result_rank_above": 10,
+      "flag_reference_rank_1_candidate_above": 20
+    },
+    "selection": {
+      "reference_sparse": "H0_sparse_only",
+      "reference_dense": "H1_dense_only",
+      "policy": "manual_review_against_both_standalone_retrievers",
+      "bootstrap_samples": 10000,
+      "bootstrap_confidence": 0.9,
+      "bootstrap_seed": 20260811,
+      "provisional_default": null,
+      "retained_alternative": null,
+      "note": "Promote a hybrid only after reviewing video quality, paired query behavior, story guardrails, catastrophic failures, and consistency across all four transcript channels."
+    },
+    "runtime": {
+      "measure_cached_stage_latency": true,
+      "latency_percentiles": [
+        50,
+        90
+      ]
+    }
+  },
+  "stage05_selection": {
+    "query_set": "development20",
+    "corpus": "all50",
+    "source_stage": "stage04_hybrid",
+    "required_channels": [
+      "whisper_raw",
+      "whisper_processed",
+      "parakeet_raw",
+      "parakeet_processed"
+    ],
+    "stage04_cache": {
+      "window_scores_path": "cache/retrieval_v2/stage04_hybrid/window_scores.npz",
+      "score_axes_path": "cache/retrieval_v2/stage04_hybrid/score_axes.json"
+    },
+    "operational_summary": {
+      "path": "reports/stage1/full_evaluation/development/operational_summary.csv",
+      "expected_sha256": null,
+      "required_model_ids": [
+        "whisper_large_v3",
+        "parakeet_ctc_0_6b_vietnamese"
+      ],
+      "required_stage_ids": [
+        "stage1_10_video",
+        "stage1_extension40"
+      ],
+      "note": "The runner always records the actual SHA-256. Set expected_sha256 later if an additional hard pin is desired."
+    },
+    "retrieval_latency_context": {
+      "stage02_latency_summary_path": "reports/retrieval_v2/stage02_dense/latency_summary.csv",
+      "stage04_latency_summary_path": "reports/retrieval_v2/stage04_hybrid/latency_summary.csv",
+      "dense_backend_id": "D1_e5_large_instruct"
+    },
+    "quality_thresholds": {
+      "video_recall_at_1_max_deficit": 0.05,
+      "video_mrr_max_deficit": 0.03,
+      "video_recall_at_5_max_deficit": 0.05,
+      "video_recall_at_10_max_deficit": 0.05,
+      "story_recall_at_1_max_deficit": 0.1,
+      "story_mrr_max_deficit": 0.05
+    },
+    "catastrophic_failure": {
+      "minimum_rank_drop": 10,
+      "result_rank_above": 10,
+      "maximum_additional_failures": 1,
+      "flag_reference_rank_1_candidate_above": 20
+    },
+    "cost_thresholds": {
+      "minimum_rtf_speedup": 10.0
+    },
+    "selection": {
+      "policy": "manual_review_after_quality_cost_tradeoff",
+      "decision_required": true,
+      "note": "Stage 5 evaluates the four channels independently. It never fuses ASR models or raw/processed views."
     }
   }
 }

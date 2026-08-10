@@ -1,41 +1,61 @@
-# Retrieval v2 Progress Update – 2026-08-10
+# Retrieval v2 Progress Update – 2026-08-11
 
-> **Status:** Stage 1 and Stage 2 complete. Stage 3 is next.  
-> **Selected lexical retriever:** BM25 preserving Vietnamese accents  
-> **Selected dense retriever:** multilingual-e5-large-instruct  
-> **ASR and text-view selection:** Open  
+> **Status:** Stages 1–5 complete. Stage 6 is next.  
+> **Selected ASR:** Parakeet CTC 0.6B Vietnamese  
+> **Selected transcript view:** Processed  
+> **Selected retriever:** 25% BM25 + 75% E5-large-instruct  
+> **Selected video aggregation:** Max window  
 > **Holdout:** Not evaluated
 
 ## 1. Overview
 
 ### 1.1 Goal
 
-Retrieval v2 aims to improve ASR-based video and temporal retrieval for the AIC 2026 video-search pipeline. The main weakness of the historical baseline was global video discrimination: the system could often localize the relevant moment once the correct video was known, but identifying that video among the full retrieval corpus remained difficult.
-
-The current work therefore focuses first on improving text retrieval quality, then on improving video-level evidence aggregation, before selecting the final ASR and transcript view.
+Retrieval v2 develops the ASR-based text retrieval component of the AIC 2026 video-search system. The work began from a baseline that could often localize a relevant transcript window once the correct video was known, but global video identification remained difficult. Stages 1–5 progressively improved lexical retrieval, dense retrieval, video aggregation, sparse+dense fusion, and finally ASR and transcript-view selection.
 
 ### 1.2 Current status
 
-| Stage | Purpose | Status | Main outcome |
+| Stage | Purpose | Status | Final decision |
 |---|---|---|---|
-| Stage 1 | Improve lexical retrieval | Complete | Accent-preserving BM25 selected |
-| Stage 2 | Improve dense retrieval | Complete | multilingual-e5-large-instruct selected |
-| Stage 3 | Improve video and temporal aggregation | Next | Not started |
-| Stage 4 | Combine sparse and dense retrieval | Pending | Not evaluated |
-| Stage 5 | Select ASR and transcript view | Pending | Not evaluated |
-| Later stages | Hierarchical retrieval, reranking, query representation, multimodal retrieval | Pending | Not evaluated |
+| Stage 1 | Lexical retrieval | Complete | `L2_bm25_preserving` |
+| Stage 2 | Dense retrieval | Complete | `D1_e5_large_instruct` |
+| Stage 3 | Video aggregation | Complete | `P0_max` |
+| Stage 4 | Sparse+dense hybrid | Complete | `H3_norm_25_75` |
+| Stage 5 | ASR and text view | Complete | Parakeet processed |
+| Stage 6 | Hierarchical retrieval | Next | Not evaluated |
+| Stage 7–10 | Reranking, representation, multimodal retrieval, holdout | Pending | Not evaluated |
 
-### 1.3 Headline result
+### 1.3 Current selected ASR retrieval pipeline
 
-The strongest current text-only result uses **multilingual-e5-large-instruct with Whisper raw transcripts**.
+```text
+Parakeet CTC 0.6B Vietnamese
+        ↓
+processed transcript
+        ↓
+60 s windows / 45 s stride
+        ↓
+L2 BM25 preserving
+        +
+D1 E5-large-instruct
+        ↓
+per-query eligible-only min-max normalization
+        ↓
+0.25 BM25 + 0.75 E5
+        ↓
+max window per video
+        ↓
+video ranking
+```
 
-| Configuration | Video R@1 | Video MRR | Story R@1 | Story MRR |
+### 1.4 Headline result
+
+| Checkpoint | Video R@1 | Video MRR | Story R@1 | Story MRR |
 |---|---:|---:|---:|---:|
 | Historical Baseline v1, Whisper raw | 0.60 | 0.6761 | 0.70 | 0.7831 |
-| **E5-large-instruct, Whisper raw** | **0.70** | **0.7601** | **0.85** | **0.8779** |
-| E5-large-instruct, Parakeet raw | 0.65 | 0.7265 | 0.70 | 0.8333 |
+| Stage 2 D1, Whisper raw | 0.70 | 0.7601 | 0.85 | 0.8779 |
+| **Stage 5 selected pipeline, Parakeet processed** | **0.75** | **0.8102** | **0.80** | **0.8583** |
 
-The current best Parakeet result is close to Whisper on video retrieval, but the ASR decision remains open until later retrieval stages are complete.
+The final Stage 1–5 ASR retrieval baseline therefore improves global video retrieval substantially over the historical baseline while using the faster Parakeet ASR.
 
 ---
 
@@ -53,30 +73,28 @@ The current best Parakeet result is close to Whisper on video retrieval, but the
 | Window overlap | 15 s |
 | Holdout queries | 20, kept closed |
 
-All architecture decisions reported here use **development20** against the full **All50** corpus. The holdout set has not been used for model or hyperparameter selection.
+All architecture decisions reported here use **development20** against the full **All50** corpus. Holdout20 has not been used for model, weight, view, or architecture selection.
 
-### 2.2 Transcript channels
+### 2.2 Metrics
 
-Four transcript channels are evaluated independently during development:
+**Video R@1** measures how often the correct video is ranked first. **Video R@5** and **Video R@10** measure whether it appears within the top candidate set. **Video MRR** rewards systems that place the correct video near the top even when it is not ranked first.
 
-| ASR | View | Meaning |
-|---|---|---|
-| Whisper large-v3 | raw | Original ASR transcript |
-| Whisper large-v3 | processed | Conservatively cleaned transcript |
-| Parakeet CTC 0.6B Vietnamese | raw | Original ASR transcript |
-| Parakeet CTC 0.6B Vietnamese | processed | Conservatively cleaned transcript |
+**Story R@1** and **Story MRR** measure temporal localization within the known correct video. Video metrics therefore measure global video discrimination, while Story metrics measure within-video localization.
 
-These channels are used for diagnosis and robustness checks. **They are not fused.**
+Because development20 contains only 20 queries, one query changes R@1 by 0.05. Aggregate metrics are interpreted together with paired per-query ranks, failure cases, and bootstrap intervals.
 
-### 2.3 Metrics
+### 2.3 Development channels
 
-**Video R@1** is the fraction of queries for which the correct video is ranked first.
+Stages 1–5 evaluated four transcript channels independently:
 
-**Video MRR** is the mean reciprocal rank of the correct video. It rewards systems that place the correct video near the top even when it is not ranked first.
+```text
+Whisper raw
+Whisper processed
+Parakeet raw
+Parakeet processed
+```
 
-**Story R@1** and **Story MRR** measure temporal localization within the known correct video.
-
-Higher values are better for all reported retrieval metrics. Because development20 contains only 20 queries, one query changes R@1 by 0.05. Paired per-query results are therefore considered together with aggregate metrics.
+These channels were used for diagnosis and robustness checks and were **never fused**. Stage 5 selected **Parakeet processed**, so later stages should use only that channel unless a later reviewed decision explicitly changes the baseline.
 
 ---
 
@@ -86,17 +104,7 @@ Higher values are better for all reported retrieval metrics. Because development
 
 #### Question
 
-Does a proper corpus-based lexical retriever improve retrieval over the historical query-fitted TF-IDF baseline?
-
-#### Methods
-
-| ID | Method | Purpose |
-|---|---|---|
-| L0 | Query-fitted TF-IDF | Historical lexical control |
-| L1 | Corpus-fitted TF-IDF | Correct the TF-IDF fitting source |
-| L2 | BM25 preserving accents | Standard lexical retrieval while preserving Vietnamese diacritics |
-| L3 | BM25 with accent folding | Test robustness to ASR diacritic errors |
-| L4 | RRF of L2 and L3 | Test whether the two BM25 rankings are complementary |
+Does a proper lexical retriever improve retrieval over the historical query-fitted TF-IDF control?
 
 #### Results
 
@@ -108,14 +116,11 @@ Does a proper corpus-based lexical retriever improve retrieval over the historic
 | L3 BM25 folded | 0.4381 | -0.1005 | 7 / 3 / 10 | 0.6797 |
 | L4 BM25 RRF | 0.5174 | -0.0211 | 7 / 4 / 9 | 0.7339 |
 
-Corpus-fitted TF-IDF was methodologically cleaner than query-fitted TF-IDF, but the gain was small. Accent-preserving BM25 produced the strongest lexical retrieval. Accent folding substantially degraded retrieval, and fusing the strong and weak BM25 variants through RRF also reduced performance.
+Corpus-fitted TF-IDF was methodologically cleaner than query-fitted TF-IDF, but the gain was small. Accent-preserving BM25 produced the strongest lexical retrieval. Accent folding removed useful distinctions and substantially reduced performance, while RRF with the weaker folded BM25 variant also hurt retrieval.
 
-#### Decision
+**Decision:** `L2_bm25_preserving`
 
-**Selected lexical retriever:** `L2_bm25_preserving`  
-**Retained alternative:** None
-
-Accent-preserving BM25 is the only lexical method carried forward.
+**What we learned:** Vietnamese accent preservation is important for lexical retrieval, and BM25 is a substantially stronger sparse baseline than the historical query-fitted TF-IDF setup.
 
 ### 3.2 Stage 2 – Dense Retrieval
 
@@ -123,18 +128,7 @@ Accent-preserving BM25 is the only lexical method carried forward.
 
 Can a stronger multilingual embedding model improve global video discrimination while preserving temporal localization?
 
-#### Methods
-
-| ID | Dense model | Role |
-|---|---|---|
-| D0 | multilingual-e5-small | Historical dense control |
-| D1 | multilingual-e5-large-instruct | Strong E5 candidate |
-| D2 | Qwen3-Embedding-0.6B | Modern multilingual candidate |
-| D3 | BGE-M3 dense | Modern multilingual candidate |
-
-All models were evaluated independently on the same four ASR and text-view channels. Video aggregation remained fixed at max-window scoring. No lexical+dense fusion, ASR fusion, transcript-view fusion, reranking, or query rewriting was used.
-
-#### Main results
+#### Results
 
 | Dense model | Composite Video RR | Δ vs D0 | Better / Tie / Worse | 90% bootstrap interval | Composite Story RR |
 |---|---:|---:|---:|---:|---:|
@@ -143,169 +137,191 @@ All models were evaluated independently on the same four ASR and text-view chann
 | D2 Qwen3-0.6B | 0.6569 | +0.0640 | 8 / 6 / 6 | [-0.0471, +0.1817] | 0.8313 |
 | D3 BGE-M3 | 0.5682 | -0.0247 | 5 / 6 / 9 | [-0.0885, +0.0359] | 0.8472 |
 
-E5-large-instruct clearly produced the strongest video retrieval. Its composite Video RR improved by **0.1372** over E5-small, while composite Story RR decreased by only **0.0138**. The gain was broad across the development set: 12 queries improved, six tied, and two worsened. The 90% bootstrap interval for the Video RR improvement remained above zero.
+E5-large-instruct produced the strongest video retrieval and the clearest paired improvement. The gain over E5-small was broad across the development set, while the Story RR decrease was small.
 
-#### E5-large-instruct by transcript channel
+At this stage Whisper raw was the strongest individual channel, with Video R@1 = 0.70 and Video MRR = 0.7601. This was treated as an intermediate result rather than a final ASR decision.
 
-| Channel | Video R@1 | Video MRR | Story R@1 | Story MRR |
+**Decision:** `D1_e5_large_instruct`
+
+**What we learned:** Dense representation quality has a large effect on global video retrieval, and E5-large-instruct provides the strongest quality-efficiency trade-off among the tested dense models.
+
+### 3.3 Stage 3 – Video and Temporal Aggregation
+
+#### Question
+
+Can repeated or temporally supported window evidence improve video ranking over max-window scoring?
+
+#### Results
+
+| Method | BM25 MRR | Dense MRR | Cross-source MRR | Δ vs max |
 |---|---:|---:|---:|---:|
-| Parakeet processed | 0.60 | 0.6808 | 0.75 | 0.8250 |
-| **Parakeet raw** | **0.65** | **0.7265** | 0.70 | 0.8333 |
-| Whisper processed | 0.65 | 0.7532 | 0.75 | 0.8288 |
-| **Whisper raw** | **0.70** | **0.7601** | **0.85** | **0.8779** |
+| **P0 Max** | **0.6064** | 0.7301 | 0.6683 | – |
+| P1 Top-2 mean | 0.6030 | **0.7443** | **0.6737** | +0.0054 |
+| P2 Top-3 mean | 0.5647 | 0.6776 | 0.6212 | -0.0471 |
+| P3 Adjacent-2 | 0.6032 | 0.7107 | 0.6570 | -0.0113 |
+| P4 Contiguous-3 | 0.5749 | 0.6647 | 0.6198 | -0.0484 |
 
-Whisper raw currently gives the strongest overall text-only result. Parakeet raw is close on video retrieval, with a Video R@1 gap of **0.05** and a Video MRR gap of **0.0336** relative to Whisper raw.
+Top-2 mean produced a small cross-source gain and showed that repeated evidence can sometimes suppress isolated false-positive peaks. However, the improvement was inconsistent across retrieval sources and transcript views, and its bootstrap interval crossed zero.
 
-One query, `R2-3`, remains a clear systematic regression for E5-large across the transcript channels and should be tracked in later stages. The second aggregate regression, `R2-8`, is small and mixed across channels.
+Adjacent and contiguous pooling did not generalize. Requiring three strong windows clearly diluted relevant evidence for short or highly localized spoken moments. Fixed temporal adjacency between overlapping ASR windows is therefore not a reliable substitute for semantic event continuity.
 
-#### Decision
+**Decision:** `P0_max`
 
-**Selected dense retriever:** `D1_e5_large_instruct`  
-**Retained alternative:** None
+**What we learned:** Strong partial relevance remains important. A single transcript window can legitimately contain most of the useful spoken evidence for a video.
 
-Qwen3-Embedding-0.6B improved over E5-small but was less consistent and substantially slower. BGE-M3 did not improve video retrieval and is not carried forward.
+### 3.4 Stage 4 – Sparse + Dense Hybrid Retrieval
+
+#### Question
+
+Does combining lexical and semantic retrieval improve over either source independently?
+
+#### Results
+
+| Method | Video MRR | Video R@1 | Story MRR | Δ Video MRR vs dense |
+|---|---:|---:|---:|---:|
+| H0 Sparse | 0.6064 | 0.4875 | 0.7839 | -0.1238 |
+| H1 Dense | 0.7301 | 0.6500 | 0.8413 | – |
+| H2 RRF | 0.7225 | 0.6125 | 0.8342 | -0.0077 |
+| **H3 25/75 normalized** | **0.7841** | **0.7125** | **0.8777** | **+0.0539** |
+| H4 50/50 | 0.7482 | 0.6500 | 0.8014 | +0.0180 |
+| H5 75/25 | 0.6700 | 0.5500 | 0.7976 | -0.0601 |
+
+`H3_norm_25_75` produced the strongest overall retrieval. Its Video RR improvement over dense-only had a positive 90% bootstrap interval of **[+0.0014, +0.1106]**. The result shows that dense retrieval should remain the main signal, while BM25 works best as a smaller lexical correction.
+
+The query-level behavior also clarified several persistent failures. `R2-1` worsened systematically when lexical evidence was added. `R3-2` and `R3-20` benefited strongly from the hybrid. `R2-3` reached strong Story localization but still struggled with global video ranking.
+
+**Decision:** `H3_norm_25_75`
+
+**What we learned:** Sparse and dense evidence are complementary, but the sparse signal should remain secondary. Rank fusion and heavier sparse weighting were less effective than normalized score fusion.
+
+### 3.5 Stage 5 – ASR and Text-View Selection
+
+#### Question
+
+After improving retrieval itself, which ASR and transcript view should feed the final Stage 1–5 text retrieval baseline?
+
+#### Results
+
+| Channel | Video R@1 | Video R@5 | Video R@10 | Video MRR | Story R@1 | Story MRR |
+|---|---:|---:|---:|---:|---:|---:|
+| **Parakeet processed** | **0.75** | **0.85** | 0.90 | **0.8102** | 0.80 | 0.8583 |
+| Parakeet raw | 0.70 | **0.85** | 0.90 | 0.7807 | **0.85** | **0.8950** |
+| Whisper processed | 0.70 | **0.85** | 0.90 | 0.7733 | **0.85** | 0.8837 |
+| Whisper raw | 0.70 | 0.80 | 0.90 | 0.7721 | 0.80 | 0.8738 |
+
+Parakeet processed produced the strongest global video retrieval. Against Whisper processed, it passed every pre-frozen video and Story quality threshold and introduced no catastrophic same-view ASR regression.
+
+Its operational advantage is also large. The measured Parakeet ASR RTF advantage is **38.1× on Core10** and **33.8× on Extension40**, with lower peak GPU memory.
+
+**Decision:** Parakeet CTC 0.6B Vietnamese with the processed transcript view.
+
+**What we learned:** The earlier Whisper advantage was partly an interaction between transcript output and retrieval architecture. Once sparse and dense retrieval were combined, Parakeet became the strongest video-retrieval channel rather than merely a cheaper approximation.
+
+Stage 5 closes the four-channel diagnostic phase. Stage 6 onward should use only **Parakeet processed**.
 
 ---
 
-## 4. Current Best Configuration
+## 4. Current Frozen ASR Retrieval System
 
-### 4.1 Selected components
+### 4.1 Frozen components
 
-| Component | Current choice | Status |
-|---|---|---|
-| Lexical retriever | BM25 preserving Vietnamese accents | Selected |
-| Dense retriever | multilingual-e5-large-instruct | Selected |
-| Video aggregation | Max window | Temporary baseline |
-| ASR | Not selected | Open |
-| Transcript view | Not selected | Open |
-| Sparse+dense fusion | Not evaluated | Pending |
-| Reranker | Not evaluated | Pending |
-| Visual and OCR evidence | Not integrated | Pending |
-
-### 4.2 Current retrieval performance
-
-The strongest current dense-only configuration is:
-
-| Setting | Value |
+| Component | Frozen choice |
 |---|---|
-| Dense model | multilingual-e5-large-instruct |
-| ASR | Whisper large-v3 |
-| Transcript view | Raw |
-| Video aggregation | Max window |
-| Video R@1 | **0.70** |
-| Video MRR | **0.7601** |
-| Story R@1 | **0.85** |
-| Story MRR | **0.8779** |
+| ASR | Parakeet CTC 0.6B Vietnamese |
+| Transcript view | Processed |
+| Windowing | 60 s, stride 45 s, overlap 15 s |
+| Sparse retriever | `L2_bm25_preserving` |
+| Dense retriever | `D1_e5_large_instruct` |
+| Score normalization | Per-query, eligible-only min-max |
+| Sparse weight | 0.25 |
+| Dense weight | 0.75 |
+| Video aggregation | `P0_max` |
+| Query representation | Original natural-language query |
 
-The strongest Parakeet configuration currently reaches **Video R@1 = 0.65** and **Video MRR = 0.7265** with raw transcripts. This is already stronger than the historical Whisper raw Baseline v1 on both Video R@1 and Video MRR, showing that retrieval improvements can compensate for a meaningful part of the original ASR gap.
+### 4.2 Development performance
 
-The ASR and transcript-view choices are intentionally not frozen yet.
+| Metric | Result |
+|---|---:|
+| Video R@1 | **0.75** |
+| Video R@5 | **0.85** |
+| Video R@10 | **0.90** |
+| Video MRR | **0.8102** |
+| Story R@1 | **0.80** |
+| Story R@5 | **0.95** |
+| Story R@10 | **1.00** |
+| Story MRR | **0.8583** |
+
+Implementation details for this frozen Stage 1–5 subsystem are documented separately in `docs/asr-retrieval-system.md`.
 
 ---
 
 ## 5. Efficiency and Operational Results
 
-### 5.1 Dense-model efficiency
+### 5.1 Selected ASR cost
 
-All Stage 2 runtime measurements were collected on a Tesla T4.
+| Benchmark | Whisper RTF | Parakeet RTF | Parakeet speedup |
+|---|---:|---:|---:|
+| Core10 | 0.3257 | 0.00855 | 38.1× |
+| Extension40 | 0.3047 | 0.00901 | 33.8× |
 
-| Dense model | Index throughput | Warm E2E p50 | Warm E2E p90 | Warm QPS | Peak GPU allocated |
-|---|---:|---:|---:|---:|---:|
-| E5-small | 191.9 docs/s | 10.46 ms | 11.10 ms | 94.4 | 0.85 GiB |
-| **E5-large-instruct** | **103.6 docs/s** | **24.82 ms** | **30.10 ms** | **38.7** | **1.18 GiB** |
-| Qwen3-0.6B | 7.57 docs/s | 74.22 ms | 94.52 ms | 13.1 | 2.50 GiB |
-| BGE-M3 | 20.24 docs/s | 28.06 ms | 35.38 ms | 33.7 | 2.38 GiB |
+Whisper peak GPU memory was approximately **6.75 GB**, compared with approximately **4.92 GB** for Parakeet. Both ASR systems completed the measured workloads without failed or empty windows.
 
-E5-large-instruct provides the strongest retrieval quality while remaining substantially faster and lighter than Qwen3 and BGE-M3. Its warm median end-to-end query latency is about **24.8 ms**.
+### 5.2 Retrieval cost
 
-Offline encoding of the 3,963 eligible transcript documents took approximately **38.2 s**, corresponding to **103.6 documents/s**.
+For `D1_e5_large_instruct`, median query encoding latency is approximately **24.44 ms**, and the measured dense online reference is approximately **24.8 ms p50** end to end.
 
-### 5.2 Where online latency comes from
+The Stage 4 H3 fusion operation itself costs about **0.1 ms per query** in cached-score evaluation. This is a separate measurement scope from the dense online benchmark, so the two values should not be interpreted as one directly measured production latency.
 
-For E5-large-instruct:
-
-| Component | Median latency |
-|---|---:|
-| Query encoding | 24.44 ms |
-| Similarity search + ranking + video aggregation | ~0.38 ms |
-| Warm end-to-end | 24.82 ms |
-
-Neural query encoding dominates online latency. Searching, ranking, and aggregating all 994 transcript windows takes well below 1 ms. Therefore, the current corpus size is not a retrieval-latency bottleneck.
-
-This also means that more informative video aggregation can be explored in Stage 3 without a strong latency concern, provided the implementation remains efficient.
+The current system is therefore dominated by dense query encoding rather than score fusion.
 
 ---
 
-## 6. Key Findings and Open Questions
+## 6. Key Findings and Remaining Limitations
 
 ### 6.1 Key findings
 
-1. **Correcting TF-IDF fitting alone was not enough.** Corpus-fitted TF-IDF was cleaner methodologically but only slightly better than the historical lexical control.
+1. **Dense retrieval produced the largest early improvement.** E5-large-instruct substantially improved global video ranking over the historical dense baseline.
+2. **BM25 contributes useful complementary evidence when kept at low weight.** A 25% sparse contribution improves both Video MRR and Story MRR over dense-only retrieval.
+3. **Max-window scoring remains the most reliable video aggregation policy.** Requiring multiple strong or adjacent ASR windows often dilutes short but valid evidence.
+4. **Fixed temporal adjacency is not semantic event continuity.** Neighboring overlapping ASR windows do not reliably represent one coherent event.
+5. **Retrieval architecture changed the ASR conclusion.** Parakeet was behind Whisper under dense-only retrieval but became the strongest video channel after sparse+dense fusion.
+6. **Global video discrimination remains the main ASR-text bottleneck.** Temporal localization is often strong even when the correct video is ranked poorly.
 
-2. **Accent-preserving BM25 is the strongest lexical method.** Accent folding removed useful Vietnamese distinctions and substantially reduced retrieval quality.
+### 6.2 Remaining limitations
 
-3. **Dense representation quality has a larger effect on video retrieval.** E5-large-instruct produced a much larger improvement than the lexical changes alone.
-
-4. **E5-large-instruct has the best quality-efficiency trade-off.** It achieved the strongest video retrieval while remaining much faster and lighter than Qwen3 and BGE-M3.
-
-5. **The Whisper-Parakeet gap has narrowed.** With E5-large-instruct and raw transcripts, the Video R@1 gap is 0.05 and the Video MRR gap is 0.0336.
-
-6. **Global video discrimination remains harder than temporal localization.** Story metrics are already strong, while some queries still rank the correct video poorly because an unrelated window receives a higher score.
-
-### 6.2 Open questions
-
-1. Can temporal support across multiple windows improve video ranking over max-window scoring?
-2. Does combining BM25 with E5-large-instruct improve retrieval beyond either method alone?
-3. After aggregation and hybrid retrieval improve, is Whisper still sufficiently better than Parakeet to justify its higher ASR cost?
-4. Should raw or processed transcripts be retained as the primary text view?
-5. Which remaining failures require visual or OCR evidence rather than better ASR-based retrieval?
-6. Does the known `R2-3` failure improve under better video aggregation or hybrid retrieval?
+- `R2-1` remains sensitive to misleading lexical evidence.
+- `R2-3` can localize the relevant Story window but still struggles with global video discrimination.
+- `R2-8` remains difficult across multiple retrieval configurations.
+- Queries that depend mainly on visual appearance, scene text, or OCR cannot be solved reliably by ASR text alone.
+- Current architecture decisions are based on development20.
+- Holdout20 remains closed.
 
 ---
 
 ## 7. Next Steps
 
-### 7.1 Planned retrieval stages
+| Stage | Main question |
+|---|---|
+| Stage 6 | Does hierarchical video → temporal retrieval improve candidate handling or later reranking? |
+| Stage 7 | Can a second-stage reranker correct difficult text-ranking errors? |
+| Stage 8 | Can better query or transcript representations improve retrieval? |
+| Stage 9 | Which remaining failures require visual and OCR evidence? |
+| Stage 10 | Does the fully frozen system generalize to holdout20? |
 
-| Next stage | Main question | Planned experiment |
-|---|---|---|
-| Stage 3 | Can stronger video and temporal aggregation improve global ranking? | Compare max, top-k, and temporally supported evidence using BM25 and E5-large |
-| Stage 4 | Are lexical and semantic signals complementary? | Combine selected BM25 and E5-large retrieval through controlled hybrid methods |
-| Stage 5 | Which ASR and transcript view should remain? | Re-evaluate Whisper raw/processed and Parakeet raw/processed under the improved retriever |
-| Later | Can candidate ranking and representation improve further? | Hierarchical retrieval, reranking, query representation |
-| Multimodal stage | Which failures require non-ASR evidence? | Integrate visual and OCR retrieval |
-| Final | Does the frozen system generalize? | Run holdout20 once after the architecture is frozen |
-
-Stage 3 should use only the two selected retrieval sources:
+Stages 6–10 start from one frozen ASR retrieval baseline:
 
 ```text
-Lexical: L2_bm25_preserving
-Dense:   D1_e5_large_instruct
+Parakeet processed
++
+L2 BM25 preserving
++
+D1 E5-large-instruct
++
+H3 normalized 25/75 fusion
++
+P0 max video aggregation
 ```
 
-No Qwen3, BGE-M3, accent-folded BM25, ASR fusion, or transcript-view fusion branches are carried forward.
+Large per-query outputs, cache identities, source hashes, runtime details, and reproducibility metadata remain in the stage-specific artifacts under `reports/retrieval_v2/` and `cache/retrieval_v2/`.
 
-### 7.2 Reproducibility and source reports
-
-Exact model revisions, source hashes, cache identities, environment details, and per-query outputs remain in the stage artifacts under:
-
-```text
-reports/retrieval_v2/stage01_lexical/
-reports/retrieval_v2/stage02_dense/
-```
-
-The main Stage 2 supporting files are:
-
-```text
-retrieval_metrics.csv
-method_summary.csv
-query_comparison.csv
-dense_diagnostics.csv
-backend_summary.csv
-latency_summary.csv
-asr_gap_summary.csv
-stage_summary.json
-retrieval_manifest.json
-```
-
-The holdout set remains closed until the retrieval architecture, ASR choice, transcript view, and selection policy are frozen.
+**Holdout20 remains closed until the full retrieval architecture is frozen.**

@@ -409,29 +409,19 @@ Average the three strongest window scores.
 
 Purpose: test whether broader repeated support improves robustness.
 
-**P3 – Adjacent or contiguous support**
+**P3 – Best adjacent-pair mean**
 
-Reward the strongest pair or short run of neighboring high-scoring windows.
+Order the windows temporally, average every pair of neighboring window scores, and use the strongest pair as the video score.
 
-For example:
+Purpose: test whether short contiguous temporal support is more reliable than an isolated peak.
 
-```text
-0.08  0.12  0.74  0.70  0.18
-            ↑     ↑
-      temporally supported
-```
+**P4 – Best contiguous-triplet mean**
 
-compared with:
+Average every valid run of three consecutive windows and use the strongest triplet as the video score.
 
-```text
-0.08  0.12  0.91  0.03  0.05
-            ↑
-        isolated spike
-```
+Purpose: test whether stronger temporal persistence provides additional robustness.
 
-Because adjacent windows overlap, this evidence should be described as temporal support or persistence rather than independent confirmation.
-
-A supported-max variant may also be retained if it provides a simple way to discount isolated peaks while preserving the strongest relevant window.
+Because adjacent windows overlap, this evidence should be described as temporal support or persistence rather than independent confirmation. P0–P4 form the complete first-pass Stage 3 experiment. More complex supported-max or event-style aggregation should only be considered if the first run reveals a clear trade-off that motivates a follow-up.
 
 #### What remains fixed
 
