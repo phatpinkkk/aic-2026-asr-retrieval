@@ -1,0 +1,312 @@
+{
+  "schema_version": "1.0",
+  "retrieval_id": "aic2026_retrieval_v2_stage00_stage01",
+  "retrieval_frozen": false,
+  "source_stage1": {
+    "config_path": "configs/stage1_evaluation.json",
+    "evaluation_path": "src/evaluation.py",
+    "postprocess_path": "src/postprocess.py",
+    "orchestrator_path": "src/06_evaluate_stage1_models.py",
+    "enforce_hashes": true,
+    "expected_sha256": {
+      "config": "bffb3dc8ce645ce8de7015fc5a66dfc78aceb9a40e359eb1bfff9cd405713f6a",
+      "evaluation": "af870ed25a82bc4624e18eb7e7e86a8a36f78abc6a038ee916ef2f38ec07294f",
+      "postprocess": "5e1a74fef50f91cac32a1cc87ed866823b6703e88e9e24ef5b0ab4a72aa7e0b5",
+      "orchestrator": "c6856eb72a72c31563ad09fb144bc00dcc38428929025163431cff5d46877e96"
+    },
+    "expected_evaluation_version": "2.1.0",
+    "expected_postprocess_version": "1.1"
+  },
+  "benchmarks": {
+    "core10": {
+      "path": "data/benchmark_manifest.json",
+      "expected_file_sha256": "af4c20a71672bb4768ddf0a3f9af60a1707b45a96fb405e8188c7b756b71f837",
+      "expected_stage_id": "stage1_10_video",
+      "expected_video_count": 10,
+      "expected_query_count": 10,
+      "expected_window_count": 219,
+      "expected_benchmark_content_hash": "a606d209e1b09fafa77d6f430ad68bf94e3d3bca8e77de2833fe74ece37c4bac",
+      "expected_window_policy_hash": "02f41c37cc9024a1b11fc04e35d9656df3357928355f33f1ebe48d2fd0aa5d29"
+    },
+    "extension40": {
+      "path": "data/stage1_extension40/benchmark_manifest.json",
+      "expected_file_sha256": "8ea86b3b1e75925e71c23e8d72f8dd2d6bfe500af2266ae25f3a5c6eee3cf7f7",
+      "expected_stage_id": "stage1_extension40",
+      "expected_video_count": 40,
+      "expected_query_count": 40,
+      "expected_window_count": 775,
+      "expected_benchmark_content_hash": "c1c986ab306c7b42d0ebcafc4832bd5e46b3f51b91444c58a3b0a3ceba835b6c",
+      "expected_window_policy_hash": "02f41c37cc9024a1b11fc04e35d9656df3357928355f33f1ebe48d2fd0aa5d29"
+    }
+  },
+  "query_sets": {
+    "regression_core10": {
+      "corpus": "core10",
+      "sources": [
+        {
+          "benchmark": "core10",
+          "split": "all"
+        }
+      ],
+      "expected_query_count": 10,
+      "expected_query_hash": "d067cfc67156a775d1faae103ddfc3fbd555167ebec36138ea94225ed838e7c4"
+    },
+    "development20": {
+      "corpus": "all50",
+      "sources": [
+        {
+          "benchmark": "extension40",
+          "split": "development20"
+        }
+      ],
+      "expected_query_count": 20,
+      "expected_query_hash": "0878c78f8d6f94c11d876cc9636077d6088ff34904a559c007dc618af8bffa0e"
+    }
+  },
+  "corpora": {
+    "core10": {
+      "benchmarks": [
+        "core10"
+      ],
+      "expected_window_count": 219,
+      "expected_video_count": 10,
+      "expected_corpus_hash": "1bd50391cad7efa5da5cb6298bcce75175b2bf5e89cecdaca3ead161d31170e8"
+    },
+    "all50": {
+      "benchmarks": [
+        "core10",
+        "extension40"
+      ],
+      "expected_window_count": 994,
+      "expected_video_count": 50,
+      "expected_corpus_hash": "caa5423fe28088979dbe21a5ab17c487ebbdb4d3e099fa2006075fcaffc444be"
+    }
+  },
+  "channels": {
+    "whisper_raw": {
+      "model_id": "whisper_large_v3",
+      "view": "raw",
+      "text_field": "raw_text",
+      "rejection_field": "canonical_rejection_reasons",
+      "apply_rejections": false
+    },
+    "whisper_processed": {
+      "model_id": "whisper_large_v3",
+      "view": "processed",
+      "text_field": "canonical_retrieval_text",
+      "rejection_field": "canonical_rejection_reasons",
+      "apply_rejections": true
+    },
+    "parakeet_raw": {
+      "model_id": "parakeet_ctc_0_6b_vietnamese",
+      "view": "raw",
+      "text_field": "raw_text",
+      "rejection_field": "canonical_rejection_reasons",
+      "apply_rejections": false
+    },
+    "parakeet_processed": {
+      "model_id": "parakeet_ctc_0_6b_vietnamese",
+      "view": "processed",
+      "text_field": "canonical_retrieval_text",
+      "rejection_field": "canonical_rejection_reasons",
+      "apply_rejections": true
+    }
+  },
+  "stage00_baseline": {
+    "query_sets": [
+      "regression_core10",
+      "development20"
+    ],
+    "lexical": {
+      "analyzer": "char_wb",
+      "ngram_min": 3,
+      "ngram_max": 5,
+      "min_df": 1,
+      "lowercase": false,
+      "fit_source": "active_query_set",
+      "accent_combination": "maximum"
+    },
+    "semantic": {
+      "model_name": "intfloat/multilingual-e5-small",
+      "revision": "614241f622f53c4eeff9890bdc4f31cfecc418b3",
+      "query_prefix": "query: ",
+      "passage_prefix": "passage: ",
+      "normalize_embeddings": true,
+      "score_clip": [
+        0.0,
+        1.0
+      ]
+    },
+    "lexical_weight": 0.5,
+    "semantic_weight": 0.5,
+    "expected_metrics": {
+      "regression_core10": {
+        "whisper_large_v3": {
+          "processed": {
+            "method_id": "baseline_v1",
+            "tolerance": 1e-09,
+            "metrics": {
+              "story_recall_at_1": 0.8,
+              "story_recall_at_3": 0.9,
+              "story_mrr": 0.8583333333333332,
+              "video_recall_at_1": 0.8,
+              "video_mrr": 0.8699999999999999
+            }
+          },
+          "raw": {
+            "method_id": "baseline_v1",
+            "tolerance": 1e-09,
+            "metrics": {
+              "story_recall_at_1": 0.8,
+              "story_recall_at_3": 0.9,
+              "story_mrr": 0.8533333333333333,
+              "video_recall_at_1": 0.9,
+              "video_mrr": 0.9166666666666667
+            }
+          }
+        }
+      },
+      "development20": {
+        "whisper_large_v3": {
+          "processed": {
+            "method_id": "baseline_v1",
+            "tolerance": 0.00011,
+            "metrics": {
+              "story_recall_at_1": 0.7,
+              "story_recall_at_3": 0.8,
+              "story_recall_at_5": 0.9,
+              "story_recall_at_10": 0.95,
+              "story_mrr": 0.7845,
+              "video_recall_at_1": 0.6,
+              "video_recall_at_3": 0.65,
+              "video_recall_at_5": 0.75,
+              "video_recall_at_10": 0.75,
+              "video_recall_at_20": 0.9,
+              "video_mrr": 0.661
+            }
+          },
+          "raw": {
+            "method_id": "baseline_v1",
+            "tolerance": 0.00011,
+            "metrics": {
+              "story_recall_at_1": 0.7,
+              "story_recall_at_3": 0.8,
+              "story_recall_at_5": 0.9,
+              "story_recall_at_10": 1.0,
+              "story_mrr": 0.7831,
+              "video_recall_at_1": 0.6,
+              "video_recall_at_3": 0.7,
+              "video_recall_at_5": 0.75,
+              "video_recall_at_10": 0.75,
+              "video_recall_at_20": 0.9,
+              "video_mrr": 0.6761
+            }
+          }
+        },
+        "parakeet_ctc_0_6b_vietnamese": {
+          "processed": {
+            "method_id": "baseline_v1",
+            "tolerance": 0.00011,
+            "metrics": {
+              "story_recall_at_1": 0.7,
+              "story_recall_at_3": 0.75,
+              "story_recall_at_5": 0.85,
+              "story_recall_at_10": 0.95,
+              "story_mrr": 0.7613,
+              "video_recall_at_1": 0.35,
+              "video_recall_at_3": 0.7,
+              "video_recall_at_5": 0.75,
+              "video_recall_at_10": 0.75,
+              "video_recall_at_20": 0.85,
+              "video_mrr": 0.5421
+            }
+          },
+          "raw": {
+            "method_id": "baseline_v1",
+            "tolerance": 0.00011,
+            "metrics": {
+              "story_recall_at_1": 0.7,
+              "story_recall_at_3": 0.8,
+              "story_recall_at_5": 0.9,
+              "story_recall_at_10": 0.95,
+              "story_mrr": 0.777,
+              "video_recall_at_1": 0.4,
+              "video_recall_at_3": 0.7,
+              "video_recall_at_5": 0.75,
+              "video_recall_at_10": 0.8,
+              "video_recall_at_20": 0.9,
+              "video_mrr": 0.5692
+            }
+          }
+        }
+      }
+    }
+  },
+  "stage01_lexical": {
+    "query_set": "development20",
+    "methods": {
+      "L0_query_tfidf": {
+        "type": "query_fitted_dual_tfidf",
+        "ngram_min": 3,
+        "ngram_max": 5
+      },
+      "L1_corpus_tfidf": {
+        "type": "corpus_fitted_dual_tfidf",
+        "ngram_min": 3,
+        "ngram_max": 5
+      },
+      "L2_bm25_preserving": {
+        "type": "bm25",
+        "fold_accents": false,
+        "k1": 1.5,
+        "b": 0.75,
+        "query_term_frequency": "unique_terms"
+      },
+      "L3_bm25_folded": {
+        "type": "bm25",
+        "fold_accents": true,
+        "k1": 1.5,
+        "b": 0.75,
+        "query_term_frequency": "unique_terms"
+      },
+      "L4_bm25_rrf": {
+        "type": "rrf",
+        "left_method": "L2_bm25_preserving",
+        "right_method": "L3_bm25_folded",
+        "k": 60,
+        "positive_evidence_only": true
+      }
+    }
+  },
+  "evaluation_policy": {
+    "silver_radius_s": 60.0,
+    "minimum_overlap_s": 30.0,
+    "video_aggregation": "max_window",
+    "tie_tolerance": 1e-12,
+    "tie_policy": "worst_rank_within_tolerance",
+    "story_scope": "correct_video_only"
+  },
+  "regression": {
+    "fixture_path": "tests/fixtures/retrieval_v1_expected.json",
+    "fixture_required": true,
+    "expected_fixture_sha256": "78a8f97d4e0e349b16da023969b41e778c685a4ed5106836289802f3989d56b4",
+    "score_tolerance": 1e-05,
+    "rank_metric_tolerance": 1e-12,
+    "require_exact_ranks_and_top_ids": true,
+    "require_provenance_match": true,
+    "note": "Stage 0 requires the frozen per-query Baseline v1 fixture derived from the reviewed Stage 1 development run."
+  },
+  "selection": {
+    "reference_method": "L0_query_tfidf",
+    "provisional_default": null,
+    "bootstrap_samples": 2000,
+    "bootstrap_confidence": 0.9,
+    "bootstrap_seed": 20260810,
+    "policy": "manual_review_after_paired_query_summary"
+  },
+  "paths": {
+    "artifact_root_env": "AIC_RETRIEVAL_ARTIFACT_ROOT",
+    "reports_root": "reports/retrieval_v2",
+    "cache_root": "cache/retrieval_v2"
+  }
+}
