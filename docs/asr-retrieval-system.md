@@ -1,89 +1,69 @@
 # ASR Retrieval System
 
-## 1. System Overview
+## 1. Overview
 
-The ASR retrieval subsystem converts spoken content from videos into searchable transcript windows and retrieves videos and temporal moments for a natural-language query. The current Stage 1–5 baseline uses Parakeet for Vietnamese ASR, combines BM25 lexical matching with E5-large semantic retrieval, and ranks each video by its strongest transcript window.
+The ASR retrieval subsystem makes spoken video content searchable.
+
+Each video is transcribed, divided into overlapping transcript windows, and indexed in two complementary ways:
+
+- **BM25** finds windows that share important words with the query.
+- **Multilingual E5-large** finds windows that are semantically similar to the query even when the wording is different.
+
+The two score sets are normalized and combined. Each video is then represented by its strongest matching transcript window.
 
 ```text
 Video audio
     ↓
 Parakeet CTC 0.6B Vietnamese
     ↓
-processed transcript
+canonical processed transcript
     ↓
-60-second overlapping windows
+60-second overlapping transcript windows
     ↓
-BM25 lexical retrieval
-       +
-E5-large semantic retrieval
-    ↓
-per-query score normalization
-    ↓
-25% BM25 + 75% E5 fusion
-    ↓
-hybrid window scores
-    ↓
-max score per video
-    ↓
-ranked videos + supporting windows
+┌──────────────────────┐
+│ BM25 lexical scores  │
+└──────────┬───────────┘
+           │
+           ├──────────────┐
+           │              │
+┌──────────▼───────────┐  │
+│ E5 semantic scores   │  │
+└──────────┬───────────┘  │
+           │              │
+           └──────┬───────┘
+                  ↓
+       per-query score normalization
+                  ↓
+       25% BM25 + 75% E5
+                  ↓
+          hybrid window scores
+                  ↓
+      maximum window score per video
+                  ↓
+      ranked videos + supporting windows
 ```
 
-This document describes the selected ASR-text retrieval subsystem after Stage 5. It focuses on what the system does and how it is implemented, not on the experiments that led to these choices.
+This document explains the current system directly. It does not describe the experiments or internal development labels that were used to choose these components.
 
 ---
 
-## 2. Inputs and Outputs
+## 2. Transcript Preparation
 
-### 2.1 Inputs
+### 2.1 Speech recognition
 
-The subsystem operates on three main inputs:
-
-| Input | Description |
-|---|---|
-| Video/audio corpus | Source videos whose spoken content is transcribed offline |
-| Transcript-window corpus | Frozen ASR windows used by the lexical and dense retrievers |
-| Natural-language query | User or benchmark description of the target video moment |
-
-The current retrieval corpus contains transcript windows generated from the video collection. Retrieval operates on these windows rather than on one transcript representation per full video.
-
-### 2.2 Outputs
-
-For each query, the subsystem produces:
-
-| Output | Meaning |
-|---|---|
-| Sparse window score | BM25 relevance score for each transcript window |
-| Dense window score | E5 semantic similarity for each transcript window |
-| Hybrid window score | Weighted combination of normalized sparse and dense evidence |
-| Video score | Maximum hybrid window score among the video's windows |
-| Ranked videos | Videos ordered by video score |
-| Supporting window | Highest-scoring transcript window that provides the strongest ASR evidence for a video |
-
-The highest-scoring window also provides temporal evidence for where the relevant spoken content is likely to occur.
-
----
-
-## 3. Offline Indexing Pipeline
-
-### 3.1 ASR
-
-The selected ASR model is:
+The system uses:
 
 ```text
 nvidia/parakeet-ctc-0.6b-Vietnamese
 ```
 
-The selected transcript view is:
+to transcribe Vietnamese speech.
 
-```text
-processed
-```
+The retrieval input is the **processed transcript view** produced by the canonical transcript-processing pipeline. Raw ASR output is not used as a second retrieval channel in the current system.
 
-The retrieval system therefore uses the canonical processed transcript rather than the raw ASR text.
+### 2.2 Transcript windows
 
-### 3.2 Windowing
-
-Videos are represented as overlapping transcript windows:
+A full video transcript is not indexed as one document. Instead, each video is divided into overlapping temporal windows:
 
 | Setting | Value |
 |---|---:|
@@ -91,53 +71,49 @@ Videos are represented as overlapping transcript windows:
 | Stride | 45 s |
 | Overlap | 15 s |
 
-Long videos are split into overlapping windows so retrieval can identify local spoken evidence instead of representing an entire video with one transcript.
+The overlap helps preserve spoken evidence that crosses a window boundary.
 
-The physical window axis is preserved consistently across ASR channels, caches, retrieval scores, and evaluation. Window IDs must remain unique and aligned with the benchmark manifest.
+Window-level indexing also gives the retriever a local unit of evidence. A query can match one relevant minute of a long video without requiring the rest of the transcript to be related.
 
-### 3.3 Retrieval eligibility
+### 2.3 Eligible retrieval windows
 
-A processed transcript window contributes retrieval evidence only when:
+A processed transcript window is eligible for retrieval when:
 
 - the ASR record completed successfully;
-- the selected processed text is nonempty; and
-- the canonical processed view has no rejection reason.
+- the processed text is nonempty; and
+- the processed view has no canonical rejection reason.
 
-Ineligible windows remain on the physical window axis so IDs and temporal structure stay aligned, but they do not contribute valid retrieval evidence.
+Ineligible windows remain in the physical window list so IDs and timestamps stay aligned with the rest of the system, but they do not contribute retrieval evidence.
 
-For lexical retrieval, ineligible windows receive zero evidence. Dense retrieval may use a finite invalid-score sentinel internally, but normalization and hybrid fusion exclude ineligible windows from score-range estimation and set their final fused contribution to zero.
+---
 
-### 3.4 Sparse index
+## 3. Text Retrieval
 
-The sparse retriever is:
+For every natural-language query, the same eligible transcript windows are scored by both BM25 and multilingual E5-large.
 
-```text
-L2_bm25_preserving
-```
+### 3.1 BM25 lexical retrieval
 
-Its main settings are:
+BM25 is the lexical component of the system. It is useful when the query and transcript share distinctive words such as names, locations, numbers, or topic-specific terms.
+
+The current BM25 configuration preserves Vietnamese accents.
 
 | Setting | Value |
 |---|---|
 | Text normalization | `normalize_for_matching` |
 | Accent handling | Preserve Vietnamese accents |
 | Tokenization | Normalized whitespace tokens |
-| BM25 `k1` | 1.5 |
-| BM25 `b` | 0.75 |
-| IDF | Positive Okapi-style `log(1 + ...)` |
+| `k1` | 1.5 |
+| `b` | 0.75 |
+| IDF | Positive Okapi-style IDF |
 | Query term frequency | Unique query terms |
 
-Only eligible, nonempty transcript windows contribute to BM25 index statistics.
+Only eligible, nonempty transcript windows contribute to the BM25 index.
 
-### 3.5 Dense index
+For each query, BM25 produces one lexical relevance score for every physical transcript window.
 
-The dense retriever is:
+### 3.2 Multilingual semantic retrieval
 
-```text
-D1_e5_large_instruct
-```
-
-Model:
+The semantic component uses:
 
 ```text
 intfloat/multilingual-e5-large-instruct
@@ -149,148 +125,182 @@ Pinned revision:
 274baa43b0e13e37fafa6428dbc7938e62e5c439
 ```
 
-The query input uses the frozen instruction:
+Queries are encoded with the instruction:
 
 ```text
 Instruct: Given a detailed description of a target video moment, retrieve transcript passages that are relevant to the described event.
 Query: <query>
 ```
 
-Document passages use the processed transcript text without an additional instruction prefix.
+Transcript windows are encoded directly from their processed text without an additional document prefix.
 
-Embeddings are converted to `float32`, checked for finite values and nonzero norms, explicitly L2-normalized, and compared through normalized dot-product cosine similarity. Document embeddings can be cached offline and reused across query runs.
+Query and document embeddings are:
+
+1. converted to `float32`;
+2. checked for finite values and nonzero norms;
+3. explicitly L2-normalized; and
+4. compared using normalized dot-product cosine similarity.
+
+Document embeddings can be computed offline and reused. At query time, only the query embedding needs to be generated before similarity scores are calculated against the cached transcript-window embeddings.
+
+### 3.3 Why both retrievers are used
+
+BM25 and E5 solve different parts of the retrieval problem.
+
+BM25 is strong when exact wording matters. E5 is stronger when the query describes the same event using different words from the transcript.
+
+The system therefore treats E5 as the main retrieval signal and BM25 as a smaller lexical correction rather than giving both sources equal influence.
 
 ---
 
-## 4. Online Query Retrieval
+## 4. Score Fusion and Video Ranking
 
-### 4.1 Window scoring
+### 4.1 Why scores are normalized
 
-For one natural-language query, the sparse and dense retrievers score the same physical transcript-window axis:
+Raw BM25 scores and cosine-similarity scores are on different numeric scales, so they cannot be combined directly.
+
+For each query, BM25 scores and E5 scores are normalized **independently** using only eligible windows.
+
+For one score source:
+
+```text
+normalized_score = (score - minimum) / (maximum - minimum)
+```
+
+where `minimum` and `maximum` are calculated across that source's eligible windows for the current query.
+
+If all eligible scores from a source are effectively identical, their normalized values are set to zero.
+
+Ineligible windows are assigned a final normalized score of zero.
+
+This makes the two retrieval sources comparable while preserving their relative ordering for the current query.
+
+### 4.2 Hybrid window score
+
+Each transcript window receives one final retrieval score:
+
+```text
+hybrid_score =
+0.25 × normalized_BM25
++
+0.75 × normalized_E5
+```
+
+The weighting intentionally gives semantic retrieval most of the influence while still allowing exact lexical evidence to adjust the ranking.
+
+There is no fusion between different ASR models and no fusion between raw and processed transcript views.
+
+### 4.3 From windows to videos
+
+A video can contain many transcript windows, but a query may only describe one short part of that video.
+
+The system therefore scores each video using its strongest matching window:
+
+```text
+video_score = max(hybrid_score of all windows in the video)
+```
+
+Videos are ranked in descending order by this score.
+
+This policy preserves **partial relevance**: one highly relevant transcript window is enough for a video to rank strongly even when most of the video discusses something else.
+
+### 4.4 Supporting temporal evidence
+
+The window that produces the highest hybrid score for a video is also its strongest ASR evidence.
+
+Its `start_s` and `end_s` values provide an initial temporal location that can be passed to later candidate selection, reranking, or multimodal stages.
+
+The current subsystem therefore produces both:
+
+```text
+ranked videos
++
+supporting transcript windows
+```
+
+rather than only a video-level score.
+
+### 4.5 Deterministic ranking
+
+Evaluation treats scores within `1e-12` as tied and assigns the worst rank within that tie group.
+
+When an explicit display order is needed for equal scores, stable secondary identifiers are used so repeated runs remain deterministic.
+
+---
+
+## 5. Data Flow and Caching
+
+### 5.1 Offline work
+
+The expensive corpus-side work is performed before online querying:
+
+```text
+video/audio
+    ↓
+ASR transcription
+    ↓
+processed transcript windows
+    ↓
+BM25 corpus statistics
+    ↓
+E5 document embeddings
+    ↓
+cached retrieval artifacts
+```
+
+Dense document embeddings are reusable across queries because the transcript corpus does not change between searches.
+
+### 5.2 Online work
+
+For a new query:
 
 ```text
 query
-  ├─ BM25 → sparse score for every window
-  └─ E5   → dense score for every window
+  ├─ tokenize and score with BM25
+  └─ encode once with E5
+            ↓
+      score all transcript windows
+            ↓
+      normalize both score sets
+            ↓
+      weighted score fusion
+            ↓
+      maximum score per video
+            ↓
+      ranked videos
 ```
 
-The two score sources are kept aligned by query ID, window ID, ASR model, transcript view, and eligibility mask.
+The dense query encoder is the main online neural cost. Score fusion itself is lightweight.
 
-### 4.2 Per-query score normalization
+### 5.3 Score caches
 
-BM25 and dense cosine scores use different numeric scales. Before fusion, each source is normalized independently for each query using only eligible windows.
-
-For an eligible source score:
+Retrieval experiments and validation use two important cache files:
 
 ```text
-normalized = (score - min) / (max - min)
+window_scores.npz
+score_axes.json
 ```
 
-where `min` and `max` are calculated from that source's eligible window scores for the current query.
+`window_scores.npz` stores numeric score matrices.
 
-If the eligible score range is effectively zero:
+`score_axes.json` stores the identities needed to interpret those matrices, such as:
 
-```text
-normalized eligible scores = 0
-```
+- query set;
+- retrieval source;
+- ASR model;
+- transcript view;
+- query IDs; and
+- window IDs.
 
-Ineligible windows are assigned:
+A cached score matrix must only be reused when its identity and axes match exactly. The system should never silently repair a mismatch by sorting IDs independently, intersecting two axes, or dropping unmatched windows.
 
-```text
-0
-```
-
-after normalization.
-
-This policy is referred to as:
-
-```text
-per-query eligible-only min-max normalization
-```
-
-### 4.3 Hybrid score
-
-The selected fusion method is:
-
-```text
-H3_norm_25_75
-```
-
-For every transcript window:
-
-```text
-hybrid score =
-0.25 × normalized BM25
-+
-0.75 × normalized E5
-```
-
-Dense retrieval is the main signal. BM25 acts as a smaller lexical correction for exact names, numbers, locations, rare words, and other distinctive terms.
-
-No ASR fusion or raw+processed transcript fusion is used.
-
-### 4.4 Video aggregation
-
-The selected video aggregation policy is:
-
-```text
-P0_max
-```
-
-For each video:
-
-```text
-video score = maximum hybrid score among its windows
-```
-
-The video therefore receives the score of its strongest transcript match. This preserves partial relevance, which is important when only a short spoken segment of a long video matches the query.
-
-### 4.5 Ranking and supporting windows
-
-Videos are ranked by video score in descending order.
-
-The window that produces the maximum score is the strongest supporting ASR window for that video and can be used as the initial temporal candidate.
-
-Evaluation uses the frozen tie policy:
-
-```text
-tie tolerance = 1e-12
-tie policy = worst rank within tolerance
-```
-
-Displayed ordering should remain deterministic by using stable secondary identifiers when equal scores need an explicit order.
-
----
-
-## 5. Implementation Map
-
-### 5.1 Core files
-
-| File | Responsibility |
-|---|---|
-| `configs/retrieval_v2.json` | Frozen model IDs, revisions, stage decisions, score policies, fusion weights, paths |
-| `src/retrieval_v2.py` | Score bundles, BM25, RRF, dense scoring, score normalization, hybrid fusion |
-| `src/retrieval_backends.py` | Dense model loading, input formatting, embedding, normalization, runtime metadata |
-| `src/retrieval_v2_evaluation.py` | Story relevance, video aggregation, ranking, ties, metrics, paired comparisons |
-| `src/07_evaluate_retrieval_v2.py` | Config validation, artifact loading, cache validation, stage orchestration, reports |
-
-Retrieval algorithms and evaluation policy should remain separate. Model loading belongs in the backend module, score production belongs in `retrieval_v2.py`, and ranking/evaluation policy belongs in `retrieval_v2_evaluation.py`.
-
-### 5.2 Code and artifact roots
+### 5.4 Code and artifact locations
 
 The project separates source code from large generated artifacts.
 
-```text
-CODE_ROOT
-```
+`CODE_ROOT` refers to the Git repository containing source, configuration, notebooks, and documentation.
 
-points to the Git repository containing source, configuration, notebooks, and compact documentation.
-
-```text
-ARTIFACT_ROOT
-```
-
-points to the external workspace containing large ASR outputs, embeddings, score caches, reports, and other generated artifacts.
+`ARTIFACT_ROOT` refers to the external experiment workspace containing large ASR outputs, embeddings, score caches, and generated reports.
 
 The artifact root can be configured through:
 
@@ -298,77 +308,63 @@ The artifact root can be configured through:
 AIC_RETRIEVAL_ARTIFACT_ROOT
 ```
 
-Code should resolve repository files from the code root and generated data from the artifact root rather than assuming both are the same directory.
-
-### 5.3 Score and embedding caches
-
-Important cached artifacts include:
-
-```text
-window_scores.npz
-score_axes.json
-```
-
-`window_scores.npz` stores numeric score matrices. `score_axes.json` stores the identities required to interpret each matrix, including query set, method, ASR model, transcript view, query IDs, and window IDs.
-
-Dense document embeddings are cached separately so the corpus does not need to be re-encoded for every experiment or query run.
-
-Cache consumers must validate identities and axes before reuse. A score matrix should never be realigned silently by sorting, intersecting IDs, or dropping unmatched windows.
+This separation keeps large generated data out of Git while allowing the same source code to run against the shared experiment workspace.
 
 ---
 
-## 6. Frozen Configuration and Current Scope
+## 6. Implementation Map and Current Scope
 
-### 6.1 Current Stage 1–5 baseline
+### 6.1 Core implementation files
+
+| File | Responsibility |
+|---|---|
+| `configs/retrieval_v2.json` | Model revisions, transcript settings, retrieval parameters, score policies, fusion weights, and artifact paths |
+| `src/retrieval_v2.py` | BM25 scoring, dense score bundles, score normalization, and sparse+dense fusion |
+| `src/retrieval_backends.py` | Dense model loading, query/document formatting, embedding, normalization, and runtime metadata |
+| `src/retrieval_v2_evaluation.py` | Temporal relevance, video ranking, tie handling, and retrieval metrics |
+| `src/07_evaluate_retrieval_v2.py` | Configuration validation, cache loading, artifact validation, experiment execution, and report generation |
+
+The modules intentionally separate model inference, retrieval scoring, evaluation policy, and experiment orchestration.
+
+### 6.2 Current system configuration
 
 | Component | Current setting |
 |---|---|
 | ASR | Parakeet CTC 0.6B Vietnamese |
-| Transcript view | Processed |
+| Transcript representation | Canonical processed transcript |
 | Window length | 60 s |
 | Window stride | 45 s |
 | Window overlap | 15 s |
-| Sparse retriever | Accent-preserving BM25 |
-| Dense retriever | E5-large-instruct |
-| Normalization | Per-query eligible-only min-max |
-| Sparse weight | 0.25 |
-| Dense weight | 0.75 |
-| Video scoring | Max window |
-| Query form | Original natural-language query |
+| Lexical retrieval | Accent-preserving BM25 |
+| Semantic retrieval | Multilingual E5-large-instruct |
+| Score normalization | Per-query, eligible-window min-max |
+| BM25 contribution | 25% |
+| E5 contribution | 75% |
+| Video score | Maximum hybrid window score |
+| Query representation | Original natural-language query |
 
-The corresponding method identities are:
+### 6.3 What this subsystem currently covers
 
-```text
-ASR channel:       parakeet_processed
-Sparse retriever:  L2_bm25_preserving
-Dense retriever:   D1_e5_large_instruct
-Hybrid retriever:  H3_norm_25_75
-Video aggregation: P0_max
-```
+The ASR retrieval subsystem currently handles:
 
-### 6.2 Current scope
-
-This subsystem currently covers:
-
-- Vietnamese ASR transcript generation;
+- Vietnamese speech transcription;
 - processed transcript selection;
-- transcript-window retrieval;
-- sparse and dense text scoring;
-- score normalization and hybrid fusion;
+- overlapping transcript-window construction;
+- lexical retrieval;
+- semantic retrieval;
+- score normalization;
+- lexical-semantic fusion;
 - global video ranking; and
-- supporting transcript-window retrieval.
+- retrieval of the strongest supporting transcript window.
 
-It does **not yet include**:
+The broader video-search pipeline may later add:
 
-```text
-hierarchical video → temporal candidate retrieval
-second-stage reranking
-query reformulation
-alternative transcript representation
-visual retrieval
-OCR retrieval
-multimodal fusion
-final holdout evaluation
-```
+- hierarchical candidate retrieval;
+- second-stage reranking;
+- improved query or transcript representations;
+- visual retrieval;
+- OCR retrieval;
+- multimodal fusion; and
+- final holdout evaluation.
 
-This document describes the frozen ASR-text retrieval baseline after Stage 5. Later retrieval stages may wrap or extend this subsystem, but should treat these components as the current starting point unless a later reviewed decision explicitly replaces them.
+Those later components can extend this subsystem, but the ASR-text pipeline described here is the current retrieval baseline they should start from.
