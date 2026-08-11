@@ -1,5 +1,5 @@
 # Relative path: src/retrieval_v2.py
-# Purpose: Pure Retrieval v2 score production for lexical methods, Baseline v1 E5 compatibility, and dense cosine retrieval.
+# Purpose: Pure Retrieval v2 score production for lexical/dense retrieval, hybrid fusion, and candidate-score blending.
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from postprocess import accent_fold, normalize_for_matching
 
 
-RETRIEVAL_V2_VERSION = "1.2.0"
+RETRIEVAL_V2_VERSION = "1.3.0"
 
 
 @dataclass
@@ -858,3 +858,123 @@ def score_dense_embeddings(
     if (valid_indices) : scores[:, valid_indices] = valid_scores.astype(np.float32, copy = False)
 
     return ScoreBundle(method_id = method_id, model_id = documents.model_id, view = documents.view, query_ids = queries, window_ids = documents.window_ids, scores = scores, eligibility_mask = documents.eligibility_mask, metadata = {"similarity" : "cosine", "score_clip" : None, "invalid_document_policy" : "finite_below_cosine_floor", "invalid_document_score" : float(invalid_document_score), **(metadata or {})})
+
+
+# -----------------------------------------------------------------------------
+# Stage 7 candidate-score normalization and fusion
+# -----------------------------------------------------------------------------
+
+
+def normalize_candidate_scores_by_query(
+    query_ids : Sequence[str],
+    scores : Sequence[float] | np.ndarray,
+    constant_tolerance : float = 1e-12,
+) -> tuple[np.ndarray, dict[str, Any]] :
+    ids    = [str(value) for value in query_ids]
+    values = np.asarray(scores, dtype = np.float64).reshape(-1)
+
+    if (len(ids) != len(values)) :
+        raise ValueError("Candidate query IDs and scores have different lengths")
+
+    if (not ids) :
+        raise ValueError("Candidate normalization requires at least one score")
+
+    if (not np.isfinite(values).all()) :
+        raise ValueError("Candidate normalization source contains NaN or infinite scores")
+
+    if (constant_tolerance < 0) :
+        raise ValueError("constant_tolerance must be nonnegative")
+
+    normalized = np.zeros(len(values), dtype = np.float64)
+    query_stats = []
+
+    ordered_queries = list(dict.fromkeys(ids))
+
+    for query_id in ordered_queries :
+        indices = np.asarray(
+            [index for index, value in enumerate(ids) if value == query_id],
+            dtype = np.int64,
+        )
+        query_values = values[indices]
+        minimum      = float(query_values.min())
+        maximum      = float(query_values.max())
+        score_range  = maximum - minimum
+        constant     = score_range <= float(constant_tolerance)
+
+        if (not constant) :
+            normalized[indices] = (query_values - minimum) / score_range
+
+        query_stats.append({
+            "query_id"    : query_id,
+            "count"       : int(len(indices)),
+            "minimum"     : minimum,
+            "maximum"     : maximum,
+            "range"       : score_range,
+            "constant"    : bool(constant),
+        })
+
+    return normalized.astype(np.float32, copy = False), {
+        "normalization_policy" : "per_query_candidate_minmax_v1",
+        "constant_tolerance"   : float(constant_tolerance),
+        "query_count"          : len(ordered_queries),
+        "query_stats"          : query_stats,
+    }
+
+
+def blend_candidate_scores_by_query(
+    query_ids : Sequence[str],
+    first_stage_scores : Sequence[float] | np.ndarray,
+    reranker_scores : Sequence[float] | np.ndarray,
+    first_stage_weight : float = 0.5,
+    reranker_weight : float = 0.5,
+    constant_tolerance : float = 1e-12,
+) -> tuple[np.ndarray, dict[str, Any]] :
+    first = np.asarray(first_stage_scores, dtype = np.float64).reshape(-1)
+    rerank = np.asarray(reranker_scores, dtype = np.float64).reshape(-1)
+
+    if (first.shape != rerank.shape) :
+        raise ValueError("First-stage and reranker candidate scores have different shapes")
+
+    first_stage_weight = float(first_stage_weight)
+    reranker_weight    = float(reranker_weight)
+
+    if (first_stage_weight < 0 or reranker_weight < 0) :
+        raise ValueError("Candidate fusion weights must be nonnegative")
+
+    total = first_stage_weight + reranker_weight
+
+    if (total <= 0) :
+        raise ValueError("Candidate fusion weights must have positive sum")
+
+    first_stage_weight /= total
+    reranker_weight    /= total
+
+    first_normalized, first_metadata = normalize_candidate_scores_by_query(
+        query_ids,
+        first,
+        constant_tolerance = constant_tolerance,
+    )
+    reranker_normalized, reranker_metadata = normalize_candidate_scores_by_query(
+        query_ids,
+        rerank,
+        constant_tolerance = constant_tolerance,
+    )
+
+    fused = (
+        first_stage_weight * first_normalized.astype(np.float64)
+        + reranker_weight * reranker_normalized.astype(np.float64)
+    ).astype(np.float32, copy = False)
+
+    if (not np.isfinite(fused).all()) :
+        raise ValueError("Candidate score fusion produced NaN or infinite scores")
+
+    return fused, {
+        "fusion_type"          : "normalized_weighted_candidate_scores",
+        "normalization_policy" : "per_query_candidate_minmax_v1",
+        "constant_tolerance"   : float(constant_tolerance),
+        "first_stage_weight"   : first_stage_weight,
+        "reranker_weight"      : reranker_weight,
+        "first_stage"          : first_metadata,
+        "reranker"             : reranker_metadata,
+    }
+

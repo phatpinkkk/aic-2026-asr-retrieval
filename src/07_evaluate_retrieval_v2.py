@@ -1,5 +1,5 @@
 # Relative path: src/07_evaluate_retrieval_v2.py
-# Purpose: Orchestrate Retrieval v2 Stage 0 baseline through Stage 5 transcript-pipeline selection.
+# Purpose: Orchestrate Retrieval v2 Stage 0 baseline through Stage 7 candidate reranking.
 
 from __future__ import annotations
 
@@ -46,8 +46,15 @@ from retrieval_v2 import (
     score_dense_embeddings,
     weighted_score_bundle,
     normalized_weighted_score_bundle,
+    blend_candidate_scores_by_query,
 )
-from retrieval_backends import DenseBackendSpec, DenseEmbeddingBundle, SentenceTransformerDenseBackend
+from retrieval_backends import (
+    DenseBackendSpec,
+    DenseEmbeddingBundle,
+    SentenceTransformerDenseBackend,
+    RerankerBackendSpec,
+    SentenceTransformerCrossEncoderReranker,
+)
 from retrieval_v2_evaluation import (
     VideoAggregationSpec,
     aggregate_video_scores_for_query,
@@ -72,6 +79,13 @@ from retrieval_v2_evaluation import (
     compare_stage5_views,
     summarize_stage5_views,
     compare_stage5_asr_pairs,
+    construct_stage6_candidate_policy,
+    summarize_stage6_candidate_policies,
+    recommend_stage6_policy,
+    stage6_candidate_failures,
+    evaluate_stage7_candidate_scores,
+    compare_stage7_methods,
+    summarize_stage7_methods,
 )
 
 
@@ -85,11 +99,11 @@ CONFIG_PATH = Path(
 
 def parse_args() -> argparse.Namespace :
     parser = argparse.ArgumentParser(
-        description = "Run AIC 2026 Retrieval v2 Stage 0 through Stage 5.",
+        description = "Run AIC 2026 Retrieval v2 Stage 0 through Stage 7.",
     )
     parser.add_argument(
         "--stage",
-        choices = ["stage00_baseline", "stage01_lexical", "stage02_dense", "stage03_aggregation", "stage04_hybrid", "stage05_selection"],
+        choices = ["stage00_baseline", "stage01_lexical", "stage02_dense", "stage03_aggregation", "stage04_hybrid", "stage05_selection", "stage06_candidate_construction", "stage07_reranking"],
         default = os.environ.get("AIC_RETRIEVAL_STAGE", "stage00_baseline"),
     )
     return parser.parse_args()
@@ -400,6 +414,8 @@ def load_retrieval_config() -> dict[str, Any] :
         "stage03_aggregation",
         "stage04_hybrid",
         "stage05_selection",
+        "stage06_candidate_construction",
+        "stage07_reranking",
         "evaluation_policy",
         "regression",
         "selection",
@@ -629,26 +645,30 @@ def validate_query_and_corpus_contract(
             for key in benchmark_keys
         ]
         actual_hash = query_set_hash(name, frame, corpus_id, benchmark_hashes)
-        expected_hash = specification["expected_query_hash"]
+        expected_hash = specification.get("expected_query_hash")
         count_ok = len(frame) == int(specification["expected_query_count"])
-        hash_ok  = actual_hash == expected_hash
+        hash_ok  = expected_hash is None or actual_hash == expected_hash
         holdout_overlap = sorted(set(frame["query_id"].astype(str)) & holdout_ids)
+        allow_exposed_holdout = bool(specification.get("allow_exposed_holdout", False))
+        holdout_ok = allow_exposed_holdout or not holdout_overlap
 
         checks.append({
-            "query_set"       : name,
-            "query_count"     : len(frame),
-            "expected_count"  : specification["expected_query_count"],
-            "query_hash"      : actual_hash,
-            "expected_hash"   : expected_hash,
-            "holdout_overlap" : holdout_overlap,
-            "passed"          : count_ok and hash_ok and not holdout_overlap,
+            "query_set"             : name,
+            "query_count"           : len(frame),
+            "expected_count"        : specification["expected_query_count"],
+            "query_hash"            : actual_hash,
+            "expected_hash"         : expected_hash,
+            "query_hash_pinned"     : expected_hash is not None,
+            "holdout_overlap"       : holdout_overlap,
+            "allow_exposed_holdout" : allow_exposed_holdout,
+            "passed"                : count_ok and hash_ok and holdout_ok,
         })
 
         if (not count_ok) :
             errors.append(f"{name}: query count mismatch")
         if (not hash_ok) :
             errors.append(f"{name}: query hash mismatch")
-        if (holdout_overlap) :
+        if (holdout_overlap and not allow_exposed_holdout) :
             errors.append(f"{name}: holdout query leakage: {holdout_overlap}")
 
     corpus_checks = []
@@ -1632,6 +1652,8 @@ def build_manifest(
         "stage03_aggregation": config["stage03_aggregation"],
         "stage04_hybrid"     : config["stage04_hybrid"],
         "stage05_selection"  : config["stage05_selection"],
+        "stage06_candidate_construction" : config["stage06_candidate_construction"],
+        "stage07_reranking" : config["stage07_reranking"],
         "evaluation_policy": config["evaluation_policy"],
         "regression"       : config["regression"],
         "cache"            : cache_records,
@@ -3813,6 +3835,1872 @@ def compact_stage00_regression(regression : dict[str, Any] | None) -> dict[str, 
     }
 
 
+# -----------------------------------------------------------------------------
+# Stage 6 candidate construction and Stage 7 reranking
+# -----------------------------------------------------------------------------
+
+
+def validate_stage06_contract(config : dict[str, Any]) -> dict[str, Any] :
+    stage_config = config["stage06_candidate_construction"]
+    decisions    = config["selection"]
+    errors = []
+
+    if (stage_config.get("query_set") != "extension40_full") :
+        errors.append("Stage 6 query_set must be extension40_full")
+    if (stage_config.get("corpus") != "all50") :
+        errors.append("Stage 6 corpus must be all50")
+
+    source = stage_config.get("source", {})
+    expected_source = {
+        "channel_id"        : "parakeet_processed",
+        "sparse_method"     : "L2_bm25_preserving",
+        "dense_method"      : "D1_e5_large_instruct",
+        "hybrid_method"     : "H3_norm_25_75",
+        "video_aggregation" : "P0_max",
+    }
+
+    for key, expected in expected_source.items() :
+        if (source.get(key) != expected) :
+            errors.append(f"Stage 6 {key} must be {expected!r}")
+
+    if ([int(value) for value in stage_config.get("candidate_video_k", [])] != [10, 20, 30]) :
+        errors.append("Stage 6 candidate_video_k must be [10, 20, 30]")
+    if ([int(value) for value in stage_config.get("windows_per_video_m", [])] != [1, 3, 5]) :
+        errors.append("Stage 6 windows_per_video_m must be [1, 3, 5]")
+    if (int(stage_config.get("fallback_video_k", 0)) != 40) :
+        errors.append("Stage 6 fallback_video_k must be 40")
+
+    frozen_expectations = [
+        ("stage01_decision", "lexical_default", source.get("sparse_method")),
+        ("stage02_decision", "dense_default", source.get("dense_method")),
+        ("stage03_decision", "selected_aggregation", source.get("video_aggregation")),
+        ("stage04_decision", "selected_method", source.get("hybrid_method")),
+        ("stage05_decision", "selected_channel_id", source.get("channel_id")),
+    ]
+
+    for decision_id, field, expected in frozen_expectations :
+        decision = decisions.get(decision_id, {})
+        if (decision.get("status") != "frozen_after_review") :
+            errors.append(f"{decision_id} must be frozen before Stage 6")
+        if (decision.get(field) != expected) :
+            errors.append(f"{decision_id}.{field} does not match the Stage 6 source")
+
+    return {
+        "passed" : not errors,
+        "errors" : errors,
+        "query_set" : stage_config.get("query_set"),
+        "corpus" : stage_config.get("corpus"),
+        "source" : source,
+        "candidate_video_k" : stage_config.get("candidate_video_k"),
+        "windows_per_video_m" : stage_config.get("windows_per_video_m"),
+    }
+
+
+def validate_stage07_contract(config : dict[str, Any]) -> dict[str, Any] :
+    stage_config = config["stage07_reranking"]
+    stage06      = config["stage06_candidate_construction"]
+    decision     = config["selection"].get("stage06_decision", {})
+    errors = []
+
+    if (stage_config.get("query_set") != "extension40_full") :
+        errors.append("Stage 7 query_set must be extension40_full")
+    if (stage_config.get("corpus") != "all50") :
+        errors.append("Stage 7 corpus must be all50")
+    if (not stage_config.get("candidate_source", {}).get("require_frozen_decision", True)) :
+        errors.append("Stage 7 must require a frozen Stage 6 decision")
+    if (decision.get("status") != "frozen_after_review") :
+        errors.append("Stage 6 decision must be frozen before Stage 7")
+
+    selected_k = decision.get("selected_video_k")
+    selected_m = decision.get("selected_windows_per_video")
+    selected_policy = decision.get("selected_policy_id")
+
+    allowed_k = {int(value) for value in stage06.get("candidate_video_k", [])} | {int(stage06.get("fallback_video_k", 40))}
+    allowed_m = {int(value) for value in stage06.get("windows_per_video_m", [])}
+
+    if (selected_k is None or int(selected_k) not in allowed_k) :
+        errors.append("Stage 6 selected_video_k is not an allowed candidate value")
+    if (selected_m is None or int(selected_m) not in allowed_m) :
+        errors.append("Stage 6 selected_windows_per_video is not an allowed candidate value")
+    if (selected_k is not None and selected_m is not None) :
+        expected_policy = f"K{int(selected_k)}_M{int(selected_m)}"
+        if (selected_policy != expected_policy) :
+            errors.append(f"Stage 6 selected_policy_id must be {expected_policy}")
+
+    if (int(stage_config.get("max_length", 0)) != 512) :
+        errors.append("Stage 7 primary max_length must be 512")
+    if ([int(value) for value in stage_config.get("batch_size_candidates", [])] != [32, 16, 8, 4]) :
+        errors.append("Stage 7 batch_size_candidates must be [32, 16, 8, 4]")
+
+    expected_models = {
+        "R1_mmarco_minilm",
+        "R2_gte_multilingual",
+        "R3_bge_v2_m3",
+        "R4_qwen3_0_6b",
+        "R5_mxbai_base_v2",
+        "R6_jina_v2_multilingual",
+    }
+    models = stage_config.get("models", {})
+
+    if (set(models) != expected_models) :
+        errors.append(f"Stage 7 primary reranker set mismatch: {sorted(models)}")
+
+    for backend_id, specification in models.items() :
+        revision = str(specification.get("revision", ""))
+        if (len(revision) != 40 or any(char not in "0123456789abcdefABCDEF" for char in revision)) :
+            errors.append(f"{backend_id}: revision must be an exact 40-character commit SHA")
+
+    policies = stage_config.get("score_policies", {})
+    expected_policies = {
+        "S0_first_stage" : "control",
+        "S1_reranker_only" : "reranker_only",
+        "S2_first_stage_reranker_50_50" : "normalized_weighted",
+    }
+    if (set(policies) != set(expected_policies)) :
+        errors.append("Stage 7 score policy set mismatch")
+    else :
+        for policy_id, kind in expected_policies.items() :
+            if (policies[policy_id].get("kind") != kind) :
+                errors.append(f"{policy_id}: kind must be {kind}")
+
+    latency_ceiling = stage_config.get("runtime", {}).get("operational_latency_ceiling_ms_p90")
+    if (latency_ceiling is None) :
+        errors.append(
+            "Stage 7 operational_latency_ceiling_ms_p90 must be frozen after Stage 6 review "
+            "and before full Stage 7 execution"
+        )
+    elif (not math.isfinite(float(latency_ceiling)) or float(latency_ceiling) <= 0) :
+        errors.append("Stage 7 operational p90 latency ceiling must be a positive finite value")
+
+    return {
+        "passed" : not errors,
+        "errors" : errors,
+        "selected_video_k" : selected_k,
+        "selected_windows_per_video" : selected_m,
+        "selected_policy_id" : selected_policy,
+        "latency_ceiling_ms_p90" : latency_ceiling,
+        "models" : list(models),
+    }
+
+
+def validate_stage07_environment(config : dict[str, Any]) -> dict[str, Any] :
+    stage_config = config["stage07_reranking"]
+    errors = []
+    checks = []
+
+    try :
+        from packaging.version import Version
+    except Exception :
+        Version = None
+
+    installed_transformers = package_version("transformers")
+    installed_sentence = package_version("sentence-transformers")
+    gpu = _gpu_memory_snapshot()
+    runtime_config = stage_config.get("runtime", {})
+    
+    required_transformers   = str(runtime_config.get("required_transformers_version", "")).strip()
+    required_sentence       = str(runtime_config.get("required_sentence_transformers_version", "")).strip()
+
+    if (required_transformers and installed_transformers != required_transformers) :
+        errors.append(f"Stage 7 requires transformers=={required_transformers}; found {installed_transformers}")
+
+    if (required_sentence and installed_sentence != required_sentence) :
+        errors.append(f"Stage 7 requires sentence-transformers=={required_sentence}; found {installed_sentence}")
+    
+    required_device = str(runtime_config.get("required_device", "cuda"))
+    expected_gpu_name = str(runtime_config.get("expected_gpu_name_contains", "")).strip()
+
+    if (required_device == "cuda" and not gpu.get("cuda_available", False)) :
+        errors.append("Stage 7 requires CUDA for the frozen runtime comparison")
+
+    if (expected_gpu_name and gpu.get("cuda_available", False) and expected_gpu_name.lower() not in str(gpu.get("device_name", "")).lower()) :
+        errors.append(f"Stage 7 runtime comparison requires a GPU name containing {expected_gpu_name!r}; found {gpu.get('device_name')!r}")
+
+    for backend_id, specification in stage_config["models"].items() :
+        minimum_transformers = specification.get("minimum_transformers_version")
+        minimum_sentence = specification.get("minimum_sentence_transformers_version")
+        transformers_ok = (
+            minimum_transformers is None
+            or (
+                Version is not None
+                and installed_transformers is not None
+                and Version(installed_transformers) >= Version(str(minimum_transformers))
+            )
+        )
+        sentence_ok = (
+            minimum_sentence is None
+            or (
+                Version is not None
+                and installed_sentence is not None
+                and Version(installed_sentence) >= Version(str(minimum_sentence))
+            )
+        )
+        passed = bool(transformers_ok and sentence_ok)
+        checks.append({
+            "backend_id" : backend_id,
+            "minimum_transformers_version" : minimum_transformers,
+            "installed_transformers_version" : installed_transformers,
+            "minimum_sentence_transformers_version" : minimum_sentence,
+            "installed_sentence_transformers_version" : installed_sentence,
+            "passed" : passed,
+        })
+        if (not transformers_ok) :
+            errors.append(f"{backend_id} requires transformers>={minimum_transformers}; found {installed_transformers}")
+        if (not sentence_ok) :
+            errors.append(f"{backend_id} requires sentence-transformers>={minimum_sentence}; found {installed_sentence}")
+
+    return {
+        "passed"                                    : not errors,
+        "transformers"                              : installed_transformers,
+        "sentence_transformers"                     : installed_sentence,
+        "required_transformers_version"             : required_transformers,
+        "required_sentence_transformers_version"    : required_sentence,
+        "gpu"                                       : gpu,
+        "required_device"                           : required_device,
+        "expected_gpu_name_contains"                : expected_gpu_name,
+        "checks"                                    : checks,
+        "errors"                                    : errors,
+    }
+
+
+def _load_stage06_selected_windows(
+    config : dict[str, Any],
+    stage1_config : dict[str, Any],
+    benchmarks : dict[str, dict[str, Any]],
+    artifacts : Path,
+) -> tuple[dict[tuple[str, str], pd.DataFrame], dict[str, Any]] :
+    channel_id = config["stage06_candidate_construction"]["source"]["channel_id"]
+    channel_spec = config["channels"][channel_id]
+    model_id = str(channel_spec["model_id"])
+    stage_frames = {}
+    validations = []
+
+    for benchmark_key in ["core10", "extension40"] :
+        benchmark = benchmarks[benchmark_key]
+        output_path = resolve_artifact_path(
+            artifacts,
+            stage1_config["models"][model_id][f"{benchmark_key}_output"],
+        )
+        frame = stage1_evaluation.load_model_output_windows(
+            model_id = model_id,
+            output_dir = output_path,
+            expected_windows = benchmark["windows"],
+            benchmark = benchmark,
+            progress_callback = None,
+        )
+        stage_frames[(model_id, benchmark_key)] = frame
+        validation = stage1_evaluation.validate_model_windows_against_benchmark(
+            windows = frame,
+            benchmark = benchmark,
+            model_id = model_id,
+            require_complete = True,
+        )
+        validation["benchmark_key"] = benchmark_key
+        validation["output_dir"] = str(output_path)
+        validations.append(validation)
+
+    errors = [item for item in validations if not item.get("passed", False)]
+    return stage_frames, {
+        "passed" : not errors,
+        "model_id" : model_id,
+        "channel_id" : channel_id,
+        "validations" : validations,
+        "errors" : errors,
+    }
+
+
+def _stage06_query_cache_paths(
+    cache_root : Path,
+    config : dict[str, Any],
+    backend_id : str,
+    query_set : str,
+) -> tuple[Path, Path] :
+    subdir = config["stage06_candidate_construction"]["source_cache"]["query_embeddings_subdir"]
+    base = cache_root / subdir / _safe_key(backend_id) / _safe_key(query_set)
+    return base.with_suffix(".npz"), base.with_suffix(".json")
+
+
+def _stage06_query_embeddings(
+    config : dict[str, Any],
+    query_frames : dict[str, pd.DataFrame],
+    cache_root : Path,
+    backend_id : str,
+    backend_spec : DenseBackendSpec,
+    backend : SentenceTransformerDenseBackend,
+) -> tuple[DenseEmbeddingBundle, bool, dict[str, Any]] :
+    stage_config = config["stage06_candidate_construction"]
+    dense_stage = config["stage02_dense"]
+    query_set = stage_config["query_set"]
+    query_frame = query_frames[query_set].reset_index(drop = True)
+    query_ids = query_frame["query_id"].astype(str).tolist()
+    query_texts = query_frame["query_text"].astype(str).tolist()
+    assembly_policy = str(
+        stage_config["source_cache"].get(
+            "query_assembly_policy",
+            "reuse_stage02_development20_plus_encode_remaining_v1",
+        )
+    )
+
+    if (assembly_policy != "reuse_stage02_development20_plus_encode_remaining_v1") :
+        raise ValueError(f"Unsupported Stage 6 query assembly policy: {assembly_policy!r}")
+
+    development_set = str(dense_stage["query_set"])
+    development = query_frames[development_set].reset_index(drop = True)
+    development_ids = development["query_id"].astype(str).tolist()
+    development_texts = development["query_text"].astype(str).tolist()
+    development_id_set = set(development_ids)
+
+    if (len(development_ids) != 20 or not development_id_set.issubset(set(query_ids))) :
+        raise ValueError(
+            "Stage 6 requires the exact frozen development20 query IDs to be a subset of extension40_full"
+        )
+
+    development_identity = _query_embedding_identity(
+        dense_stage,
+        backend_spec,
+        development_set,
+        development_ids,
+        development_texts,
+    )
+    development_npz, development_json = _embedding_cache_paths(
+        cache_root,
+        dense_stage,
+        backend_id,
+        "queries",
+        development_set,
+    )
+    development_bundle = _load_embedding_cache(
+        development_npz,
+        development_json,
+        development_ids,
+        development_identity,
+    )
+
+    if (development_bundle is None) :
+        raise RuntimeError(
+            "Stage 6 requires the frozen Stage 2 development20 D1 query embedding cache. "
+            "Re-run Stage 2 instead of re-encoding development20 inside Stage 6."
+        )
+
+    full_identity = _query_embedding_identity(
+        dense_stage,
+        backend_spec,
+        query_set,
+        query_ids,
+        query_texts,
+    )
+    full_identity.update({
+        "stage06_query_assembly_policy" : assembly_policy,
+        "frozen_development20_query_cache_npz_sha256" : sha256_file(development_npz),
+        "frozen_development20_query_cache_json_sha256" : sha256_file(development_json),
+    })
+
+    query_npz, query_json = _stage06_query_cache_paths(cache_root, config, backend_id, query_set)
+    query_bundle = (
+        _load_embedding_cache(query_npz, query_json, query_ids, full_identity)
+        if stage_config["source_cache"].get("reuse_query_embeddings", True)
+        else None
+    )
+    query_cache_hit = query_bundle is not None
+
+    remaining = query_frame[
+        ~query_frame["query_id"].astype(str).isin(development_id_set)
+    ].copy().reset_index(drop = True)
+    remaining_ids = remaining["query_id"].astype(str).tolist()
+    remaining_texts = remaining["query_text"].astype(str).tolist()
+
+    if (query_bundle is None) :
+        log_detail(
+            f"{backend_id}/{query_set}: query cache MISS; reusing {len(development_ids)} frozen "
+            f"Stage 2 development embeddings and encoding only {len(remaining_ids)} newly exposed queries"
+        )
+        remaining_bundle = backend.encode_queries(remaining_ids, remaining_texts)
+        development_lookup = {
+            query_id : development_bundle.embeddings[index]
+            for index, query_id in enumerate(development_ids)
+        }
+        remaining_lookup = {
+            query_id : remaining_bundle.embeddings[index]
+            for index, query_id in enumerate(remaining_ids)
+        }
+        embeddings = np.asarray(
+            np.stack([
+                development_lookup[query_id]
+                if query_id in development_lookup
+                else remaining_lookup[query_id]
+                for query_id in query_ids
+            ], axis = 0),
+            dtype = np.float32,
+        )
+        query_bundle = DenseEmbeddingBundle(
+            ids = query_ids,
+            embeddings = embeddings,
+            metadata = {
+                "assembly_policy" : assembly_policy,
+                "development20_reused_count" : len(development_ids),
+                "newly_encoded_count" : len(remaining_ids),
+                "newly_encoded_runtime_s" : float(remaining_bundle.metadata.get("runtime_s", 0.0)),
+                "effective_batch_size" : remaining_bundle.metadata.get("effective_batch_size"),
+            },
+        )
+        cache_record = _write_embedding_cache(query_npz, query_json, query_bundle, full_identity)
+    else :
+        log_detail(
+            f"{backend_id}/{query_set}: query cache HIT "
+            f"({len(development_ids)} frozen development + {len(remaining_ids)} newly exposed)"
+        )
+        cache_record = {
+            "npz_path" : str(query_npz),
+            "json_path" : str(query_json),
+            "npz_sha256" : sha256_file(query_npz),
+            "json_sha256" : sha256_file(query_json),
+            "identity_hash" : _embedding_identity_hash(full_identity),
+        }
+
+    return query_bundle, query_cache_hit, {
+        **cache_record,
+        "assembly_policy" : assembly_policy,
+        "development20_reused_count" : len(development_ids),
+        "newly_encoded_count" : len(remaining_ids),
+        "frozen_development20_cache" : {
+            "npz_path" : str(development_npz),
+            "json_path" : str(development_json),
+            "npz_sha256" : sha256_file(development_npz),
+            "json_sha256" : sha256_file(development_json),
+            "identity_hash" : _embedding_identity_hash(development_identity),
+        },
+    }
+
+
+def _build_stage06_first_stage(
+    config : dict[str, Any],
+    query_frames : dict[str, pd.DataFrame],
+    stage_frames : dict[tuple[str, str], pd.DataFrame],
+    cache_root : Path,
+) -> tuple[ScoreBundle, pd.DataFrame, pd.DataFrame, ChannelDocuments, dict[str, Any]] :
+    stage_config = config["stage06_candidate_construction"]
+    source = stage_config["source"]
+    query_set = stage_config["query_set"]
+    corpus_id = stage_config["corpus"]
+    query_frame = query_frames[query_set].reset_index(drop = True)
+    query_ids = query_frame["query_id"].astype(str).tolist()
+    query_texts = query_frame["query_text"].astype(str).tolist()
+    channel_id = source["channel_id"]
+    channel_spec = config["channels"][channel_id]
+    windows = model_corpus_windows(stage_frames, channel_spec["model_id"], corpus_id)
+    documents = channel_documents(windows, channel_spec)
+
+    lexical_spec = config["stage01_lexical"]["methods"][source["sparse_method"]]
+    sparse = score_bm25(
+        query_texts,
+        query_ids,
+        documents,
+        fold_accents = bool(lexical_spec.get("fold_accents", False)),
+        k1 = float(lexical_spec["k1"]),
+        b = float(lexical_spec["b"]),
+        method_id = source["sparse_method"],
+    )
+
+    dense_stage = config["stage02_dense"]
+    backend_id = source["dense_method"]
+    backend_spec = DenseBackendSpec.from_config(backend_id, dense_stage["backends"][backend_id])
+    backend = SentenceTransformerDenseBackend(backend_spec, progress_callback = log_detail)
+    query_bundle, query_cache_hit, query_cache_record = _stage06_query_embeddings(
+        config,
+        query_frames,
+        cache_root,
+        backend_id,
+        backend_spec,
+        backend,
+    )
+
+    eligible_ids = [documents.window_ids[index] for index in documents.eligible_indices]
+    document_identity = _document_embedding_identity(
+        dense_stage,
+        backend_spec,
+        channel_id,
+        documents,
+    )
+    document_npz, document_json = _embedding_cache_paths(
+        cache_root,
+        dense_stage,
+        backend_id,
+        "documents",
+        channel_id,
+    )
+    document_bundle = _load_embedding_cache(
+        document_npz,
+        document_json,
+        eligible_ids,
+        document_identity,
+    )
+
+    if (document_bundle is None) :
+        backend.release()
+        raise RuntimeError(
+            "Stage 6 requires the frozen Stage 2 D1 document embedding cache for "
+            f"{channel_id}. Re-run Stage 2 instead of rebuilding the corpus inside Stage 6."
+        )
+
+    dense = score_dense_embeddings(
+        query_ids = query_ids,
+        documents = documents,
+        query_embeddings = query_bundle.embeddings,
+        document_embeddings = document_bundle.embeddings,
+        method_id = backend_id,
+        invalid_document_score = float(dense_stage["score"]["invalid_document_score"]),
+        metadata = {
+            "query_set" : query_set,
+            "corpus_id" : corpus_id,
+            "channel_id" : channel_id,
+            "backend" : backend_spec.identity(),
+            "query_cache_hit" : query_cache_hit,
+            "document_cache_hit" : True,
+        },
+    )
+
+    hybrid_id = source["hybrid_method"]
+    hybrid_spec = config["stage04_hybrid"]["methods"][hybrid_id]
+    normalization = config["stage04_hybrid"]["normalization"]
+    hybrid = normalized_weighted_score_bundle(
+        sparse,
+        dense,
+        sparse_weight = float(hybrid_spec["sparse_weight"]),
+        dense_weight = float(hybrid_spec["dense_weight"]),
+        method_id = hybrid_id,
+        normalization_policy = str(normalization["policy"]),
+        constant_tolerance = float(normalization["constant_tolerance"]),
+    )
+    hybrid.metadata.update({
+        "query_set" : query_set,
+        "corpus_id" : corpus_id,
+        "channel_id" : channel_id,
+        "stage06_source" : True,
+    })
+    query_results, _ = evaluate_bundle(
+        hybrid,
+        query_frame,
+        windows,
+        documents,
+        query_set,
+        corpus_id,
+        config,
+    )
+    backend_metadata = backend.metadata()
+    backend.release()
+
+    records = {
+        "query_embeddings" : {
+            "cache_hit" : query_cache_hit,
+            **query_cache_record,
+        },
+        "document_embeddings" : {
+            "cache_hit" : True,
+            "npz_path" : str(document_npz),
+            "json_path" : str(document_json),
+            "npz_sha256" : sha256_file(document_npz),
+            "json_sha256" : sha256_file(document_json),
+            "identity_hash" : _embedding_identity_hash(document_identity),
+        },
+        "dense_backend" : backend_metadata,
+    }
+    return hybrid, query_results, windows, documents, records
+
+
+def _validate_stage06_first_stage_reproduction(
+    config : dict[str, Any],
+    artifacts : Path,
+    query_results : pd.DataFrame,
+    tolerance : float | None = None,
+) -> dict[str, Any] :
+    if (tolerance is None) :
+        tolerance = float(
+            config["stage06_candidate_construction"].get(
+                "reproduction_score_tolerance",
+                1e-5,
+            )
+        )
+    report_root = resolve_artifact_path(artifacts, config["paths"]["reports_root"])
+    source_path = report_root / "stage04_hybrid" / "query_results.csv"
+
+    if (not source_path.exists()) :
+        return {
+            "passed" : False,
+            "source_path" : str(source_path),
+            "errors" : ["Stage 4 query_results.csv is missing"],
+        }
+
+    stage06_source = config["stage06_candidate_construction"]["source"]
+    channel_spec = config["channels"][stage06_source["channel_id"]]
+    reference = pd.read_csv(source_path)
+    reference = reference[
+        (reference["method_id"].astype(str) == stage06_source["hybrid_method"])
+        & (reference["model_id"].astype(str) == channel_spec["model_id"])
+        & (reference["view"].astype(str) == channel_spec["view"])
+    ].copy()
+    candidate = query_results[
+        query_results["evaluation_split"].astype(str) == "development20"
+    ].copy()
+
+    merged = candidate.merge(
+        reference,
+        on = "query_id",
+        how = "outer",
+        suffixes = ("_stage06", "_stage04"),
+        indicator = True,
+    )
+    errors = []
+    rank_fields = ["video_rank", "first_relevant_rank"]
+    exact_fields = ["top_video_id", "top_story_window_id"]
+    numeric_fields = ["correct_video_score", "best_wrong_video_score", "video_score_margin", "story_score_margin"]
+    maximum_difference = 0.0
+
+    if (len(candidate) != 20 or len(reference) != 20 or not (merged["_merge"] == "both").all()) :
+        errors.append(
+            f"Stage 6/Stage 4 development20 row mismatch: candidate={len(candidate)}, "
+            f"reference={len(reference)}, merged={len(merged)}"
+        )
+
+    for _, row in merged[merged["_merge"] == "both"].iterrows() :
+        query_id = str(row["query_id"])
+        for field in rank_fields :
+            left = row.get(f"{field}_stage06")
+            right = row.get(f"{field}_stage04")
+            if (pd.isna(left) and pd.isna(right)) :
+                continue
+            if (pd.isna(left) or pd.isna(right) or int(float(left)) != int(float(right))) :
+                errors.append(f"{query_id}/{field}: Stage 6 does not reproduce Stage 4")
+        for field in exact_fields :
+            left = row.get(f"{field}_stage06")
+            right = row.get(f"{field}_stage04")
+            left_null = pd.isna(left)
+            right_null = pd.isna(right)
+            if (left_null and right_null) :
+                continue
+            if (left_null != right_null or str(left) != str(right)) :
+                errors.append(f"{query_id}/{field}: Stage 6 does not reproduce Stage 4")
+        for field in numeric_fields :
+            left = row.get(f"{field}_stage06")
+            right = row.get(f"{field}_stage04")
+            if (pd.isna(left) and pd.isna(right)) :
+                continue
+            if (pd.isna(left) or pd.isna(right)) :
+                errors.append(f"{query_id}/{field}: null mismatch")
+                continue
+            difference = abs(float(left) - float(right))
+            maximum_difference = max(maximum_difference, difference)
+            if (difference > tolerance) :
+                errors.append(f"{query_id}/{field}: difference {difference:.9g} > {tolerance:.9g}")
+
+    return {
+        "passed" : not errors,
+        "source_path" : str(source_path),
+        "source_sha256" : sha256_file(source_path),
+        "candidate_row_count" : len(candidate),
+        "reference_row_count" : len(reference),
+        "maximum_score_difference" : maximum_difference,
+        "tolerance" : float(tolerance),
+        "errors" : errors[:50],
+    }
+
+
+def _stage06_diagnostic_metrics(candidate_query_results : pd.DataFrame) -> pd.DataFrame :
+    rows = []
+
+    for policy_id, group in candidate_query_results.groupby("policy_id", sort = True) :
+        slices = [("all40", group)]
+        for split, subset in group.groupby("historical_split", sort = True) :
+            slices.append((f"split:{split}", subset))
+        for task_type, subset in group.groupby("task_type", sort = True) :
+            slices.append((f"task:{task_type}", subset))
+
+        for slice_id, subset in slices :
+            rows.append({
+                "policy_id" : str(policy_id),
+                "slice" : slice_id,
+                "query_count" : int(len(subset)),
+                "video_candidate_recall" : float(subset["correct_video_retained"].astype(bool).mean()),
+                "temporal_candidate_recall" : float(subset["relevant_window_retained"].astype(bool).mean()),
+                "joint_candidate_recall" : float(subset["joint_success"].astype(bool).mean()),
+                "candidate_pairs_mean" : float(subset["candidate_pair_count"].mean()),
+                "candidate_pairs_max" : int(subset["candidate_pair_count"].max()),
+            })
+
+    return pd.DataFrame(rows)
+
+
+def run_stage06_main(config : dict[str, Any], artifacts : Path) -> None :
+    stage = "stage06_candidate_construction"
+    stage_config = config[stage]
+    reports_root = resolve_artifact_path(artifacts, config["paths"]["reports_root"]) / stage
+    cache_root = resolve_artifact_path(artifacts, config["paths"]["cache_root"])
+    reports_root.mkdir(parents = True, exist_ok = True)
+
+    print("=" * 88)
+    print("AIC 2026 RETRIEVAL V2 – STAGE 6 CANDIDATE CONSTRUCTION")
+    print("=" * 88)
+    print(f"Query set:     {stage_config['query_set']} (Extension40 full 40)")
+    print(f"Corpus:        {stage_config['corpus']} (All50)")
+    print(f"Source:        {stage_config['source']['channel_id']} / {stage_config['source']['hybrid_method']}")
+    print()
+
+    contract = validate_stage06_contract(config)
+    if (not contract["passed"]) :
+        raise RuntimeError(f"Stage 6 contract validation failed: {contract['errors']}")
+
+    source_validation = validate_source_contract(config)
+    if (not source_validation["passed"]) :
+        raise RuntimeError(f"Stage 6 source contract failed: {source_validation['errors']}")
+
+    stage1_config = load_stage1_config(config)
+    benchmarks, benchmark_paths, benchmark_validations = load_benchmarks(config)
+    query_frames, query_validation = validate_query_and_corpus_contract(config, benchmarks)
+    if (not query_validation["passed"]) :
+        raise RuntimeError(f"Stage 6 query/corpus validation failed: {query_validation['errors']}")
+
+    _stage_prerequisite(config, artifacts, "stage05_selection", ["stage05_selection", "evaluation_policy"])
+    stage_frames, selected_output_validation = _load_stage06_selected_windows(
+        config,
+        stage1_config,
+        benchmarks,
+        artifacts,
+    )
+    if (not selected_output_validation["passed"]) :
+        raise RuntimeError("Stage 6 selected Parakeet outputs failed benchmark validation")
+
+    hybrid, first_stage_results, windows, documents, source_cache_records = _build_stage06_first_stage(
+        config,
+        query_frames,
+        stage_frames,
+        cache_root,
+    )
+    first_stage_metrics = summarize_retrieval_metrics(first_stage_results)
+    reproduction = _validate_stage06_first_stage_reproduction(config, artifacts, first_stage_results)
+    if (not reproduction["passed"]) :
+        raise RuntimeError(f"Stage 6 first-stage reproduction failed: {reproduction['errors'][:5]}")
+
+    first_stage_cache = save_score_cache(
+        [hybrid],
+        first_stage_results,
+        cache_root,
+        stage_config["source_cache"]["subdir"],
+    )
+
+    query_frame = query_frames[stage_config["query_set"]].reset_index(drop = True)
+    policy_pools = []
+    policy_results = []
+
+    def run_policy(video_k : int, window_m : int) -> None :
+        policy_id = f"K{int(video_k)}_M{int(window_m)}"
+        pool, results = construct_stage6_candidate_policy(
+            hybrid.scores,
+            query_frame,
+            windows,
+            documents.eligibility_mask,
+            video_k = int(video_k),
+            windows_per_video = int(window_m),
+            silver_radius_s = float(config["evaluation_policy"]["silver_radius_s"]),
+            minimum_overlap_s = float(config["evaluation_policy"]["minimum_overlap_s"]),
+            tie_tolerance = float(config["evaluation_policy"]["tie_tolerance"]),
+            policy_id = policy_id,
+            text_field = config["channels"][stage_config["source"]["channel_id"]]["text_field"],
+        )
+        policy_pools.append(pool)
+        policy_results.append(results)
+
+    for video_k in stage_config["candidate_video_k"] :
+        for window_m in stage_config["windows_per_video_m"] :
+            run_policy(int(video_k), int(window_m))
+
+    all_results = pd.concat(policy_results, ignore_index = True)
+    summary = summarize_stage6_candidate_policies(all_results)
+    target = float(stage_config["selection_policy"]["target"])
+
+    if (float(summary["joint_candidate_recall"].max()) < target - 1e-12) :
+        fallback_k = int(stage_config["fallback_video_k"])
+        for window_m in stage_config["windows_per_video_m"] :
+            run_policy(fallback_k, int(window_m))
+        all_results = pd.concat(policy_results, ignore_index = True)
+        summary = summarize_stage6_candidate_policies(all_results)
+
+    summary, recommended_policy = recommend_stage6_policy(
+        summary,
+        target_joint_recall = target,
+    )
+    all_pool = pd.concat(policy_pools, ignore_index = True)
+    decision = config["selection"].get("stage06_decision", {})
+    selected_policy = (
+        str(decision["selected_policy_id"])
+        if decision.get("status") == "frozen_after_review" and decision.get("selected_policy_id")
+        else str(recommended_policy)
+    )
+
+    if (selected_policy not in set(summary["policy_id"].astype(str))) :
+        raise RuntimeError(f"Stage 6 selected policy {selected_policy!r} was not evaluated")
+
+    selected_pool = all_pool[all_pool["policy_id"].astype(str) == selected_policy].copy().reset_index(drop = True)
+    selected_results = all_results[all_results["policy_id"].astype(str) == selected_policy].copy().reset_index(drop = True)
+    selected_row = summary[summary["policy_id"].astype(str) == selected_policy].iloc[0]
+
+    rerun_pool, rerun_results = construct_stage6_candidate_policy(
+        hybrid.scores,
+        query_frame,
+        windows,
+        documents.eligibility_mask,
+        video_k = int(selected_row["video_k"]),
+        windows_per_video = int(selected_row["windows_per_video_m"]),
+        silver_radius_s = float(config["evaluation_policy"]["silver_radius_s"]),
+        minimum_overlap_s = float(config["evaluation_policy"]["minimum_overlap_s"]),
+        tie_tolerance = float(config["evaluation_policy"]["tie_tolerance"]),
+        policy_id = selected_policy,
+        text_field = config["channels"][stage_config["source"]["channel_id"]]["text_field"],
+    )
+    deterministic = bool(
+        selected_pool.reset_index(drop = True).equals(rerun_pool.reset_index(drop = True))
+        and selected_results.reset_index(drop = True).equals(rerun_results.reset_index(drop = True))
+    )
+
+    diagnostic_metrics = _stage06_diagnostic_metrics(all_results)
+    failures = stage6_candidate_failures(all_results)
+
+    write_csv(reports_root / "first_stage_retrieval_metrics.csv", first_stage_metrics)
+    write_csv(reports_root / "first_stage_query_results.csv", first_stage_results)
+    write_csv(reports_root / "candidate_policy_summary.csv", summary)
+    write_csv(reports_root / "candidate_metrics.csv", diagnostic_metrics)
+    write_csv(reports_root / "candidate_query_results.csv", all_results)
+    write_csv(reports_root / "candidate_pool_all.csv", all_pool)
+    write_csv(reports_root / "candidate_pool.csv", selected_pool)
+    write_csv(reports_root / "candidate_failures.csv", failures)
+
+    cache_records = {
+        "first_stage" : first_stage_cache,
+        "source_embeddings" : source_cache_records,
+        "candidate_pool_all" : {
+            "path" : str(reports_root / "candidate_pool_all.csv"),
+            "sha256" : sha256_file(reports_root / "candidate_pool_all.csv"),
+        },
+        "candidate_pool" : {
+            "path" : str(reports_root / "candidate_pool.csv"),
+            "sha256" : sha256_file(reports_root / "candidate_pool.csv"),
+        },
+    }
+    channel_validation = {
+        "passed" : True,
+        "channels" : [{
+            "channel_id" : stage_config["source"]["channel_id"],
+            "model_id" : documents.model_id,
+            "view" : documents.view,
+            "physical_window_count" : len(documents.window_ids),
+            "eligible_window_count" : int(documents.eligibility_mask.sum()),
+            "channel_hash" : channel_identity_hash(documents),
+        }],
+        "errors" : [],
+    }
+    output_hashes = model_output_hashes(stage1_config, benchmarks, artifacts)
+    validation_summary = {
+        "passed" : bool(
+            contract["passed"]
+            and source_validation["passed"]
+            and query_validation["passed"]
+            and selected_output_validation["passed"]
+            and reproduction["passed"]
+            and deterministic
+        ),
+        "stage06_contract" : contract,
+        "source_contract" : source_validation,
+        "benchmarks" : benchmark_validations,
+        "query_and_corpus" : query_validation,
+        "selected_model_outputs" : selected_output_validation,
+        "channel" : channel_validation,
+        "first_stage_reproduction" : reproduction,
+        "candidate_determinism" : {
+            "passed" : deterministic,
+            "selected_policy_id" : selected_policy,
+        },
+    }
+    write_json(reports_root / "validation_summary.json", validation_summary)
+
+    manifest = build_manifest(
+        stage,
+        config,
+        benchmarks,
+        benchmark_paths,
+        artifacts,
+        stage1_config,
+        query_validation,
+        channel_validation,
+        output_hashes,
+        cache_records,
+    )
+    write_json(reports_root / "retrieval_manifest.json", manifest)
+
+    passed = bool(validation_summary["passed"])
+    stage_summary = {
+        "schema_version" : "1.0",
+        "retrieval_id" : config["retrieval_id"],
+        "stage" : stage,
+        "generated_at_utc" : utc_now(),
+        "passed" : passed,
+        "query_set" : stage_config["query_set"],
+        "query_count" : len(query_frame),
+        "corpus" : stage_config["corpus"],
+        "video_count" : int(windows["video_id"].astype(str).nunique()),
+        "physical_window_count" : len(windows),
+        "recommended_policy_id" : recommended_policy,
+        "selected_output_policy_id" : selected_policy,
+        "decision_status" : decision.get("status", "pending_review"),
+        "decision_required" : decision.get("status") != "frozen_after_review",
+        "policy_summary" : summary.to_dict(orient = "records"),
+        "candidate_pool_sha256" : cache_records["candidate_pool"]["sha256"],
+        "candidate_pool_all_sha256" : cache_records["candidate_pool_all"]["sha256"],
+        "first_stage_cache" : first_stage_cache,
+        "first_stage_reproduction" : reproduction,
+        "candidate_determinism_passed" : deterministic,
+        "reports_root" : str(reports_root),
+        "note" : (
+            "Stage 6 selects candidates using coverage only. Reranker quality is not used to choose K/M. "
+            "Freeze selection.stage06_decision after reviewing this report before running Stage 7."
+        ),
+    }
+    write_json(reports_root / "stage_summary.json", stage_summary)
+
+    print("=" * 88)
+    print(f"Stage 6 status: {'PASS' if passed else 'FAIL'}")
+    print(f"Recommended:   {recommended_policy}")
+    print(f"Output policy: {selected_policy}")
+    print(f"Reports:       {reports_root}")
+
+    if (not passed) :
+        raise SystemExit(2)
+
+
+def _load_stage06_first_stage_cache(
+    config : dict[str, Any],
+    artifacts : Path,
+    query_ids : list[str],
+    window_ids : list[str],
+) -> tuple[ScoreBundle, dict[str, Any]] :
+    cache_root = resolve_artifact_path(artifacts, config["paths"]["cache_root"])
+    subdir = config["stage06_candidate_construction"]["source_cache"]["subdir"]
+    target = cache_root / subdir
+    npz_path = target / "window_scores.npz"
+    axes_path = target / "score_axes.json"
+
+    if (not npz_path.exists() or not axes_path.exists()) :
+        raise FileNotFoundError(f"Stage 6 first-stage cache is incomplete: {target}")
+
+    axes = load_json(axes_path)
+    expected_stage = subdir
+    if (axes.get("schema_version") != "1.0" or axes.get("stage") != expected_stage) :
+        raise ValueError("Stage 6 first-stage cache identity mismatch")
+
+    source = config["stage06_candidate_construction"]["source"]
+    channel = config["channels"][source["channel_id"]]
+    matches = [
+        item for item in axes.get("bundles", [])
+        if item.get("query_set") == config["stage06_candidate_construction"]["query_set"]
+        and item.get("method_id") == source["hybrid_method"]
+        and item.get("model_id") == channel["model_id"]
+        and item.get("view") == channel["view"]
+    ]
+    if (len(matches) != 1) :
+        raise ValueError(f"Stage 6 first-stage cache expected one bundle, found {len(matches)}")
+
+    record = matches[0]
+    with np.load(npz_path, allow_pickle = False) as payload :
+        scores = np.asarray(payload[record["array_key"]])
+        eligibility = np.asarray(payload[record["eligibility_key"]], dtype = bool)
+
+    bundle = ScoreBundle(
+        method_id = str(record["method_id"]),
+        model_id = str(record["model_id"]),
+        view = str(record["view"]),
+        query_ids = [str(value) for value in record["query_ids"]],
+        window_ids = [str(value) for value in record["window_ids"]],
+        scores = scores,
+        eligibility_mask = eligibility,
+        metadata = dict(record.get("metadata", {})),
+    )
+    if (bundle.query_ids != query_ids) :
+        raise ValueError("Stage 7 query axis differs from Stage 6 first-stage cache")
+    if (bundle.window_ids != window_ids) :
+        raise ValueError("Stage 7 physical window axis differs from Stage 6 first-stage cache")
+
+    return bundle, {
+        "window_scores_path" : str(npz_path),
+        "window_scores_sha256" : sha256_file(npz_path),
+        "score_axes_path" : str(axes_path),
+        "score_axes_sha256" : sha256_file(axes_path),
+    }
+
+
+def _stage07_candidate_pool_identity(candidate_pool : pd.DataFrame) -> str :
+    fields = [
+        "query_id", "video_id", "candidate_video_rank", "window_id",
+        "candidate_window_rank", "first_stage_window_score", "window_text",
+    ]
+    records = candidate_pool[fields].to_dict(orient = "records")
+    return canonical_json_hash(records)
+
+
+def _stage07_score_cache_paths(
+    cache_root : Path,
+    config : dict[str, Any],
+    backend_id : str,
+) -> tuple[Path, Path] :
+    subdir = config["stage07_reranking"]["cache"]["subdir"]
+    base = cache_root / subdir / _safe_key(backend_id)
+    return base / "scores.npz", base / "score_axes.json"
+
+
+def _load_stage07_score_cache(
+    npz_path : Path,
+    json_path : Path,
+    identity : dict[str, Any],
+    expected_pair_ids : list[str],
+) -> tuple[np.ndarray, dict[str, Any]] | None :
+    if (not npz_path.exists() or not json_path.exists()) :
+        return None
+    metadata = load_json(json_path)
+    if (metadata.get("schema_version") != "1.0") :
+        return None
+    if (metadata.get("identity_hash") != canonical_json_hash(identity)) :
+        return None
+    if (metadata.get("pair_ids") != expected_pair_ids) :
+        return None
+    if (metadata.get("npz_sha256") != sha256_file(npz_path)) :
+        return None
+    with np.load(npz_path, allow_pickle = False) as payload :
+        scores = np.asarray(payload["scores"], dtype = np.float32)
+    if (scores.shape != (len(expected_pair_ids),) or not np.isfinite(scores).all()) :
+        return None
+    return scores, metadata
+
+
+def _write_stage07_score_cache(
+    npz_path : Path,
+    json_path : Path,
+    scores : np.ndarray,
+    identity : dict[str, Any],
+    pair_ids : list[str],
+    runtime_metadata : dict[str, Any],
+) -> dict[str, Any] :
+    npz_path.parent.mkdir(parents = True, exist_ok = True)
+    np.savez_compressed(npz_path, scores = np.asarray(scores, dtype = np.float32))
+    record = {
+        "schema_version" : "1.0",
+        "identity" : identity,
+        "identity_hash" : canonical_json_hash(identity),
+        "pair_ids" : pair_ids,
+        "npz_sha256" : sha256_file(npz_path),
+        "runtime_metadata" : runtime_metadata,
+    }
+    write_json(json_path, record)
+    return record
+
+
+def _stage07_latency_summary(
+    query_latency : pd.DataFrame,
+    percentiles : list[int],
+) -> pd.DataFrame :
+    if (query_latency.empty) :
+        return pd.DataFrame()
+    rows = []
+
+    for backend_id, group in query_latency.groupby("backend_id", sort = True) :
+        values = group["rerank_runtime_ms"].to_numpy(dtype = float)
+        total_pairs = int(group["candidate_pair_count"].sum())
+        total_runtime_s = float(values.sum() / 1000.0)
+        row = {
+            "backend_id" : str(backend_id),
+            "query_count" : int(len(group)),
+            "candidate_pairs_mean" : float(group["candidate_pair_count"].mean()),
+            "candidate_pairs_max" : int(group["candidate_pair_count"].max()),
+            "total_pairs" : total_pairs,
+            "total_runtime_s" : total_runtime_s,
+            "mean_query_ms" : float(values.mean()),
+            "pairs_per_second" : float(total_pairs / total_runtime_s) if total_runtime_s > 0 else None,
+            "amortized_ms_per_pair" : float(1000.0 * total_runtime_s / total_pairs) if total_pairs else None,
+        }
+        for percentile in percentiles :
+            row[f"p{int(percentile)}_query_ms"] = float(np.percentile(values, percentile))
+        rows.append(row)
+
+    return pd.DataFrame(rows)
+
+
+def _stage07_diagnostic_metrics(query_results : pd.DataFrame) -> pd.DataFrame :
+    frames = []
+
+    for slice_name, column in [("historical_split", "evaluation_split"), ("task_type", "task_type")] :
+        for slice_value, subset in query_results.groupby(column, sort = True) :
+            working = subset.copy()
+            working["query_set"] = f"extension40_full__{slice_name}_{slice_value}"
+            metrics = summarize_retrieval_metrics(working)
+            metrics["diagnostic_slice_type"] = slice_name
+            metrics["diagnostic_slice_value"] = str(slice_value)
+            frames.append(metrics)
+
+    return pd.concat(frames, ignore_index = True) if frames else pd.DataFrame()
+
+
+def _validate_stage07_control_reproduction(
+    control : pd.DataFrame,
+    source : pd.DataFrame,
+) -> dict[str, Any] :
+    fields = [
+        "video_rank", "first_relevant_rank", "top_video_id", "top_story_window_id",
+        "video_rr", "story_rr",
+    ]
+    merged = control.merge(
+        source[["query_id", *fields]],
+        on = "query_id",
+        how = "outer",
+        suffixes = ("_control", "_source"),
+        indicator = True,
+    )
+    errors = []
+
+    if (len(control) != 40 or len(source) != 40 or not (merged["_merge"] == "both").all()) :
+        errors.append("Stage 7 control/source query axes do not contain the same 40 queries")
+
+    for _, row in merged[merged["_merge"] == "both"].iterrows() :
+        for field in fields :
+            left = row.get(f"{field}_control")
+            right = row.get(f"{field}_source")
+            if (pd.isna(left) and pd.isna(right)) :
+                continue
+            if (field in {"video_rr", "story_rr"}) :
+                if (pd.isna(left) or pd.isna(right) or abs(float(left) - float(right)) > 1e-12) :
+                    errors.append(f"{row['query_id']}/{field}: control reproduction mismatch")
+            elif (pd.isna(left) != pd.isna(right) or str(left) != str(right)) :
+                errors.append(f"{row['query_id']}/{field}: control reproduction mismatch")
+
+    return {
+        "passed" : not errors,
+        "query_count" : len(control),
+        "errors" : errors[:50],
+    }
+
+
+def _stage07_pareto_flags(method_summary : pd.DataFrame) -> pd.DataFrame :
+    frame = method_summary.copy()
+    frame["pareto_optimal"] = False
+    candidates = frame[
+        (frame["method_id"] != "S0_first_stage")
+        & frame["video_mrr"].notna()
+        & frame["p90_query_ms"].notna()
+    ]
+
+    for index, row in candidates.iterrows() :
+        dominated = False
+        for other_index, other in candidates.iterrows() :
+            if (index == other_index) :
+                continue
+            quality_not_worse = float(other["video_mrr"]) >= float(row["video_mrr"])
+            latency_not_worse = float(other["p90_query_ms"]) <= float(row["p90_query_ms"])
+            strictly_better = (
+                float(other["video_mrr"]) > float(row["video_mrr"])
+                or float(other["p90_query_ms"]) < float(row["p90_query_ms"])
+            )
+            if (quality_not_worse and latency_not_worse and strictly_better) :
+                dominated = True
+                break
+        if (not dominated) :
+            frame.loc[index, "pareto_optimal"] = True
+
+    return frame
+
+
+def run_stage07_main(config : dict[str, Any], artifacts : Path) -> None :
+    stage = "stage07_reranking"
+    stage_config = config[stage]
+    reports_root = resolve_artifact_path(artifacts, config["paths"]["reports_root"]) / stage
+    cache_root = resolve_artifact_path(artifacts, config["paths"]["cache_root"])
+    reports_root.mkdir(parents = True, exist_ok = True)
+
+    print("=" * 88)
+    print("AIC 2026 RETRIEVAL V2 – STAGE 7 CANDIDATE RERANKING")
+    print("=" * 88)
+
+    contract = validate_stage07_contract(config)
+    if (not contract["passed"]) :
+        raise RuntimeError(f"Stage 7 contract validation failed: {contract['errors']}")
+
+    environment = validate_stage07_environment(config)
+    if (not environment["passed"]) :
+        raise RuntimeError(f"Stage 7 environment validation failed: {environment['errors']}")
+
+    stage06_summary = _stage_prerequisite(
+        config,
+        artifacts,
+        "stage06_candidate_construction",
+        ["stage06_candidate_construction", "evaluation_policy"],
+    )
+    source_validation = validate_source_contract(config)
+    if (not source_validation["passed"]) :
+        raise RuntimeError(f"Stage 7 source contract failed: {source_validation['errors']}")
+
+    stage1_config = load_stage1_config(config)
+    benchmarks, benchmark_paths, benchmark_validations = load_benchmarks(config)
+    query_frames, query_validation = validate_query_and_corpus_contract(config, benchmarks)
+    if (not query_validation["passed"]) :
+        raise RuntimeError(f"Stage 7 query/corpus validation failed: {query_validation['errors']}")
+
+    query_frame = query_frames[stage_config["query_set"]].reset_index(drop = True)
+    query_ids = query_frame["query_id"].astype(str).tolist()
+    windows = _stage3_physical_windows(benchmarks)
+    window_ids = windows["window_id"].astype(str).tolist()
+    first_stage_bundle, first_stage_cache_record = _load_stage06_first_stage_cache(
+        config,
+        artifacts,
+        query_ids,
+        window_ids,
+    )
+
+    candidate_path = resolve_artifact_path(
+        artifacts,
+        stage_config["candidate_source"]["candidate_pool_path"],
+    )
+    if (not candidate_path.exists()) :
+        raise FileNotFoundError(f"Stage 7 candidate pool is missing: {candidate_path}")
+    candidate_all = pd.read_csv(candidate_path)
+    selected_policy = str(config["selection"]["stage06_decision"]["selected_policy_id"])
+    candidate_pool = candidate_all[
+        candidate_all["policy_id"].astype(str) == selected_policy
+    ].copy().reset_index(drop = True)
+    for boolean_column in ["eligible", "is_correct_video", "is_relevant_window"] :
+        if (boolean_column in candidate_pool.columns) :
+            candidate_pool[boolean_column] = (
+                candidate_pool[boolean_column]
+                .astype(str)
+                .str.strip()
+                .str.lower()
+                .isin({"true", "1", "yes"})
+            )
+
+    expected_query_ids = set(query_ids)
+    candidate_query_ids = set(candidate_pool["query_id"].astype(str))
+    candidate_errors = []
+    if (candidate_query_ids != expected_query_ids) :
+        candidate_errors.append("Selected Stage 6 candidate pool query IDs do not match Extension40")
+    if (candidate_pool.duplicated(["query_id", "window_id"]).any()) :
+        candidate_errors.append("Selected Stage 6 candidate pool contains duplicate query/window identities")
+    selected_k = int(config["selection"]["stage06_decision"]["selected_video_k"])
+    selected_m = int(config["selection"]["stage06_decision"]["selected_windows_per_video"])
+
+    for query_id, group in candidate_pool.groupby("query_id", sort = False) :
+        video_count = group["video_id"].astype(str).nunique()
+        if (video_count != selected_k) :
+            candidate_errors.append(f"{query_id}: candidate video count {video_count} != {selected_k}")
+        if (len(group) > selected_k * selected_m) :
+            candidate_errors.append(f"{query_id}: candidate pair count exceeds K*M")
+        if ((group["window_text"].fillna("").astype(str).str.strip() == "").any()) :
+            candidate_errors.append(f"{query_id}: candidate pool contains empty reranker text")
+
+    if (candidate_errors) :
+        raise RuntimeError(f"Stage 7 candidate validation failed: {candidate_errors[:10]}")
+
+    first_stage_query_path = resolve_artifact_path(
+        artifacts,
+        config["paths"]["reports_root"],
+    ) / "stage06_candidate_construction" / "first_stage_query_results.csv"
+    first_stage_source = pd.read_csv(first_stage_query_path)
+    control = first_stage_source.copy()
+    control["method_id"] = "S0_first_stage"
+    control["model_id"] = "first_stage"
+    control["view"] = "processed"
+    control["reranker_id"] = None
+    control["score_policy_id"] = "S0_first_stage"
+    control_reproduction = _validate_stage07_control_reproduction(control, first_stage_source)
+    if (not control_reproduction["passed"]) :
+        raise RuntimeError(f"Stage 7 control reproduction failed: {control_reproduction['errors'][:5]}")
+
+    pair_ids = [
+        f"{row.query_id}::{row.window_id}"
+        for row in candidate_pool[["query_id", "window_id"]].itertuples(index = False)
+    ]
+    if (len(set(pair_ids)) != len(pair_ids)) :
+        raise ValueError("Stage 7 pair identities are not unique")
+
+    query_order = {query_id : index for index, query_id in enumerate(query_ids)}
+    candidate_pool["_query_order"] = candidate_pool["query_id"].astype(str).map(query_order)
+    candidate_pool = candidate_pool.sort_values(
+        ["_query_order", "candidate_video_rank", "candidate_window_rank", "video_id", "window_id"],
+        kind = "mergesort",
+    ).drop(columns = ["_query_order"]).reset_index(drop = True)
+    pair_ids = [
+        f"{row.query_id}::{row.window_id}"
+        for row in candidate_pool[["query_id", "window_id"]].itertuples(index = False)
+    ]
+    candidate_identity_hash = _stage07_candidate_pool_identity(candidate_pool)
+
+    result_frames = [control]
+    backend_rows = []
+    preflight_rows = []
+    token_rows = []
+    query_latency_rows = []
+    cache_records = {}
+    unexpected_failures = []
+    compatible_models = []
+    latency_ceiling = float(stage_config["runtime"]["operational_latency_ceiling_ms_p90"])
+    configured_batches = [int(value) for value in stage_config["batch_size_candidates"]]
+    minimum_batch = int(stage_config["minimum_batch_size"])
+
+    preflight_query_ids = query_ids[ : int(stage_config["preflight"]["query_count"])]
+    preflight_pool = candidate_pool[
+        candidate_pool["query_id"].astype(str).isin(preflight_query_ids)
+    ]
+    preflight_pairs = list(zip(
+        preflight_pool["query_text"].astype(str).tolist(),
+        preflight_pool["window_text"].astype(str).tolist(),
+    ))
+
+    for backend_id, backend_config in stage_config["models"].items() :
+        specification = RerankerBackendSpec.from_config(
+            backend_id,
+            backend_config,
+            max_length = int(stage_config["max_length"]),
+            dtype = str(stage_config["dtype"]),
+        )
+        cache_identity = {
+            "reranker_backend_version" : retrieval_backends.RERANKER_BACKENDS_VERSION,
+            "backend" : specification.identity(),
+            "transformers_version" : environment["transformers"],
+            "sentence_transformers_version" : environment["sentence_transformers"],
+            "candidate_pool_hash" : candidate_identity_hash,
+            "selected_policy_id" : selected_policy,
+            "query_ids" : query_ids,
+            "pair_ids_hash" : canonical_json_hash(pair_ids),
+        }
+        npz_path, json_path = _stage07_score_cache_paths(cache_root, config, backend_id)
+        cached = (
+            _load_stage07_score_cache(npz_path, json_path, cache_identity, pair_ids)
+            if stage_config["cache"].get("reuse_scores", True)
+            else None
+        )
+
+        if (cached is not None) :
+            scores, cache_metadata = cached
+            runtime_metadata = cache_metadata.get("runtime_metadata", {})
+            token_audit = runtime_metadata.get("token_audit", {})
+            backend_record = runtime_metadata.get("backend", {})
+            preflight_record = runtime_metadata.get("preflight", {})
+            latency_records = runtime_metadata.get("query_latency", [])
+            token_rows.append({"backend_id" : backend_id, **token_audit})
+            truncation_threshold = float(stage_config["token_length_audit"]["review_threshold_fraction"])
+            if (float(token_audit.get("truncated_fraction", 0.0)) > truncation_threshold) :
+                message = (
+                    f"{backend_id}: TOKEN_LENGTH_REVIEW_REQUIRED; "
+                    f"truncated_fraction={float(token_audit.get('truncated_fraction', 0.0)):.4f} "
+                    f"> {truncation_threshold:.4f}"
+                )
+                unexpected_failures.append({"backend_id" : backend_id, "error" : message})
+                backend_rows.append({
+                    "backend_id" : backend_id,
+                    "model_name" : specification.model_name,
+                    "configured_revision" : specification.revision,
+                    "resolved_revision" : backend_record.get("resolved_revision", specification.revision),
+                    "compatible" : False,
+                    "cache_hit" : True,
+                    "selected_batch_size" : runtime_metadata.get("selected_batch_size"),
+                    "model_load_s" : backend_record.get("load_runtime_s"),
+                    "warmup_s" : runtime_metadata.get("warmup_s"),
+                    "oom_count" : backend_record.get("oom_count", 0),
+                    "batch_retries" : runtime_metadata.get("batch_retries", 0),
+                    "failure_reason" : message,
+                    "unexpected_failure" : True,
+                    "peak_allocated_bytes" : runtime_metadata.get("gpu", {}).get("peak_allocated_bytes"),
+                    "peak_reserved_bytes" : runtime_metadata.get("gpu", {}).get("peak_reserved_bytes"),
+                })
+                preflight_rows.append({"backend_id" : backend_id, "cache_hit" : True, "passed" : False, "error" : message})
+                continue
+            backend_rows.append({
+                "backend_id" : backend_id,
+                "model_name" : specification.model_name,
+                "configured_revision" : specification.revision,
+                "resolved_revision" : backend_record.get("resolved_revision", specification.revision),
+                "compatible" : True,
+                "cache_hit" : True,
+                "selected_batch_size" : runtime_metadata.get("selected_batch_size"),
+                "model_load_s" : backend_record.get("load_runtime_s"),
+                "warmup_s" : runtime_metadata.get("warmup_s"),
+                "oom_count" : backend_record.get("oom_count", 0),
+                "batch_retries" : runtime_metadata.get("batch_retries", 0),
+                "failure_reason" : None,
+                "unexpected_failure" : False,
+                "peak_allocated_bytes" : runtime_metadata.get("gpu", {}).get("peak_allocated_bytes"),
+                "peak_reserved_bytes" : runtime_metadata.get("gpu", {}).get("peak_reserved_bytes"),
+            })
+            preflight_rows.append({"backend_id" : backend_id, "cache_hit" : True, **preflight_record})
+            query_latency_rows.extend(latency_records)
+            cache_records[backend_id] = {
+                "npz_path" : str(npz_path),
+                "json_path" : str(json_path),
+                "npz_sha256" : sha256_file(npz_path),
+                "identity_hash" : cache_metadata.get("identity_hash"),
+                "cache_hit" : True,
+            }
+            compatible_models.append(backend_id)
+        else :
+            backend = None
+            try :
+                backend = SentenceTransformerCrossEncoderReranker(specification, progress_callback = log_detail)
+                log_detail(f"{backend_id}: running one-pair compatibility smoke test")
+                smoke_test = backend.smoke_test()
+
+                log_detail(f"{backend_id}: smoke test PASS; score={float(smoke_test['score']):.6f}")
+                
+                token_audit = backend.token_length_audit(list(zip(
+                    candidate_pool["query_text"].astype(str).tolist(),
+                    candidate_pool["window_text"].astype(str).tolist(),
+                )))
+                token_rows.append({"backend_id" : backend_id, **token_audit})
+                truncation_threshold = float(stage_config["token_length_audit"]["review_threshold_fraction"])
+                if (float(token_audit.get("truncated_fraction", 0.0)) > truncation_threshold) :
+                    raise RuntimeError(
+                        f"{backend_id}: TOKEN_LENGTH_REVIEW_REQUIRED; "
+                        f"truncated_fraction={float(token_audit.get('truncated_fraction', 0.0)):.4f} "
+                        f"> {truncation_threshold:.4f}"
+                    )
+
+                batch_size, attempts = backend.select_batch_size(
+                    preflight_pairs,
+                    candidates = configured_batches,
+                    minimum_batch_size = minimum_batch,
+                )
+                warmup_s = backend.warmup(
+                    preflight_pairs,
+                    batch_size = batch_size,
+                    pair_count = int(stage_config["preflight"]["warmup_pairs"]),
+                )
+                preflight_rows.append({
+                    "backend_id" : backend_id,
+                    "cache_hit" : False,
+                    "preflight_pairs" : len(preflight_pairs),
+                    "selected_batch_size" : batch_size,
+                    "attempts" : json.dumps(attempts, ensure_ascii = False),
+                    "warmup_s" : warmup_s,
+                    "passed" : True,
+                })
+
+                selected_index = configured_batches.index(batch_size)
+                full_batch_candidates = configured_batches[selected_index :]
+                full_scores = None
+                full_query_latency = None
+                final_batch_size = None
+                batch_retries = 0
+                last_oom = None
+
+                for full_batch_size in full_batch_candidates :
+                    _reset_gpu_peak_memory()
+                    scores_working = np.empty(len(candidate_pool), dtype = np.float32)
+                    latency_working = []
+                    try :
+                        for query_id in query_ids :
+                            indices = np.flatnonzero(
+                                candidate_pool["query_id"].astype(str).to_numpy() == query_id
+                            )
+                            group = candidate_pool.iloc[indices]
+                            output = backend.score_pairs(
+                                list(zip(
+                                    group["query_text"].astype(str).tolist(),
+                                    group["window_text"].astype(str).tolist(),
+                                )),
+                                batch_size = full_batch_size,
+                                show_progress_bar = False,
+                            )
+                            scores_working[indices] = output.scores
+                            latency_working.append({
+                                "backend_id" : backend_id,
+                                "query_id" : query_id,
+                                "candidate_pair_count" : len(indices),
+                                "rerank_runtime_ms" : float(output.runtime_s * 1000.0),
+                                "batch_size" : int(full_batch_size),
+                            })
+                        full_scores = scores_working
+                        full_query_latency = latency_working
+                        final_batch_size = int(full_batch_size)
+                        break
+                    except RuntimeError as error :
+                        if (not backend._is_oom(error)) :
+                            raise
+                        last_oom = str(error)
+                        batch_retries += 1
+                        backend._clear_cuda()
+
+                if (full_scores is None or full_query_latency is None or final_batch_size is None) :
+                    raise RuntimeError(
+                        f"{backend_id}: full Extension40 scoring failed with OOM at all configured batch sizes; "
+                        f"last error: {last_oom}"
+                    )
+
+                scores = full_scores
+                query_latency_rows.extend(full_query_latency)
+                gpu = _gpu_memory_snapshot()
+                backend_metadata = backend.metadata()
+                runtime_metadata = {
+                    "backend" : backend_metadata,
+                    "token_audit" : token_audit,
+                    "preflight" : preflight_rows[-1],
+                    "warmup_s" : warmup_s,
+                    "selected_batch_size" : final_batch_size,
+                    "batch_retries" : batch_retries,
+                    "query_latency" : full_query_latency,
+                    "gpu" : gpu,
+                }
+                cache_record = _write_stage07_score_cache(
+                    npz_path,
+                    json_path,
+                    scores,
+                    cache_identity,
+                    pair_ids,
+                    runtime_metadata,
+                )
+                cache_records[backend_id] = {
+                    "npz_path" : str(npz_path),
+                    "json_path" : str(json_path),
+                    "npz_sha256" : cache_record["npz_sha256"],
+                    "identity_hash" : cache_record["identity_hash"],
+                }
+                backend_rows.append({
+                    "backend_id" : backend_id,
+                    "model_name" : specification.model_name,
+                    "configured_revision" : specification.revision,
+                    "resolved_revision" : backend_metadata.get("resolved_revision"),
+                    "compatible" : True,
+                    "cache_hit" : False,
+                    "selected_batch_size" : final_batch_size,
+                    "model_load_s" : backend_metadata.get("load_runtime_s"),
+                    "warmup_s" : warmup_s,
+                    "oom_count" : backend_metadata.get("oom_count", 0),
+                    "batch_retries" : batch_retries,
+                    "failure_reason" : None,
+                    "unexpected_failure" : False,
+                    "peak_allocated_bytes" : gpu.get("peak_allocated_bytes"),
+                    "peak_reserved_bytes" : gpu.get("peak_reserved_bytes"),
+                })
+                compatible_models.append(backend_id)
+            except RuntimeError as error :
+                
+                if (backend is not None and backend._is_fatal_cuda(error)) :
+                    raise RuntimeError(
+                        f"{backend_id}: fatal CUDA failure; aborting the Stage 7 subprocess because the CUDA context is no longer reliable"
+                    ) from error
+                
+                message = str(error)
+                oom_incompatible = "OOM" in message.upper() or "OUT OF MEMORY" in message.upper()
+                backend_rows.append({
+                    "backend_id" : backend_id,
+                    "model_name" : specification.model_name,
+                    "configured_revision" : specification.revision,
+                    "resolved_revision" : specification.revision,
+                    "compatible" : False,
+                    "cache_hit" : False,
+                    "selected_batch_size" : None,
+                    "model_load_s" : getattr(backend, "load_runtime_s", None) if backend is not None else None,
+                    "warmup_s" : None,
+                    "oom_count" : getattr(backend, "oom_count", 0) if backend is not None else 0,
+                    "batch_retries" : None,
+                    "failure_reason" : "INCOMPATIBLE_T4_OOM" if oom_incompatible else message,
+                    "unexpected_failure" : not oom_incompatible,
+                    "peak_allocated_bytes" : _gpu_memory_snapshot().get("peak_allocated_bytes"),
+                    "peak_reserved_bytes" : _gpu_memory_snapshot().get("peak_reserved_bytes"),
+                })
+                preflight_rows.append({
+                    "backend_id" : backend_id,
+                    "cache_hit" : False,
+                    "passed" : False,
+                    "error" : "INCOMPATIBLE_T4_OOM" if oom_incompatible else message,
+                })
+                if (not oom_incompatible) :
+                    unexpected_failures.append({"backend_id" : backend_id, "error" : message})
+                if (backend is not None) :
+                    backend.release()
+                continue
+            except Exception as error :
+                message = f"{type(error).__name__}: {error}"
+                unexpected_failures.append({"backend_id" : backend_id, "error" : message})
+                backend_rows.append({
+                    "backend_id" : backend_id,
+                    "model_name" : specification.model_name,
+                    "configured_revision" : specification.revision,
+                    "resolved_revision" : specification.revision,
+                    "compatible" : False,
+                    "cache_hit" : False,
+                    "selected_batch_size" : None,
+                    "model_load_s" : getattr(backend, "load_runtime_s", None) if backend is not None else None,
+                    "warmup_s" : None,
+                    "oom_count" : getattr(backend, "oom_count", 0) if backend is not None else 0,
+                    "batch_retries" : None,
+                    "failure_reason" : message,
+                    "unexpected_failure" : True,
+                    "peak_allocated_bytes" : _gpu_memory_snapshot().get("peak_allocated_bytes"),
+                    "peak_reserved_bytes" : _gpu_memory_snapshot().get("peak_reserved_bytes"),
+                })
+                preflight_rows.append({"backend_id" : backend_id, "cache_hit" : False, "passed" : False, "error" : message})
+                if (backend is not None) :
+                    backend.release()
+                continue
+            finally :
+                if (backend is not None) :
+                    backend.release()
+
+        if (backend_id not in compatible_models) :
+            continue
+
+        reranker_method = f"{backend_id}__S1_reranker_only"
+        reranker_results = evaluate_stage7_candidate_scores(
+            candidate_pool,
+            scores,
+            first_stage_bundle.scores,
+            query_frame,
+            windows,
+            first_stage_bundle.eligibility_mask,
+            method_id = reranker_method,
+            model_id = backend_id,
+            view = "processed",
+            query_set = stage_config["query_set"],
+            corpus_id = stage_config["corpus"],
+            silver_radius_s = float(config["evaluation_policy"]["silver_radius_s"]),
+            minimum_overlap_s = float(config["evaluation_policy"]["minimum_overlap_s"]),
+            tie_tolerance = float(config["evaluation_policy"]["tie_tolerance"]),
+            catastrophic_failure = stage_config["catastrophic_failure"],
+        )
+        reranker_results["reranker_id"] = backend_id
+        reranker_results["score_policy_id"] = "S1_reranker_only"
+        result_frames.append(reranker_results)
+
+        blend_spec = stage_config["score_policies"]["S2_first_stage_reranker_50_50"]
+        blended_scores, _ = blend_candidate_scores_by_query(
+            candidate_pool["query_id"].astype(str).tolist(),
+            candidate_pool["first_stage_window_score"].to_numpy(dtype = float),
+            scores,
+            first_stage_weight = float(blend_spec["first_stage_weight"]),
+            reranker_weight = float(blend_spec["reranker_weight"]),
+            constant_tolerance = float(blend_spec["constant_tolerance"]),
+        )
+        blend_method = f"{backend_id}__S2_first_stage_reranker_50_50"
+        blend_results = evaluate_stage7_candidate_scores(
+            candidate_pool,
+            blended_scores,
+            first_stage_bundle.scores,
+            query_frame,
+            windows,
+            first_stage_bundle.eligibility_mask,
+            method_id = blend_method,
+            model_id = backend_id,
+            view = "processed",
+            query_set = stage_config["query_set"],
+            corpus_id = stage_config["corpus"],
+            silver_radius_s = float(config["evaluation_policy"]["silver_radius_s"]),
+            minimum_overlap_s = float(config["evaluation_policy"]["minimum_overlap_s"]),
+            tie_tolerance = float(config["evaluation_policy"]["tie_tolerance"]),
+            catastrophic_failure = stage_config["catastrophic_failure"],
+        )
+        blend_results["reranker_id"] = backend_id
+        blend_results["score_policy_id"] = "S2_first_stage_reranker_50_50"
+        result_frames.append(blend_results)
+
+    query_results = pd.concat(result_frames, ignore_index = True)
+    metrics = summarize_retrieval_metrics(query_results)
+    comparison = compare_stage7_methods(query_results, reference_method = "S0_first_stage")
+    method_summary = summarize_stage7_methods(
+        query_results,
+        reference_method = "S0_first_stage",
+        bootstrap_samples = int(stage_config["bootstrap"]["samples"]),
+        confidence = float(stage_config["bootstrap"]["confidence"]),
+        seed = int(stage_config["bootstrap"]["seed"]),
+    )
+    query_latency = pd.DataFrame(query_latency_rows)
+    latency_summary = _stage07_latency_summary(
+        query_latency,
+        [int(value) for value in stage_config["runtime"]["latency_percentiles"]],
+    )
+    backend_summary = pd.DataFrame(backend_rows)
+    preflight_summary = pd.DataFrame(preflight_rows)
+    token_summary = pd.DataFrame(token_rows)
+
+    if (not latency_summary.empty and not token_summary.empty) :
+        token_throughput = token_summary[["backend_id", "total_input_tokens"]].copy()
+        latency_summary = latency_summary.merge(token_throughput, on = "backend_id", how = "left")
+        latency_summary["tokens_per_second"] = np.where(
+            latency_summary["total_runtime_s"] > 0,
+            latency_summary["total_input_tokens"] / latency_summary["total_runtime_s"],
+            np.nan,
+        )
+
+    if (not latency_summary.empty) :
+        latency_summary["operational_latency_ceiling_ms_p90"] = latency_ceiling
+        latency_summary["operationally_eligible"] = latency_summary["p90_query_ms"] <= latency_ceiling
+
+    metric_lookup = metrics[[
+        "method_id", "video_recall_at_1", "video_recall_at_3", "video_recall_at_5",
+        "video_recall_at_10", "video_recall_at_20", "video_mrr",
+        "story_recall_at_1", "story_recall_at_3", "story_recall_at_5", "story_recall_at_10", "story_mrr",
+    ]].copy()
+    method_summary = method_summary.merge(metric_lookup, on = "method_id", how = "left")
+    method_summary["backend_id"] = method_summary["method_id"].map(
+        lambda value : None if str(value) == "S0_first_stage" else str(value).split("__", 1)[0]
+    )
+    latency_columns = [
+        "backend_id", "total_runtime_s", "mean_query_ms", "p50_query_ms",
+        "p90_query_ms", "p95_query_ms", "pairs_per_second", "amortized_ms_per_pair",
+        "total_input_tokens", "tokens_per_second", "operationally_eligible",
+    ]
+    if (not latency_summary.empty) :
+        method_summary = method_summary.merge(latency_summary[latency_columns], on = "backend_id", how = "left")
+    else :
+        for column in latency_columns[1 :] :
+            method_summary[column] = None
+    control_mask = method_summary["method_id"].astype(str) == "S0_first_stage"
+    method_summary.loc[control_mask, ["total_runtime_s", "mean_query_ms", "p50_query_ms", "p90_query_ms", "p95_query_ms", "amortized_ms_per_pair", "total_input_tokens", "tokens_per_second"]] = 0.0
+    method_summary.loc[control_mask, "operationally_eligible"] = True
+    method_summary = _stage07_pareto_flags(method_summary)
+
+    diagnostic_metrics = _stage07_diagnostic_metrics(query_results)
+    failure_cases = query_results[
+        (query_results["method_id"].astype(str) != "S0_first_stage")
+        & (
+            query_results.get("failure_type", pd.Series(index = query_results.index, dtype = object)).notna()
+            | query_results.get("large_regression", pd.Series(False, index = query_results.index)).fillna(False).astype(bool)
+            | query_results.get("hard_top1_regression", pd.Series(False, index = query_results.index)).fillna(False).astype(bool)
+        )
+    ].copy()
+    candidate_failure_summary = (
+        failure_cases.groupby(["method_id", "failure_type"], dropna = False, as_index = False)
+        .size()
+        .rename(columns = {"size" : "query_count"})
+        if not failure_cases.empty
+        else pd.DataFrame(columns = ["method_id", "failure_type", "query_count"])
+    )
+
+    write_csv(reports_root / "retrieval_metrics.csv", metrics)
+    write_csv(reports_root / "query_results.csv", query_results)
+    write_csv(reports_root / "method_summary.csv", method_summary)
+    write_csv(reports_root / "paired_comparison.csv", comparison)
+    write_csv(reports_root / "failure_cases.csv", failure_cases)
+    write_csv(reports_root / "candidate_failure_summary.csv", candidate_failure_summary)
+    write_csv(reports_root / "runtime_preflight.csv", preflight_summary)
+    write_csv(reports_root / "query_latency.csv", query_latency)
+    write_csv(reports_root / "latency_summary.csv", latency_summary)
+    write_csv(reports_root / "backend_summary.csv", backend_summary)
+    write_csv(reports_root / "token_length_summary.csv", token_summary)
+    write_csv(reports_root / "diagnostic_slice_metrics.csv", diagnostic_metrics)
+    write_csv(reports_root / "quality_latency_summary.csv", method_summary)
+    first_stage_latency_context = _stage5_retrieval_latency_context(
+        config,
+        artifacts,
+        config["stage06_candidate_construction"]["source"]["hybrid_method"],
+    )
+    write_csv(reports_root / "first_stage_latency_context.csv", first_stage_latency_context)
+
+    channel_validation = {
+        "passed" : True,
+        "channels" : [{
+            "channel_id" : "parakeet_processed",
+            "model_id" : first_stage_bundle.model_id,
+            "view" : first_stage_bundle.view,
+            "physical_window_count" : len(first_stage_bundle.window_ids),
+            "eligible_window_count" : int(first_stage_bundle.eligibility_mask.sum()),
+        }],
+        "errors" : [],
+    }
+    output_hashes = model_output_hashes(stage1_config, benchmarks, artifacts)
+    validation_summary = {
+        "passed" : bool(
+            contract["passed"]
+            and environment["passed"]
+            and source_validation["passed"]
+            and query_validation["passed"]
+            and control_reproduction["passed"]
+            and len(compatible_models) > 0
+            and not unexpected_failures
+        ),
+        "stage07_contract" : contract,
+        "environment" : environment,
+        "source_contract" : source_validation,
+        "benchmarks" : benchmark_validations,
+        "query_and_corpus" : query_validation,
+        "stage06_prerequisite" : stage06_summary,
+        "candidate_pool" : {
+            "path" : str(candidate_path),
+            "sha256" : sha256_file(candidate_path),
+            "selected_policy_id" : selected_policy,
+            "selected_row_count" : len(candidate_pool),
+            "candidate_pool_identity_hash" : candidate_identity_hash,
+            "errors" : candidate_errors,
+        },
+        "first_stage_cache" : first_stage_cache_record,
+        "control_reproduction" : control_reproduction,
+        "compatible_models" : compatible_models,
+        "unexpected_model_failures" : unexpected_failures,
+    }
+    write_json(reports_root / "validation_summary.json", validation_summary)
+
+    manifest_cache = {
+        "stage06_first_stage" : first_stage_cache_record,
+        "stage06_candidate_pool" : {
+            "path" : str(candidate_path),
+            "sha256" : sha256_file(candidate_path),
+            "identity_hash" : candidate_identity_hash,
+        },
+        "reranker_scores" : cache_records,
+    }
+    manifest = build_manifest(
+        stage,
+        config,
+        benchmarks,
+        benchmark_paths,
+        artifacts,
+        stage1_config,
+        query_validation,
+        channel_validation,
+        output_hashes,
+        manifest_cache,
+    )
+    write_json(reports_root / "retrieval_manifest.json", manifest)
+
+    passed = bool(validation_summary["passed"])
+    decision = config["selection"].get("stage07_decision", {})
+    stage_summary = {
+        "schema_version" : "1.0",
+        "retrieval_id" : config["retrieval_id"],
+        "stage" : stage,
+        "generated_at_utc" : utc_now(),
+        "passed" : passed,
+        "query_set" : stage_config["query_set"],
+        "query_count" : len(query_frame),
+        "corpus" : stage_config["corpus"],
+        "selected_stage06_policy_id" : selected_policy,
+        "candidate_video_k" : selected_k,
+        "windows_per_video_m" : selected_m,
+        "compatible_rerankers" : compatible_models,
+        "unexpected_model_failures" : unexpected_failures,
+        "operational_latency_ceiling_ms_p90" : latency_ceiling,
+        "method_summary" : method_summary.to_dict(orient = "records"),
+        "first_stage_latency_context_path" : str(reports_root / "first_stage_latency_context.csv"),
+        "decision_status" : decision.get("status", "pending_review"),
+        "decision_required" : decision.get("status") != "frozen_after_review",
+        "reports_root" : str(reports_root),
+        "note" : (
+            "Stage 7 compares zero-shot local multilingual rerankers on one frozen Stage 6 candidate pool. "
+            "Selection is manual and must consider quality, p90 reranking time, memory, and paired failures."
+        ),
+    }
+    write_json(reports_root / "stage_summary.json", stage_summary)
+
+    print("=" * 88)
+    print(f"Stage 7 status: {'PASS' if passed else 'FAIL'}")
+    print(f"Candidates:     {selected_policy} ({selected_k} videos × up to {selected_m} windows)")
+    print(f"Rerankers run:  {', '.join(compatible_models) if compatible_models else 'none'}")
+    print(f"Reports:        {reports_root}")
+
+    if (not passed) :
+        raise SystemExit(2)
+
+
+
 def main() -> None :
     args   = parse_args()
     config = load_retrieval_config()
@@ -3831,6 +5719,14 @@ def main() -> None :
 
     if (args.stage == "stage05_selection") :
         run_stage05_main(config, artifacts)
+        return
+
+    if (args.stage == "stage06_candidate_construction") :
+        run_stage06_main(config, artifacts)
+        return
+
+    if (args.stage == "stage07_reranking") :
+        run_stage07_main(config, artifacts)
         return
 
     print("=" * 88)

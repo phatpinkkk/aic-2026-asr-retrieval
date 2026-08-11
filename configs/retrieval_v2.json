@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "retrieval_id": "aic2026_retrieval_v2_stage00_stage05",
+  "retrieval_id": "aic2026_retrieval_v2_stage00_stage07",
   "retrieval_frozen": false,
   "source_stage1": {
     "config_path": "configs/stage1_evaluation.json",
@@ -61,6 +61,19 @@
       ],
       "expected_query_count": 20,
       "expected_query_hash": "0878c78f8d6f94c11d876cc9636077d6088ff34904a559c007dc618af8bffa0e"
+    },
+    "extension40_full": {
+      "corpus": "all50",
+      "sources": [
+        {
+          "benchmark": "extension40",
+          "split": "all"
+        }
+      ],
+      "expected_query_count": 40,
+      "expected_query_hash": null,
+      "allow_exposed_holdout": true,
+      "note": "Extension40 full40 is the Stage 6-9 development/selection pool. The benchmark content hash is already frozen; the actual canonical query hash is recorded by the runner."
     }
   },
   "corpora": {
@@ -337,17 +350,31 @@
       "note": "Maximum-window aggregation is retained. Repeated or contiguous fixed-window support was not consistent enough to replace max."
     },
     "stage04_decision": {
-        "status": "frozen_after_review",
-        "selected_method": "H3_norm_25_75",
-        "retained_alternative": null,
-        "note": "Selected after Stage 4 review. H3 improved composite Video MRR from 0.7301 for dense-only to 0.7841, improved Video R@1 from 0.6500 to 0.7125, improved Story MRR from 0.8413 to 0.8777, and had a positive 90% bootstrap interval for Video RR improvement versus dense-only."
+      "status": "frozen_after_review",
+      "selected_method": "H3_norm_25_75",
+      "retained_alternative": null,
+      "note": "Selected after Stage 4 review. H3 improved composite Video MRR from 0.7301 for dense-only to 0.7841, improved Video R@1 from 0.6500 to 0.7125, improved Story MRR from 0.8413 to 0.8777, and had a positive 90% bootstrap interval for Video RR improvement versus dense-only."
     },
     "stage05_decision": {
-        "status": "frozen_after_review",
-        "selected_asr": "parakeet_ctc_0_6b_vietnamese",
-        "selected_view": "processed",
-        "selected_channel_id": "parakeet_processed",
-        "note": "Selected after Stage 5 review. Under H3_norm_25_75, Parakeet processed achieved the best Video R@1 (0.75) and Video MRR (0.8102), passed all predefined video and story quality thresholds against Whisper processed, had no catastrophic same-view ASR regressions, and was at least 33.83x faster in measured ASR RTF with lower peak GPU memory."
+      "status": "frozen_after_review",
+      "selected_asr": "parakeet_ctc_0_6b_vietnamese",
+      "selected_view": "processed",
+      "selected_channel_id": "parakeet_processed",
+      "note": "Selected after Stage 5 review. Under H3_norm_25_75, Parakeet processed achieved the best Video R@1 (0.75) and Video MRR (0.8102), passed all predefined video and story quality thresholds against Whisper processed, had no catastrophic same-view ASR regressions, and was at least 33.83x faster in measured ASR RTF with lower peak GPU memory."
+    },
+    "stage06_decision" : {
+        "status" : "frozen_after_review",
+        "selected_video_k" : 30,
+        "selected_windows_per_video" : 5,
+        "selected_policy_id" : "K30_M5",
+        "note" : "Selected after Stage 6 review. K30_M5 preserved all 40 correct videos and retained benchmark-relevant temporal evidence for 39 of 40 queries, giving Video Candidate Recall = 1.000 and Joint Candidate Recall = 0.975 with about 149.3 candidate pairs per query."
+    },
+    "stage07_decision": {
+      "status": "pending_review",
+      "selected_reranker": null,
+      "selected_score_policy": null,
+      "retained_alternative": null,
+      "note": null
     }
   },
   "paths": {
@@ -643,6 +670,190 @@
       "policy": "manual_review_after_quality_cost_tradeoff",
       "decision_required": true,
       "note": "Stage 5 evaluates the four channels independently. It never fuses ASR models or raw/processed views."
+    }
+  },
+  "stage06_candidate_construction": {
+    "query_set": "extension40_full",
+    "corpus": "all50",
+    "source": {
+      "channel_id": "parakeet_processed",
+      "sparse_method": "L2_bm25_preserving",
+      "dense_method": "D1_e5_large_instruct",
+      "hybrid_method": "H3_norm_25_75",
+      "video_aggregation": "P0_max"
+    },
+    "candidate_video_k": [
+      10,
+      20,
+      30
+    ],
+    "windows_per_video_m": [
+      1,
+      3,
+      5
+    ],
+    "fallback_video_k": 40,
+    "selection_policy": {
+      "primary_metric": "joint_candidate_recall",
+      "target": 1.0,
+      "tie_break": [
+        "smaller_pair_count",
+        "smaller_video_k",
+        "smaller_window_m"
+      ]
+    },
+    "source_cache": {
+      "subdir": "stage06_candidate_construction/first_stage",
+      "query_embeddings_subdir": "stage06_candidate_construction/embeddings",
+      "reuse_query_embeddings": true,
+      "reuse_document_embeddings": true,
+      "query_assembly_policy": "reuse_stage02_development20_plus_encode_remaining_v1"
+    },
+    "reports_subdir": "stage06_candidate_construction",
+    "reproduction_score_tolerance": 1e-05
+  },
+  "stage07_reranking": {
+    "query_set": "extension40_full",
+    "corpus": "all50",
+    "candidate_source": {
+      "stage": "stage06_candidate_construction",
+      "require_frozen_decision": true,
+      "candidate_pool_path": "reports/retrieval_v2/stage06_candidate_construction/candidate_pool_all.csv",
+      "stage_summary_path": "reports/retrieval_v2/stage06_candidate_construction/stage_summary.json"
+    },
+    "dtype": "float16",
+    "max_length": 512,
+    "batch_size_candidates": [
+      32,
+      16,
+      8,
+      4
+    ],
+    "minimum_batch_size": 4,
+    "preflight": {
+      "query_count": 5,
+      "selection": "first_query_ids_in_canonical_order",
+      "warmup_pairs": 8
+    },
+    "models": {
+      "R1_mmarco_minilm": {
+        "type": "cross_encoder",
+        "family": "encoder",
+        "model_name": "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1",
+        "revision": "1427fd652930e4ba29e8149678df786c240d8825",
+        "trust_remote_code": false,
+        "instruction": null,
+        "minimum_transformers_version": "4.36.0",
+        "minimum_sentence_transformers_version": "5.4.0"
+      },
+      "R2_gte_multilingual": {
+        "type": "cross_encoder",
+        "family": "encoder",
+        "model_name": "Alibaba-NLP/gte-multilingual-reranker-base",
+        "revision": "8215cf04918ba6f7b6a62bb44238ce2953d8831c",
+        "trust_remote_code": true,
+        "instruction": null,
+        "minimum_transformers_version": "4.36.0",
+        "minimum_sentence_transformers_version": "5.4.0"
+      },
+      "R3_bge_v2_m3": {
+        "type": "cross_encoder",
+        "family": "encoder",
+        "model_name": "BAAI/bge-reranker-v2-m3",
+        "revision": "953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e",
+        "trust_remote_code": false,
+        "instruction": null,
+        "minimum_transformers_version": "4.36.0",
+        "minimum_sentence_transformers_version": "5.4.0"
+      },
+      "R4_qwen3_0_6b": {
+        "type": "cross_encoder",
+        "family": "causal_logit",
+        "model_name": "Qwen/Qwen3-Reranker-0.6B",
+        "revision": "e61197ed45024b0ed8a2d74b80b4d909f1255473",
+        "trust_remote_code": false,
+        "instruction": "Given a detailed description of a target video moment, judge whether the transcript passage is relevant to the described event.",
+        "prompt_name": "video_moment_relevance",
+        "minimum_transformers_version": "4.51.0",
+        "minimum_sentence_transformers_version": "5.4.0"
+      },
+      "R5_mxbai_base_v2": {
+        "type": "cross_encoder",
+        "family": "causal_logit",
+        "model_name": "mixedbread-ai/mxbai-rerank-base-v2",
+        "revision": "3ea9d4dffa7d12a4f366be8e275c349de9fc9865",
+        "trust_remote_code": false,
+        "instruction": null,
+        "minimum_transformers_version": "4.51.0",
+        "minimum_sentence_transformers_version": "5.4.0"
+      },
+      "R6_jina_v2_multilingual": {
+        "type": "cross_encoder",
+        "family": "encoder",
+        "model_name": "jinaai/jina-reranker-v2-base-multilingual",
+        "revision": "9cfeff2df7d40d1b78e75e5e9cebec92a99813c9",
+        "trust_remote_code": true,
+        "instruction": null,
+        "license": "CC-BY-NC-4.0",
+        "minimum_transformers_version": "4.52.0",
+        "minimum_sentence_transformers_version": "5.4.0"
+      }
+    },
+    "optional_listwise": {
+      "enabled": false,
+      "model_name": "jinaai/jina-reranker-v3.5",
+      "revision": null,
+      "license": "CC-BY-NC-4.0",
+      "note": "Diagnostic only. Implement/run only after the pairwise Stage 7 comparison is complete and pin an exact revision before enabling."
+    },
+    "score_policies": {
+      "S0_first_stage": {
+        "kind": "control"
+      },
+      "S1_reranker_only": {
+        "kind": "reranker_only"
+      },
+      "S2_first_stage_reranker_50_50": {
+        "kind": "normalized_weighted",
+        "first_stage_weight": 0.5,
+        "reranker_weight": 0.5,
+        "normalization_policy": "per_query_candidate_minmax_v1",
+        "constant_tolerance": 1e-12
+      }
+    },
+    "bootstrap": {
+      "samples": 10000,
+      "confidence": 0.9,
+      "seed": 20260811
+    },
+    "catastrophic_failure": {
+      "minimum_rank_drop": 10,
+      "result_rank_above": 10,
+      "flag_reference_rank_1_candidate_above": 5
+    },
+    "runtime" : {
+        "latency_percentiles" : [50, 90, 95],
+        "measure_token_throughput" : true,
+        "measure_gpu_memory" : true,
+    
+        "operational_latency_ceiling_ms_p90" : 5000.0,
+    
+        "required_transformers_version" : "4.52.0",
+        "required_sentence_transformers_version" : "5.4.0",
+    
+        "required_device" : "cuda",
+        "expected_gpu_name_contains" : "T4",
+    
+        "note" : "Frozen before Stage 7 quality evaluation. A reranker with p90 query latency above 5 seconds on the selected K30_M5 workload is considered operationally unattractive."
+    },
+    "cache": {
+      "subdir": "stage07_reranking",
+      "reuse_scores": true,
+      "schema_version": "1.0"
+    },
+    "token_length_audit": {
+      "review_threshold_fraction": 0.05,
+      "policy": "review_before_accepting_results_if_more_than_5_percent_of_candidate_pairs_exceed_max_length"
     }
   }
 }

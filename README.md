@@ -1,143 +1,148 @@
 # AIC 2026 ASR & Retrieval Research
 
-Research and evaluation repository for ASR-assisted video retrieval in the AI Challenge 2026 pipeline.
+This repository contains the research and implementation of the ASR-based text retrieval subsystem used in the AIC 2026 video-search pipeline. The subsystem makes spoken video content searchable: it transcribes short audio windows, retrieves relevant transcript passages with lexical and semantic search, ranks videos from those passage scores, and can rerank a small candidate set with a stronger cross-encoder.
 
-The repository studies how spoken content can support video identification and temporal localization, with a focus on Vietnamese ASR, multilingual text retrieval, sparse+dense retrieval, video-level evidence aggregation, and later reranking and multimodal extensions.
+The production video-search application is maintained separately in `aic-2026-pipeline`. This repository is focused on controlled retrieval experiments, reproducible implementation, and the evidence used to choose the current design.
 
-The production video-search application is maintained separately in `aic-2026-pipeline`.
+## 1. Current System
 
-## Current Status
-
-The first ASR-text retrieval baseline is now complete.
-
-The current system uses:
+The current pipeline has two parts. Corpus-side processing is done before search, while query-dependent scoring happens online.
 
 ```text
+OFFLINE
+
 video audio
+    ↓
+60 s audio windows, 45 s stride
     ↓
 Parakeet CTC 0.6B Vietnamese
     ↓
-processed transcript
+conservative transcript post-processing
     ↓
-60 s overlapping transcript windows
+processed retrieval text
     ↓
-BM25 lexical retrieval
-       +
-multilingual E5-large semantic retrieval
+BM25 index + E5 document embeddings
+
+
+ONLINE
+
+natural-language query
+    ↓
+BM25 + multilingual E5-large
     ↓
 per-query score normalization
     ↓
 25% BM25 + 75% E5
     ↓
-maximum window score per video
+best matching window → first-stage video ranking
     ↓
-ranked videos + supporting transcript windows
+candidate selection
+    ↓
+cross-encoder reranking
+    ↓
+50% first-stage + 50% reranker score
+    ↓
+ranked videos + supporting transcript moments
 ```
 
-On `development20` against the 50-video corpus, the current ASR-text system reaches:
+A full video is not transcribed first and divided into text afterward. The benchmark defines fixed temporal windows, and the inference runner reads the exact audio samples for each window before sending that window to ASR. The current window policy is 60 seconds with a 45-second stride, giving 15 seconds of overlap.
 
-| Metric | Development20 |
-|---|---:|
-| Video R@1 | **0.75** |
-| Video R@5 | **0.85** |
-| Video R@10 | **0.90** |
-| Video MRR | **0.8102** |
-| Story R@1 | **0.80** |
-| Story MRR | **0.8583** |
+The decisions through Stage 6 are frozen. Stage 7 evaluation is complete and passed, but the final Stage 7 selection is still marked `pending_review` in the current configuration. BGE reranker v2 M3 with the predefined 50/50 first-stage/reranker fusion is the current operational recommendation.
 
-After the Stage 1–5 ASR-text subsystem was frozen, it was evaluated once on `holdout20`:
+| Component | Current choice |
+|---|---|
+| ASR | NVIDIA Parakeet CTC 0.6B Vietnamese |
+| Audio window | 60 s |
+| Window stride | 45 s |
+| Transcript representation | Processed |
+| Lexical retrieval | Accent-preserving BM25 |
+| Dense retrieval | `intfloat/multilingual-e5-large-instruct` |
+| First-stage fusion | 25% normalized BM25 + 75% normalized E5 |
+| Video score | Best matching transcript window |
+| Stage 6 benchmark candidate policy | Top 30 videos × up to 5 windows/video |
+| Stage 7 score policy | 50% normalized first-stage + 50% normalized reranker |
+| Stage 7 operational recommendation | BGE reranker v2 M3, pending final freeze |
 
-| Metric | Holdout20 |
-|---|---:|
-| Video R@1 | **0.70** |
-| Video R@5 | **0.95** |
-| Video R@10 | **0.95** |
-| Video MRR | **0.8119** |
-| Story R@1 | **0.90** |
-| Story MRR | **0.9500** |
+The main Full40 results are:
 
-The holdout result validates the frozen Stage 1–5 ASR-text subsystem. Because `holdout20` has now been exposed, it must not be used for further architecture or hyperparameter selection.
+| System | Video R@1 | Video MRR | Story MRR | Reranking p90 |
+|---|---:|---:|---:|---:|
+| First stage only | 0.725 | 0.8110 | 0.9042 | — |
+| BGE + first-stage fusion | 0.750 | 0.8205 | **0.9125** | 2.54 s |
+| Qwen3-0.6B + first-stage fusion | **0.825** | **0.8642** | 0.8625 | 7.31 s |
 
-## Retrieval Research
+Qwen produced the strongest video-ranking result, but its p90 reranking time exceeded the 5-second limit that was fixed before Stage 7. BGE gave a much smaller video improvement, but it improved both Video and Story MRR while remaining within the latency limit. The no-reranker first stage is still a competitive option when latency matters.
 
-Retrieval v2 improved the text-retrieval subsystem in several steps:
+Stage 6 should also be interpreted carefully. `K30_M5` was selected on the 50-video All50 benchmark, where it retained every correct video and a relevant window for 39 of 40 queries. It is **not** assumed to be optimal for the much larger competition corpus. Candidate-video recall must be measured again before using the same `K=30` at full scale.
 
-1. replace the historical query-fitted TF-IDF setup with a proper lexical retriever;
-2. strengthen multilingual semantic retrieval;
-3. evaluate how transcript-window evidence should be aggregated into video scores;
-4. combine lexical and semantic scores using controlled score fusion; and
-5. re-evaluate the ASR model and transcript representation under the improved retriever.
+## 2. Repository and Documentation
 
-The resulting ASR-text subsystem uses accent-preserving BM25 as a lexical signal and `intfloat/multilingual-e5-large-instruct` as the main semantic signal. Dense retrieval carries most of the weight, while BM25 provides a smaller lexical correction.
-
-The next research stages focus on hierarchical retrieval, reranking, query and transcript representation, visual/OCR evidence, and an independent final evaluation after the broader architecture is frozen.
-
-## Repository Structure
+The repository keeps source code and compact metadata in Git while large generated artifacts remain outside the repository.
 
 ```text
-configs/       experiment and retrieval configuration
-data/          compact benchmark and reference metadata
-notebooks/     stage-specific research notebooks
-src/           retrieval, backend, evaluation, and orchestration code
-docs/          technical reference and curated research results
-reports/       generated reports, local only and ignored by Git
+configs/      experiment and retrieval configuration
+data/         compact benchmark and reference metadata
+notebooks/    stage-specific experiment notebooks
+src/          ASR, retrieval, reranking, and evaluation code
+docs/         maintained technical documentation
+reports/      generated reports; local/external and ignored by Git
 ```
 
-Large generated artifacts are stored outside Git.
+There are only two maintained technical documents in addition to this README:
 
-## Documentation
+- [`docs/asr-retrieval-system.md`](docs/asr-retrieval-system.md) explains **how the current system works**. Read it for audio preparation, ASR, transcript post-processing, BM25, E5, candidate construction, reranking, runtime, scaling, and implementation boundaries.
+- [`docs/retrieval-v2.md`](docs/retrieval-v2.md) explains **why the system has this design**. It documents the benchmark, evaluation chronology, Stages 1–7, results, decisions, failure patterns, and remaining uncertainty.
 
-Start with the document that matches what you need:
+Older rolling progress documentation should not be treated as current. Its stable findings are incorporated into `docs/retrieval-v2.md`.
 
-- [ASR Retrieval System](docs/asr-retrieval-system.md)  
-  Clear implementation reference for the current ASR-text retrieval subsystem: inputs, transcript preparation, BM25, E5-large, score fusion, video scoring, caches, and code ownership.
+## 3. Development and Evaluation Status
 
-- [Retrieval v2 Progress](docs/results/retrieval-v2-progress.md)  
-  Research results and decisions through ASR and transcript-view selection, including comparisons, failure analysis, efficiency, and remaining limitations.
+Retrieval v2 was developed in controlled stages. Each stage changed one major part of the system and then froze the chosen result before the next stage depended on it.
 
-- [Retrieval v2](docs/retrieval-v2.md)  
-  Research methodology, evaluation protocol, experiment design, and roadmap for the broader Retrieval v2 work.
+| Stage | Question | Outcome |
+|---|---|---|
+| 1 | Which lexical retriever should replace the historical query-fitted TF-IDF? | Accent-preserving BM25 |
+| 2 | Which multilingual dense retriever gives the best semantic retrieval? | E5-large-instruct |
+| 3 | How should transcript-window scores become video scores? | Maximum window score |
+| 4 | How should BM25 and E5 be combined? | 25% BM25 + 75% E5 |
+| 5 | Which ASR and transcript representation should feed retrieval? | Parakeet processed |
+| 6 | How much evidence should be passed to a reranker? | `K30_M5` on All50 |
+| 7 | Does a cross-encoder improve the candidate ranking at acceptable cost? | Evaluation complete; BGE is the operational recommendation, final freeze pending |
 
-## Development and Evaluation Policy
+The data chronology matters when interpreting the numbers. Stages 1–5 used `development20` against the complete 50-video All50 corpus. `holdout20` remained closed through those decisions and was evaluated once after the Stage 1–5 subsystem had been frozen. After that evaluation, it was no longer an untouched holdout.
 
-Architecture selection is performed using `development20` against the full 50-video corpus.
+Stages 6–7 therefore used all 40 Extension40 queries (`extension40_full`) against All50 for development and comparison. The old `development20` and `holdout20` labels were retained only as diagnostic slices. They should not be presented as independent validation splits for the Stage 6–7 decisions.
 
-`core10` is used for regression and reproducibility checks.
+For full methodology and results, see [`docs/retrieval-v2.md`](docs/retrieval-v2.md).
 
-`holdout20` was evaluated once after the Stage 1–5 ASR-text subsystem was frozen. It is now considered exposed and must not be used for further architecture or hyperparameter selection. Development channels are evaluated independently and are not fused unless an experiment explicitly defines such a method.
+## 4. Data, Artifacts, and Running the Code
 
-## Data and Artifacts
+Large files are intentionally kept outside Git. This includes source video/audio, ASR outputs, model weights, embedding caches, retrieval score caches, reranker caches, and generated reports.
 
-Git contains source code, configuration, notebooks, compact benchmark metadata, and curated documentation.
+The retrieval code separates two roots:
 
-Large artifacts remain in the external experiment workspace, including:
+```text
+CODE_ROOT
+    source code, configuration, notebooks, and documentation
 
-- source videos and audio;
-- ASR outputs;
-- model weights;
-- dense embedding caches;
-- retrieval score caches; and
-- full generated reports.
+ARTIFACT_ROOT
+    ASR outputs, embeddings, score caches, candidate pools, and reports
+```
 
-The retrieval code separates the repository code root from the artifact root so the Git checkout does not need to contain large generated data.
-
-The artifact root can be configured with:
+The artifact workspace can be set with:
 
 ```text
 AIC_RETRIEVAL_ARTIFACT_ROOT
 ```
 
-## Current Scope
+This separation is important because the research workspace is much larger than the Git repository.
 
-The current ASR-text subsystem covers:
+Corpus-side work should also be reused rather than repeated for every query. ASR transcripts and E5 document embeddings are generated once and cached. A production-style retrieval service should similarly build or load the BM25 index and dense document matrix at startup, keep the models resident, and perform only query-dependent work after a search request arrives.
 
-- Vietnamese speech transcription;
-- processed transcript selection;
-- overlapping transcript-window retrieval;
-- BM25 lexical matching;
-- multilingual dense retrieval;
-- normalized sparse+dense score fusion;
-- global video ranking; and
-- supporting transcript-window retrieval.
+The canonical stage runner is:
 
-The broader AIC retrieval system is still under development. Hierarchical retrieval, reranking, alternative query/transcript representations, visual retrieval, OCR retrieval, multimodal fusion, and an independent final evaluation are handled in later stages.
+```text
+src/07_evaluate_retrieval_v2.py
+```
+
+Stage-specific notebooks under `notebooks/` are execution and review interfaces; the retrieval algorithms themselves belong in the source modules rather than notebook cells.

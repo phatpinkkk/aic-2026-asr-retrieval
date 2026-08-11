@@ -1,555 +1,87 @@
-# Retrieval v2
+# Retrieval v2: Methodology and Results
 
-## 1. Purpose and Scope
+Retrieval v2 is the controlled research programme that produced the current ASR-text retrieval system. This document explains the starting problem, the evaluation protocol, what each of Stages 1–7 changed, what the experiments found, and which conclusions are reliable enough to carry forward.
 
-### 1.1 Goal
+Implementation details are documented separately in [`asr-retrieval-system.md`](asr-retrieval-system.md).
 
-Retrieval v2 develops the text-retrieval component of the AIC 2026 video-search pipeline. ASR transcripts provide useful evidence about spoken events, people, locations, numbers, and actions, but earlier evaluation showed that global video identification is substantially harder than locating the relevant moment once the correct video is known.
+## 1. Motivation and Starting Point
 
-The goal is therefore to improve retrieval progressively. The work starts with lexical and dense text retrieval, then moves to stronger video-level evidence aggregation, sparse+dense hybrid retrieval, ASR and transcript-view selection, hierarchical retrieval, reranking, query and transcript representation, and finally multimodal integration.
+The historical text-retrieval baseline could often identify a useful transcript region once the correct video was already known, but ranking the correct video against unrelated videos was much less reliable. Retrieval v2 therefore focused first on improving global video retrieval, then on adding stronger candidate reranking without making query cost unbounded.
 
-Retrieval v2 is designed as a controlled research pipeline. Each stage should answer one main question while keeping the rest of the retrieval system fixed as much as possible.
+The historical Baseline v1 used:
 
-### 1.2 Scope
-
-Retrieval v2 covers:
-
-- ASR transcript retrieval
-- window-level scoring
-- video-level evidence aggregation
-- sparse+dense hybrid retrieval
-- candidate-video and candidate-moment selection
-- candidate reranking
-- query and transcript representation
-- multimodal integration with visual and OCR evidence
-
-Retrieval v2 does not attempt to redesign the ASR models themselves. Whisper Large-v3 and NVIDIA Parakeet CTC 0.6B Vietnamese are retained as controlled development conditions until the retrieval architecture is strong enough to support a final ASR decision.
-
-### 1.3 Historical baseline
-
-The historical Baseline v1 remains frozen for regression and comparison.
-
-| Component | Baseline v1 |
+| Component | Historical baseline |
 |---|---|
 | Lexical retrieval | Query-fitted character TF-IDF |
 | Dense retrieval | `intfloat/multilingual-e5-small` |
 | Combination | Fixed 50/50 lexical-semantic score average |
-| Video aggregation | Maximum-scoring window |
+| Video scoring | Maximum-scoring window |
 | Transcript conditions | Whisper / Parakeet, raw / processed |
 
-Retrieval v2 is developed separately so that improvements can be measured against the frozen baseline without silently changing historical behavior.
+Query-fitted TF-IDF was useful as a frozen reference but was not a good long-term lexical design because its vocabulary was fitted from the active query set rather than the transcript corpus. The dense model was also relatively small, and equal weighting assumed that lexical and semantic scores should contribute equally even though they have different strengths and numeric scales.
 
----
+Retrieval v2 did not replace everything at once. Each stage changed one main part of the system, compared a small predeclared set of alternatives, and then froze the reviewed decision before later stages depended on it.
 
-## 2. Evaluation Protocol
+The seven stages were:
 
-### 2.1 Benchmark structure
+```text
+Stage 1  lexical retrieval
+Stage 2  dense retrieval
+Stage 3  window → video scoring
+Stage 4  BM25 + E5 combination
+Stage 5  ASR and transcript representation
+Stage 6  candidate selection for reranking
+Stage 7  cross-encoder reranking
+```
 
-| Dataset | Videos | Queries | Windows | Purpose |
+This staged design matters because the conclusion about one component can depend on the rest of the retrieval architecture. Stage 5 is the clearest example: Parakeet became the selected ASR only after the first-stage retriever had been improved.
+
+## 2. Evaluation Setup and Research Rules
+
+### 2.1 Benchmarks and query chronology
+
+Retrieval v2 uses three related benchmark views:
+
+| Benchmark | Videos | Queries | Windows | Main role |
 |---|---:|---:|---:|---|
 | Core10 | 10 | 10 | 219 | Regression and implementation checks |
-| Extension40 | 40 | 40 | 775 | Development and holdout queries |
-| All50 | 50 | 50 | 994 | Full retrieval corpus |
+| Extension40 | 40 | 40 | 775 | Main query set |
+| All50 | 50 | — | 994 | Retrieval corpus formed from Core10 + Extension40 videos |
 
-Every development query is retrieved against the complete All50 corpus. This avoids artificially easy evaluation against a reduced set of videos.
+The Extension40 queries were originally divided into `development20` and `holdout20`.
 
-### 2.2 Development and holdout
+Stages 1–5 selected the retrieval architecture using **development20 against the full All50 corpus**. Searching against all 50 videos was important because evaluating a query only against a smaller local set would make global video ranking artificially easy.
 
-`development20` is used for retrieval architecture, model, and policy selection.
+`holdout20` remained closed through the Stage 1–5 decisions. After that subsystem was frozen, the holdout was evaluated once. The frozen Stage 1–5 system produced:
 
-`holdout20` was kept closed through Stage 5 and was evaluated once only after the Stage 1–5 ASR-text subsystem had been frozen. That evaluation is valid evidence for the frozen Stage 1–5 subsystem.
-
-Because the holdout results have now been observed, `holdout20` is considered exposed. It must not be used for further model, architecture, or hyperparameter selection in later Retrieval v2 stages.
-
-In particular, the observed holdout results must not influence:
-
-- hierarchical retrieval
-- reranking
-- query representation
-- transcript representation
-- multimodal integration
-- fusion weights or candidate thresholds
-
-Later stages continue to use `development20` for controlled development. Final evaluation of the broader retrieval system must use an independent evaluation source rather than treating `holdout20` as untouched.
-
-### 2.3 Transcript windows
-
-| Setting | Value |
+| Holdout20 metric | Result |
 |---|---:|
-| Window length | 60 s |
-| Stride | 45 s |
-| Overlap | 15 s |
+| Video R@1 | 0.70 |
+| Video R@5 | 0.95 |
+| Video R@10 | 0.95 |
+| Video MRR | 0.8119 |
+| Story R@1 | 0.90 |
+| Story MRR | 0.9500 |
 
-Adjacent windows share 15 seconds of audio. Therefore, neighboring high scores should be interpreted as temporal support or persistence, not as independent evidence.
+Once these results had been observed, `holdout20` was no longer an untouched holdout. Stages 6–7 therefore used **all 40 Extension40 queries** (`extension40_full`) against All50 for development and comparison. The old development/holdout labels were retained only for diagnostic slices; they are not independent validation splits for the later-stage decisions.
 
-### 2.4 Transcript channels
+### 2.2 What Video and Story metrics mean
 
-| Channel | Description |
-|---|---|
-| Whisper raw | Original Whisper transcript |
-| Whisper processed | Conservatively cleaned Whisper transcript |
-| Parakeet raw | Original Parakeet transcript |
-| Parakeet processed | Conservatively cleaned Parakeet transcript |
+The evaluation deliberately separates two problems.
 
-These four channels are development conditions, not fusion inputs. They remain independent until Stage 5 selects one ASR and one primary transcript view.
+**Video retrieval** asks whether the correct video is ranked near the top of the complete corpus. It is measured with Video R@1, R@3, R@5, R@10, R@20, and MRR.
 
-### 2.5 Metrics
+**Story retrieval** asks whether a relevant moment is ranked highly **inside the known correct video**. A transcript window is considered relevant when it belongs to the correct video and overlaps the query's ±60-second answer zone by at least 30 seconds. Story retrieval is measured with R@1, R@3, R@5, R@10, and MRR.
 
-#### Video retrieval
+This distinction is important. A model can be good at locating the moment once it knows the video but still be poor at separating that video from other videos.
 
-Video retrieval is evaluated with:
+MRR is especially useful because it rewards moving the correct item closer to the top even when R@1 does not change. However, aggregate metrics are never interpreted alone. The reports also keep per-query ranks, better/tie/worse counts, rank-1 recoveries and losses, score margins, failure categories, and paired bootstrap intervals.
 
-- R@1
-- R@3
-- R@5
-- R@10
-- R@20
-- MRR
+With only 20 queries in the early development split, one query changes R@1 by five percentage points. That is why paired behavior matters.
 
-These metrics measure whether the correct video is ranked near the top of the full 50-video corpus.
+### 2.3 Transcript conditions and experimental discipline
 
-#### Story retrieval
-
-Story retrieval is evaluated with:
-
-- R@1
-- R@3
-- R@5
-- R@10
-- MRR
-
-These metrics measure whether the correct temporal region is ranked highly within the known correct video.
-
-#### Paired analysis
-
-Aggregate metrics are supplemented with:
-
-- per-query ranks
-- better / tie / worse comparisons
-- correct-video score margins
-- known failure cases
-
-This is important because `development20` contains only 20 queries, so one query changes R@1 by 0.05.
-
-### 2.6 ASR reference policy
-
-Manually verified transcript ground truth is not currently available. Whisper Large-v3 is therefore used only as a frozen pseudo-reference for transcript-agreement diagnostics.
-
-WER and CER against Whisper measure agreement with Whisper rather than absolute transcription accuracy. Downstream retrieval metrics, reliability measurements, and manual inspection remain the main evidence for system selection.
-
----
-
-## 3. Retrieval Architecture and Current State
-
-### 3.1 Retrieval flow
-
-```text
-query
-  ↓
-query representation
-  ↓
-lexical and/or dense window retrieval
-  ↓
-window scores
-  ↓
-video evidence aggregation
-  ↓
-video ranking
-  ↓
-candidate temporal retrieval
-  ↓
-optional reranking
-  ↓
-final video / moment result
-```
-
-Stage 9 expands the evidence sources beyond ASR transcripts:
-
-```text
-ASR + visual + OCR
-```
-
-### 3.2 Current selected components
-
-| Component | Current choice | Status |
-|---|---|---|
-| Lexical retriever | L2 BM25 preserving Vietnamese accents | Selected |
-| Dense retriever | D1 multilingual-e5-large-instruct | Selected |
-| Video aggregation | Maximum window | Selected |
-| Hybrid policy | 25% normalized BM25 + 75% normalized E5 | Selected |
-| ASR | Parakeet CTC 0.6B Vietnamese | Selected |
-| Transcript view | Processed | Selected |
-| Hierarchical retrieval | Not selected | Stage 6 |
-| Reranker | Not selected | Stage 7 |
-| Query representation | Original query | Stage 8 |
-| Multimodal evidence | ASR only | Stage 9 |
-
-### 3.3 Current score sources
-
-The frozen Stage 1–5 ASR-text subsystem uses:
-
-```text
-ASR:
-Parakeet CTC 0.6B Vietnamese
-
-Transcript view:
-processed
-
-Lexical retrieval:
-accent-preserving BM25
-
-Dense retrieval:
-multilingual-e5-large-instruct
-
-Score fusion:
-25% normalized BM25 + 75% normalized E5
-
-Video aggregation:
-maximum window score
-```
-
-Detailed metrics, holdout validation, and current progress are maintained separately in `docs/results/retrieval-v2-progress.md`.
-
----
-
-## 4. Development Principles and Fixed Decisions
-
-### 4.1 Controlled stage design
-
-Each stage should change one major part of the retrieval system.
-
-For example:
-
-```text
-Stage 2 changes representation.
-Stage 3 changes video aggregation.
-Stage 4 changes sparse+dense combination.
-```
-
-Avoid changing several major components at once because that makes improvements difficult to interpret.
-
-### 4.2 Aggressive pruning
-
-Each completed stage should reduce the experiment tree. Clearly dominated methods should not automatically be carried into later stages.
-
-Current examples:
-
-```text
-Stage 1:
-keep BM25 preserving
-drop corpus TF-IDF, folded BM25, and BM25 RRF as downstream candidates
-
-Stage 2:
-keep E5-large-instruct
-retain E5-small only as historical control
-drop Qwen3 and BGE-M3 as downstream candidates
-```
-
-Historical controls remain available for comparison but do not become active branches.
-
-### 4.3 ASR policy
-
-Whisper and Parakeet remain independent evaluation conditions through Stage 5.
-
-The final system should use one ASR unless later evidence clearly demonstrates that additional ASR complexity is necessary.
-
-### 4.4 Transcript-view policy
-
-Raw and processed transcripts remain diagnostic views until Stage 5.
-
-They are not automatically fused.
-
-### 4.5 Fusion policy
-
-The following are intentionally excluded from the roadmap:
-
-```text
-Whisper + Parakeet fusion
-raw + processed fusion
-all-four-channel fusion
-```
-
-Sparse+dense fusion is different because lexical and semantic retrieval represent distinct retrieval mechanisms and will be evaluated explicitly in Stage 4.
-
-### 4.6 Complexity policy
-
-Complexity should be added only when it produces a clear downstream retrieval benefit.
-
-Compute and engineering effort should preferentially be spent on stronger retrieval, temporal evidence, reranking, and multimodal information rather than maintaining redundant transcript channels.
-
-### 4.7 Efficiency tracking
-
-Future candidate components should be evaluated on both retrieval quality and operational cost.
-
-Where applicable, track:
-
-- retrieval metrics
-- warm query latency
-- offline indexing time
-- throughput
-- GPU memory
-- candidate-set size
-- reranking cost
-
----
-
-## 5. Retrieval v2 Roadmap
-
-### 5.1 Stage 1 – Proper Lexical Retrieval
-
-#### Goal
-
-Establish a reliable lexical retriever for noisy Vietnamese ASR transcripts.
-
-#### Main question
-
-> Does a proper corpus-oriented lexical method improve retrieval over the historical query-fitted TF-IDF implementation?
-
-#### Methods considered
-
-```text
-L0 – query-fitted character TF-IDF
-L1 – corpus-fitted character TF-IDF
-L2 – BM25 preserving Vietnamese accents
-L3 – accent-folded BM25
-L4 – RRF of preserving and folded BM25
-```
-
-Corpus-fitted TF-IDF corrects the historical fitting issue. BM25 is designed for document retrieval and accounts for term rarity, repeated occurrences, and document length. Accent folding was tested because ASR can make diacritic errors, while accent-preserving BM25 tests whether Vietnamese lexical distinctions are more valuable than that additional robustness.
-
-#### Decision
-
-```text
-Selected:
-L2_bm25_preserving
-
-Retained alternative:
-None
-```
-
-Accent folding substantially reduced retrieval quality and is not carried forward.
-
----
-
-### 5.2 Stage 2 – Stronger Dense Retrieval
-
-#### Goal
-
-Improve semantic retrieval beyond multilingual-e5-small.
-
-#### Main question
-
-> Can a stronger multilingual embedding model improve global video discrimination while keeping temporal localization strong?
-
-#### Models evaluated
-
-```text
-D0 – multilingual-e5-small
-D1 – multilingual-e5-large-instruct
-D2 – Qwen3-Embedding-0.6B
-D3 – BGE-M3 dense
-```
-
-All models were evaluated with the same query set, transcript channels, eligibility rules, window universe, max-window video aggregation, and evaluation metrics.
-
-No BM25 fusion, aggregation change, ASR fusion, transcript-view fusion, reranking, or query rewriting was introduced.
-
-#### Decision
-
-```text
-Selected:
-D1_e5_large_instruct
-
-Retained alternative:
-None
-```
-
-E5-large-instruct produced the strongest and most consistent global video retrieval while maintaining practical indexing cost, latency, and GPU usage.
-
----
-
-### 5.3 Stage 3 – Video and Temporal Evidence Aggregation
-
-#### Goal
-
-Improve how window-level retrieval scores are converted into video-level evidence.
-
-#### Problem
-
-The current system uses:
-
-```text
-video score = highest-scoring window
-```
-
-This is simple but fragile. A single accidentally high-scoring or noisy transcript window can make an incorrect video outrank the correct one.
-
-#### Main question
-
-> Can temporally supported evidence improve video ranking compared with relying on one maximum-scoring window?
-
-#### Inputs
-
-Stage 3 uses exactly two frozen score sources:
-
-```text
-L2_bm25_preserving
-D1_e5_large_instruct
-```
-
-They should be evaluated independently so that the aggregation policy is not tuned to only one score distribution.
-
-#### Candidate aggregation methods
-
-**P0 – Max**
-
-```text
-video score = maximum window score
-```
-
-This remains the control.
-
-**P1 – Top-2 mean**
-
-Average the two strongest window scores in each video.
-
-Purpose: reduce dependence on one isolated high score.
-
-**P2 – Top-3 mean**
-
-Average the three strongest window scores.
-
-Purpose: test whether broader repeated support improves robustness.
-
-**P3 – Best adjacent-pair mean**
-
-Order the windows temporally, average every pair of neighboring window scores, and use the strongest pair as the video score.
-
-Purpose: test whether short contiguous temporal support is more reliable than an isolated peak.
-
-**P4 – Best contiguous-triplet mean**
-
-Average every valid run of three consecutive windows and use the strongest triplet as the video score.
-
-Purpose: test whether stronger temporal persistence provides additional robustness.
-
-Because adjacent windows overlap, this evidence should be described as temporal support or persistence rather than independent confirmation. P0–P4 form the complete first-pass Stage 3 experiment. More complex supported-max or event-style aggregation should only be considered if the first run reveals a clear trade-off that motivates a follow-up.
-
-#### What remains fixed
-
-- lexical retriever
-- dense retriever
-- ASR channels
-- transcript views
-- query representation
-- evaluation protocol
-
-#### Decision
-
-Select one general video aggregation policy if it improves video retrieval consistently across both lexical and dense evidence.
-
-The selected aggregation policy becomes fixed before Stage 4.
-
----
-
-### 5.4 Stage 4 – Sparse + Dense Hybrid Retrieval
-
-#### Goal
-
-Combine complementary lexical and semantic retrieval evidence.
-
-#### Main question
-
-> Does combining BM25 and E5-large improve retrieval beyond either retriever independently?
-
-#### Inputs
-
-```text
-Sparse:
-L2_bm25_preserving
-
-Dense:
-D1_e5_large_instruct
-
-Aggregation:
-selected Stage 3 policy
-```
-
-BM25 is strong when a query contains distinctive names, numbers, locations, exact terms, or rare words. Dense retrieval is better when relevant text expresses the same meaning with different wording.
-
-The two methods may therefore recover different correct results.
-
-#### Candidate methods
-
-**H0 – Sparse only**
-
-Control.
-
-**H1 – Dense only**
-
-Control.
-
-**H2 – Reciprocal Rank Fusion**
-
-Combine sparse and dense rankings instead of raw scores.
-
-Primary predefined setting:
-
-```text
-RRF k = 60
-```
-
-This avoids problems caused by incompatible BM25 and cosine score scales.
-
-**Limited normalized score fusion**
-
-Evaluate only a small predefined set such as:
-
-```text
-25% sparse + 75% dense
-50% sparse + 50% dense
-75% sparse + 25% dense
-```
-
-Avoid large weight sweeps on only 20 development queries.
-
-#### What remains fixed
-
-- dense model
-- lexical model
-- ASR channels
-- transcript views
-- video aggregation
-- query representation
-
-#### Decision
-
-Choose one retrieval architecture:
-
-```text
-sparse only
-dense only
-or
-hybrid
-```
-
-The result is frozen before Stage 5.
-
----
-
-### 5.5 Stage 5 – ASR and Text-View Re-evaluation
-
-#### Goal
-
-Reduce four development channels to one practical transcript pipeline.
-
-#### Main question
-
-> After improving retrieval itself, is Whisper still sufficiently better than Parakeet to justify its higher operational cost, and should raw or processed transcripts be retained?
-
-#### Conditions
-
-Evaluate the frozen Stage 4 retriever independently on:
+Stages 1–5 evaluated four transcript conditions independently:
 
 ```text
 Whisper raw
@@ -558,389 +90,378 @@ Parakeet raw
 Parakeet processed
 ```
 
-This is explicitly a selection stage.
+They were diagnostic channels, not four inputs to one fused system. The project intentionally avoided Whisper+Parakeet or raw+processed fusion because the first question was whether one sufficiently good transcript pipeline could support retrieval without extra complexity.
 
-It does not test:
+Each stage reused the same physical window axis and the same evaluation rules. Once a method was frozen, later stages depended on that decision through explicit prerequisite checks and cached-artifact identities. If a prerequisite configuration changes, the later stage is expected to fail rather than silently continue with stale results.
 
-```text
-Whisper + Parakeet
-raw + processed
-all four channels
-```
+## 3. Building the First-Stage Retriever: Stages 1–5
 
-#### Evaluation evidence
+### 3.1 Stage 1 — Replacing query-fitted TF-IDF
 
-Use:
+The first question was whether the historical lexical component could be replaced by a proper corpus-oriented retriever.
 
-- Video R@1
-- Video R@5
-- Video R@10
-- Video MRR
-- Story R@1
-- Story MRR
-- paired per-query ranks
-- catastrophic failures
-- ASR inference cost
-- retrieval latency
-
-A cheaper ASR may replace a stronger one if downstream retrieval becomes sufficiently close and no systematic failure pattern remains.
-
-The exact engineering thresholds should be frozen in configuration before the final Stage 5 comparison.
-
-#### Decision
-
-The selected Stage 1–5 transcript pipeline is:
+Five methods were compared:
 
 ```text
-Parakeet CTC 0.6B Vietnamese
-+
-processed transcript view
+L0  query-fitted character TF-IDF
+L1  corpus-fitted character TF-IDF
+L2  BM25 preserving Vietnamese accents
+L3  accent-folded BM25
+L4  RRF of preserving and folded BM25
 ```
 
-Everything downstream should use that single transcript pipeline unless a later reviewed decision explicitly replaces it.
+The development results were summarized across the four ASR/view conditions:
 
----
+| Method | Composite Video RR | Δ vs L0 | Better / Tie / Worse | Composite Story RR |
+|---|---:|---:|---:|---:|
+| L0 query TF-IDF | 0.5386 | — | — | 0.7235 |
+| L1 corpus TF-IDF | 0.5476 | +0.0090 | 8 / 6 / 6 | 0.7389 |
+| **L2 BM25, accents preserved** | **0.6064** | **+0.0678** | **9 / 5 / 6** | **0.7839** |
+| L3 accent-folded BM25 | 0.4381 | -0.1005 | 7 / 3 / 10 | 0.6797 |
+| L4 BM25 RRF | 0.5174 | -0.0211 | 7 / 4 / 9 | 0.7339 |
 
-### 5.6 Stage 6 – Hierarchical Retrieval
+Corpus-fitted TF-IDF fixed the methodological weakness of query fitting but produced only a small gain. Accent-preserving BM25 was clearly the strongest lexical option.
 
-#### Goal
+Accent folding was tested because ASR can make diacritic errors, but the result went in the opposite direction: removing accents destroyed useful lexical distinctions and reduced retrieval quality substantially. Combining the strong and weak BM25 variants with RRF did not recover that loss.
 
-Separate video retrieval from temporal localization.
+**Decision:** accent-preserving BM25 (`L2_bm25_preserving`).
 
-#### Motivation
+The main lesson from Stage 1 is straightforward: Vietnamese lexical detail is valuable enough that we should preserve it rather than pre-emptively remove it for noise tolerance.
 
-Current retrieval scores transcript windows globally.
+### 3.2 Stage 2 — Stronger multilingual dense retrieval
 
-A hierarchical system instead performs:
+Stage 2 asked whether a stronger embedding model could improve semantic retrieval beyond multilingual E5-small.
+
+The tested models were:
 
 ```text
-query
-  ↓
-retrieve candidate videos
-  ↓
-keep top-K videos
-  ↓
-search temporal windows only inside those videos
+D0  multilingual-e5-small
+D1  multilingual-e5-large-instruct
+D2  Qwen3-Embedding-0.6B
+D3  BGE-M3 dense
 ```
 
-#### Main question
+All other major retrieval choices remained fixed.
 
-> Can separating video selection and temporal localization improve retrieval quality or make later reranking more efficient?
+| Dense model | Composite Video RR | Δ vs D0 | Better / Tie / Worse | 90% bootstrap interval | Composite Story RR |
+|---|---:|---:|---:|---:|---:|
+| D0 E5-small | 0.5929 | — | — | — | **0.8550** |
+| **D1 E5-large-instruct** | **0.7301** | **+0.1372** | **12 / 6 / 2** | **[+0.0569, +0.2151]** | 0.8413 |
+| D2 Qwen3 embedding | 0.6569 | +0.0640 | 8 / 6 / 6 | [-0.0471, +0.1817] | 0.8313 |
+| D3 BGE-M3 dense | 0.5682 | -0.0247 | 5 / 6 / 9 | [-0.0885, +0.0359] | 0.8472 |
 
-#### Candidate-video stage
+E5-large-instruct produced the strongest video retrieval and the clearest paired improvement. Its 90% bootstrap interval for the Video RR gain over E5-small stayed above zero. Story RR was slightly lower than E5-small, but the global video gain was much larger and was the main bottleneck the project was trying to improve.
 
-Evaluate:
+**Decision:** `D1_e5_large_instruct`.
+
+This was the largest early gain in Retrieval v2 and established dense semantic retrieval as the main first-stage signal.
+
+### 3.3 Stage 3 — Turning transcript-window scores into video scores
+
+A retrieval model produces a score for each transcript window, but the competition also needs a video ranking. Stage 3 tested whether a video should be represented by its single strongest window or by repeated/neighboring support.
+
+The candidates were:
 
 ```text
-candidate Video Recall@5
-candidate Video Recall@10
-candidate Video Recall@20
+P0  maximum window score
+P1  mean of top 2 windows
+P2  mean of top 3 windows
+P3  best adjacent-window pair mean
+P4  best contiguous 3-window mean
 ```
 
-The candidate stage must preserve very high recall because a video removed here cannot be recovered later.
+The same aggregation policies were tested independently on the selected BM25 and E5 score sources.
 
-#### Temporal stage
+| Aggregation | BM25 Video RR | E5 Video RR | Cross-source Video RR |
+|---|---:|---:|---:|
+| **P0 max** | **0.6064** | 0.7301 | 0.6683 |
+| P1 top-2 mean | 0.6030 | **0.7443** | **0.6737** |
+| P2 top-3 mean | 0.5647 | 0.6776 | 0.6212 |
+| P3 adjacent-2 mean | 0.6032 | 0.7107 | 0.6570 |
+| P4 contiguous-3 mean | 0.5749 | 0.6647 | 0.6198 |
 
-Within selected videos:
+Top-2 mean produced a small cross-source increase of about 0.0054, but the improvement was not consistent across both retrieval sources and its paired bootstrap interval crossed zero. More aggressive averaging was clearly harmful.
+
+The behavior is understandable. A query may describe only a brief spoken moment. If one window contains that moment and the neighboring windows discuss something else, averaging several windows dilutes correct evidence. Temporal adjacency also does not guarantee semantic continuity, especially with fixed overlapping windows.
+
+**Decision:** maximum-window scoring (`P0_max`).
+
+The main lesson is that partial relevance should be preserved: one strong local passage can legitimately identify the correct video.
+
+### 3.4 Stage 4 — Combining lexical and semantic retrieval
+
+BM25 and E5 solve different parts of the problem. Stage 4 tested whether combining them improved on either source alone.
+
+Because their raw score scales are different, the weighted methods normalize BM25 and E5 separately for each query over eligible windows before combining them.
+
+| Method | Video MRR | Video R@1 | Story MRR | Δ Video MRR vs dense |
+|---|---:|---:|---:|---:|
+| H0 BM25 only | 0.6064 | 0.4875 | 0.7839 | -0.1238 |
+| H1 E5 only | 0.7301 | 0.6500 | 0.8413 | — |
+| H2 RRF | 0.7225 | 0.6125 | 0.8342 | -0.0077 |
+| **H3 25% BM25 / 75% E5** | **0.7841** | **0.7125** | **0.8777** | **+0.0539** |
+| H4 50/50 | 0.7482 | 0.6500 | 0.8014 | +0.0180 |
+| H5 75% BM25 / 25% E5 | 0.6700 | 0.5500 | 0.7976 | -0.0601 |
+
+The selected 25/75 fusion improved both Video and Story MRR over dense-only retrieval. Its Video RR improvement over E5 alone had a positive 90% paired bootstrap interval of approximately `[+0.0014, +0.1106]`.
+
+The weight pattern is also informative. Equal weighting helped less, and making BM25 the larger signal was harmful. Exact lexical evidence is useful, but semantic retrieval should remain dominant.
+
+**Decision:** per-query normalized 25% BM25 + 75% E5 (`H3_norm_25_75`).
+
+### 3.5 Stage 5 — Selecting the ASR and transcript representation
+
+Only after the first-stage retrieval architecture had improved did the project make the final Stage 1–5 ASR decision. This avoided selecting an ASR based on weaknesses that actually belonged to the old retriever.
+
+The frozen Stage 4 system was applied to the four independent ASR/view conditions:
+
+| Channel | Video R@1 | Video R@5 | Video R@10 | Video MRR | Story R@1 | Story MRR |
+|---|---:|---:|---:|---:|---:|---:|
+| **Parakeet processed** | **0.75** | **0.85** | 0.90 | **0.8102** | 0.80 | 0.8583 |
+| Parakeet raw | 0.70 | **0.85** | 0.90 | 0.7807 | **0.85** | **0.8950** |
+| Whisper processed | 0.70 | **0.85** | 0.90 | 0.7733 | **0.85** | 0.8837 |
+| Whisper raw | 0.70 | 0.80 | 0.90 | 0.7721 | 0.80 | 0.8738 |
+
+Parakeet processed produced the strongest global video retrieval. The processed representation did not maximize every Story metric—Parakeet raw had higher Story MRR—but the project prioritized the larger global-video problem while enforcing predeclared quality gates to avoid unacceptable Story regressions.
+
+Parakeet also had a major operational advantage:
+
+| Benchmark | Whisper RTF | Parakeet RTF | Parakeet speedup |
+|---|---:|---:|---:|
+| Core10 | 0.3257 | 0.00855 | 38.1× |
+| Extension40 | 0.3047 | 0.00901 | 33.8× |
+
+Peak GPU memory was also lower for Parakeet (about 4.92 GB versus about 6.75 GB for Whisper in the measured runs).
+
+**Decision:** Parakeet CTC 0.6B Vietnamese with the processed transcript representation.
+
+After this decision, the first-stage pipeline was:
 
 ```text
-rank transcript windows
-identify candidate moments
-return temporal evidence
+Parakeet processed transcript
+        ↓
+accent-preserving BM25
+        +
+E5-large-instruct
+        ↓
+per-query eligible-only min-max normalization
+        ↓
+25% BM25 + 75% E5
+        ↓
+maximum window score per video
 ```
 
-#### Important constraint
+On all 40 Extension40 queries, after the one-time holdout exposure, this first-stage system produced:
 
-Current All50 dense search is already very fast. Hierarchical retrieval is therefore not justified by the current 994-window search latency alone.
+| Full40 metric | Result |
+|---|---:|
+| Video R@1 | 0.725 |
+| Video R@3 | 0.900 |
+| Video R@5 | 0.900 |
+| Video R@10 | 0.925 |
+| Video R@20 | 0.950 |
+| Video MRR | 0.8110 |
+| Story R@1 | 0.850 |
+| Story R@3 | 0.925 |
+| Story R@5 | 0.975 |
+| Story R@10 | 1.000 |
+| Story MRR | 0.9042 |
 
-It should be retained only if it improves:
+## 4. Candidate Selection and Reranking: Stages 6–7
 
-- retrieval quality
-- reranking efficiency
-- future corpus scaling
+Stages 6 and 7 solve one practical problem: a stronger cross-encoder can improve difficult rankings, but it is too expensive to apply indiscriminately to every transcript window.
 
-#### Output
+### 4.1 Stage 6 — Reducing the reranker workload
 
-Select:
+Stage 6 did **not** try to improve MRR. It measured how aggressively the 994-window All50 corpus could be reduced while preserving the evidence a later reranker might need.
+
+For every query, the frozen first stage first ranked videos using the maximum hybrid window score. A candidate policy then kept the top `K` videos and the top `M` windows within each selected video.
+
+The main policies were combinations of:
 
 ```text
-candidate K
-video scoring policy
-within-video retrieval policy
+K ∈ {10, 20, 30}
+M ∈ {1, 3, 5}
 ```
 
----
+A K=40 fallback was also evaluated because none of the original policies reached perfect joint video+window coverage.
 
-### 5.7 Stage 7 – Candidate Reranking
+The results show separately why both K and M matter:
 
-#### Goal
+| Policy | Mean pairs/query | Video candidate recall | Relevant-window recall | Joint recall |
+|---|---:|---:|---:|---:|
+| K10_M5 | 49.6 | 0.925 | 0.975 | 0.925 |
+| K20_M5 | 99.4 | 0.950 | 0.975 | 0.950 |
+| **K30_M5** | **149.3** | **1.000** | **0.975** | **0.975** |
+| K40_M5 | 197.5 | 1.000 | 0.975 | 0.975 |
+| K30_M3 | 89.9 | 1.000 | 0.925 | 0.925 |
+| K30_M1 | 30.0 | 1.000 | 0.850 | 0.850 |
 
-Use a more expensive model only on a small first-stage candidate set.
-
-#### Main question
-
-> Can richer query-transcript interaction fix difficult ranking errors without paying the cost over the full corpus?
-
-#### Pipeline
+Three difficult queries explain the required video breadth:
 
 ```text
-first-stage retriever
-  ↓
-top candidate windows or videos
-  ↓
-reranker
-  ↓
-final ordering
+R2-15  correct video rank 14
+R2-1   correct video rank 24
+R2-8   correct video rank 27
 ```
 
-Potential reranker families include:
+K=10 loses all three. K=20 recovers `R2-15`, and K=30 keeps all correct videos.
 
-- multilingual cross-encoders
-- instruction-following rerankers
-- other query-document interaction models
+Increasing M solves a different problem. At M=1, six queries lose the relevant temporal window even when the correct video is retained. M=3 reduces this to three; M=5 leaves one persistent temporal miss.
 
-The exact model should be selected only when Stage 7 begins.
+The remaining miss is `R2-8`. Its correct video is present at Stage 7, but none of the selected top-five windows satisfies the benchmark temporal relevance rule. Stage 7 can still improve its **video** rank, but perfect joint video+moment coverage is impossible under this candidate pool.
 
-#### Evaluation
+`K30_M5` and `K40_M5` have the same 0.975 joint recall. K40 requires about 32% more pairs, so the additional videos do not buy any benchmark coverage.
 
-Track:
+**Decision:** `K30_M5`.
 
-- retrieval-quality gain
-- candidate recall
-- reranking latency
-- GPU memory
-- failure recovery
-- sensitivity to candidate K
+This reduces the reranker workload from all 994 windows to about 149 query-window pairs while preserving all 40 correct videos and relevant temporal evidence for 39 of 40 queries.
 
-#### Decision
+This result is specific to All50. K30 retains 60% of a 50-video corpus; it would retain only about 2% of a roughly 1,490-video corpus. The correct production K therefore remains an open scaling question.
 
-Retain reranking only if the gain justifies the added online cost.
+### 4.2 Stage 7 — Reranking the candidate set
 
----
-
-### 5.8 Stage 8 – Query and Transcript Representation Improvements
-
-#### Goal
-
-Improve how information is presented to the retriever without changing the underlying event being searched.
-
-#### Main question
-
-> Are the original natural-language queries and transcript windows the best retrieval representations?
-
-#### Query-side possibilities
-
-Start conservatively:
+Stage 7 evaluated six local rerankers on the exact same frozen `K30_M5` pool and Tesla T4 environment:
 
 ```text
-original query
-content-focused query
-entity / location / number-focused representation
-ASR-oriented query reformulation
+R1  mMARCO MiniLM
+R2  GTE multilingual
+R3  BGE reranker v2 M3
+R4  Qwen3-Reranker-0.6B
+R5  Mixedbread mxbai-rerank-base-v2
+R6  Jina reranker v2 multilingual
 ```
 
-The original query remains the control.
+All models used the same 512-token maximum input length. The runner performed a compatibility smoke test, a runtime preflight, batch-size fallback if needed, token-length auditing, and then the complete Full40 run. In the final valid environment all six rerankers passed and used batch size 32 without OOM retries.
 
-#### Transcript-side possibilities
-
-Potential experiments include:
+Three score policies were compared conceptually:
 
 ```text
-sentence cleanup
-context expansion
-neighbor-window context
-structured entity extraction
-number normalization
-light transcript segmentation
+S0  frozen first-stage control
+
+S1  reranker-only candidate score
+
+S2  50% normalized first-stage candidate score
+    + 50% normalized reranker score
 ```
 
-Representations must not invent content that is not present in the original query or ASR transcript.
+There was no reranker-weight sweep.
 
-#### Experimental rule
+The most important finding was not the identity of the best model. It was that **reranker-only scoring was consistently worse than the first-stage control**:
 
-Avoid large prompt searches on `development20`.
+| Reranker-only model | Video MRR |
+|---|---:|
+| BGE | 0.7833 |
+| Qwen3 | 0.7014 |
+| Mixedbread | 0.6927 |
+| GTE | 0.6322 |
+| Jina | 0.5319 |
+| MiniLM | 0.4289 |
+| **First-stage control** | **0.8110** |
 
-Use a small number of predefined representations, clear deterministic rules, and paired evaluation.
+The first stage therefore contains useful lexical+dense evidence that should not be discarded. Cross-encoding works better as a refinement signal.
 
-#### Output
+With the predefined S2 fusion:
 
-Select one query representation and, if useful, one transcript representation.
+| Reranker | Video R@1 | Video MRR | Story MRR | Better / Tie / Worse | p90 | Meets 5 s limit |
+|---|---:|---:|---:|---:|---:|---|
+| No reranker | 0.725 | 0.8110 | 0.9042 | — | — | Yes |
+| MiniLM | 0.625 | 0.7154 | 0.8729 | 5 / 25 / 10 | 0.34 s | Yes |
+| GTE | 0.700 | 0.7972 | 0.8988 | 5 / 29 / 6 | 1.04 s | Yes |
+| **BGE v2 M3** | **0.750** | **0.8205** | **0.9125** | **6 / 30 / 4** | **2.54 s** | **Yes** |
+| Qwen3-0.6B | **0.825** | **0.8642** | 0.8625 | **8 / 28 / 4** | 7.31 s | No |
+| Mixedbread | 0.725 | 0.7955 | 0.8896 | 4 / 29 / 7 | 4.57 s | Yes |
+| Jina v2 | 0.675 | 0.7543 | 0.9113 | 4 / 25 / 11 | 1.02 s | Yes |
 
----
+Qwen was the clear video-quality leader. It raised Video R@1 from 0.725 to 0.825 and Video MRR from 0.8110 to 0.8642. It also had five rank-1 recoveries and one rank-1 loss. Its paired 90% bootstrap interval for Video RR improvement was positive, approximately `[+0.0023, +0.1082]`.
 
-### 5.9 Stage 9 – Multimodal Integration
+However, Qwen had two important costs. Its p90 reranking latency was 7.31 seconds, above the 5-second limit fixed before Stage 7, and Story MRR fell from 0.9042 to 0.8625. It therefore cannot be the operational choice under the frozen runtime rule.
 
-#### Goal
+BGE produced a much smaller gain: Video MRR increased by about 0.0095 and Story MRR by about 0.0083. It had six better queries, 30 ties, four worse queries, two rank-1 recoveries, one rank-1 loss, and no large or hard top-1 regressions. Its Video RR bootstrap interval crossed zero, so the quality improvement should be described as modest rather than conclusive.
 
-Address queries that ASR alone cannot solve.
+Its advantage is balance: BGE is the only tested reranker that improves both aggregate Video and Story MRR while staying within the 5-second limit.
 
-#### Motivation
+**Stage 7 status:** evaluation complete and passed.
 
-Some queries depend primarily on:
+**Operational recommendation:** BGE reranker v2 M3 with S2 50/50 fusion.
+
+**Quality-oriented challenger:** Qwen3-0.6B, retained as evidence of the attainable video-quality gain but not operationally eligible under the current latency rule.
+
+The current configuration still marks `selection.stage07_decision` as `pending_review`, so this document deliberately calls BGE a recommendation rather than a formally frozen selection.
+
+## 5. What We Learned and What Remains Uncertain
+
+### 5.1 Current Stage 1–7 design
+
+The research has converged on the following design:
+
+| Component | Current outcome |
+|---|---|
+| ASR | Parakeet CTC 0.6B Vietnamese |
+| Audio windows | 60 s, 45 s stride, 15 s overlap |
+| Transcript representation | Processed |
+| Lexical retrieval | Accent-preserving BM25 |
+| Dense retrieval | E5-large-instruct |
+| First-stage normalization | Per-query, eligible-window min-max |
+| First-stage fusion | 25% BM25 + 75% E5 |
+| Video score | Maximum window score |
+| Stage 6 benchmark candidate policy | `K30_M5` |
+| Stage 7 candidate fusion | 50% first-stage + 50% reranker |
+| Stage 7 operational recommendation | BGE v2 M3, final freeze pending |
+
+Several broader lessons are more important than the method IDs.
+
+First, **dense semantic retrieval provides most of the first-stage strength**, but a small BM25 contribution is useful for exact names, locations, numbers, and unusual words. The best fusion is therefore asymmetric rather than 50/50.
+
+Second, **short local evidence matters**. The max-window policy survived Stage 3 because requiring repeated or neighboring support often diluted the one passage that actually described the target event.
+
+Third, **ASR quality cannot be judged independently of retrieval architecture**. Whisper appeared stronger in some earlier configurations, but once the retriever improved, Parakeet processed became the best global video channel while also being more than 30× faster in the measured ASR runs.
+
+Fourth, **candidate selection and reranking solve different problems**. Stage 6 protects recall and controls compute; Stage 7 changes the ordering of candidates. A candidate that is removed before Stage 7 cannot be recovered by a stronger reranker.
+
+Finally, **the reranker should refine the first stage rather than replace it**. This is the clearest Stage 7 architectural result: all six reranker-only variants lost Video MRR.
+
+### 5.2 Failure patterns
+
+The remaining errors fall into a few useful categories.
+
+A **deep first-stage video error** occurs when the correct video is far down the global ranking. Stage 6 exposed examples at ranks 14, 24, and 27. These are the cases that force candidate-video breadth to increase.
+
+A **candidate-window miss** occurs when the correct video survives but the relevant moment is not among the windows passed to the cross-encoder. `R2-8` is the persistent Stage 6 example under `K30_M5`.
+
+A **reranker failure/regression** occurs when the necessary candidate evidence is present but the reranker still ranks a wrong video above the correct one, or pushes a previously strong result down. Stage 7 tracks these separately from candidate misses so upstream and reranker errors are not confused.
+
+A fourth limitation is outside ranking itself: **the transcript may not contain the evidence required by the query**. ASR retrieval cannot solve information that is only visual or only present as on-screen text. These cases motivate the separate visual/OCR parts of the broader system rather than further tuning of the ASR retriever.
+
+### 5.3 Runtime and statistical caution
+
+The first-stage system is already relatively cheap on All50. E5-large query encoding is measured in tens of milliseconds, while Stage 7 cross-encoding is measured in seconds. If BGE is enabled, reranking becomes the dominant online neural cost.
+
+This makes the size of the candidate pool an operational parameter, not just an accuracy parameter.
+
+The sample size also limits how strongly small differences should be interpreted. BGE's Full40 aggregate improvement is positive, but its paired bootstrap interval crosses zero and its historical `development20` and `holdout20` slices behave differently. The Stage 7 evidence supports BGE as the best balanced operational choice among the tested rerankers, but it does not justify claiming a large or universally stable improvement.
+
+Qwen's video improvement is stronger and more consistent, which tells us that the candidate pool contains recoverable information. Its current problem is the quality/latency/Story trade-off rather than a lack of ranking capability.
+
+### 5.4 Scaling beyond All50
+
+The largest unresolved question is how the candidate layer behaves on the full competition corpus.
+
+Stage 6 selected `K30_M5` on 50 videos. Keeping 30 of 50 videos is generous; keeping 30 of roughly 1,490 is extremely selective. The correct video may fall below rank 30 simply because many more distractors are present.
+
+The full-corpus deployment should therefore remeasure:
 
 ```text
-objects
-appearance
-actions
-scene layout
-signs
-logos
-on-screen text
-visual events
+first-stage Video Recall@10 / @20 / @30 / @50 / @100
+candidate-video recall
+relevant-window recall
+joint candidate recall
+reranker pair count
+warm query latency
 ```
 
-No ASR retriever can recover information that was never spoken.
+The goal should not be to preserve the literal `K30_M5` rectangle. The goal is to preserve enough video and temporal evidence while keeping the expensive reranker workload bounded.
 
-#### Evidence sources
+A possible engineering direction is to give at least one window to a broader set of videos and allocate additional windows to higher-ranked videos under a fixed total pair budget. This is a deployment hypothesis, not a Stage 1–7 experimental result, and it should be validated on full-corpus queries before adoption.
 
-Stage 9 introduces:
-
-```text
-ASR
-visual embeddings
-OCR
-```
-
-#### Architecture
-
-```text
-query
-  ├── ASR retrieval
-  ├── visual retrieval
-  └── OCR retrieval
-          ↓
-    evidence combination
-          ↓
-       video ranking
-          ↓
-      temporal result
-```
-
-#### Fusion strategy
-
-Start with simple and interpretable methods:
-
-```text
-rank fusion
-small score-fusion grid
-query-type-aware weighting only if clearly justified
-```
-
-Avoid complex learned fusion until simpler approaches have been evaluated.
-
-#### Evaluation
-
-Track:
-
-- overall Video R@k
-- overall Story R@k
-- ASR-heavy queries
-- visual-heavy queries
-- OCR-heavy queries
-- failure recovery
-- latency
-
-#### Output
-
-Freeze the final multimodal retrieval architecture.
-
----
-
-### 5.10 Stage 10 – Freeze and Final Evaluation
-
-#### Goal
-
-Produce one frozen broader retrieval system and evaluate generalization using an independent evaluation source.
-
-#### Holdout status
-
-`holdout20` has already been evaluated once after the Stage 1–5 ASR-text subsystem was frozen. It is now exposed and cannot serve as an untouched final test set for later Retrieval v2 stages.
-
-Later Stage 6–9 development must not use the observed `holdout20` results for tuning, candidate selection, threshold selection, or architecture changes.
-
-#### Freeze before final evaluation
-
-Freeze:
-
-```text
-ASR
-transcript view
-lexical retriever
-dense retriever
-video aggregation
-hybrid policy
-hierarchical candidate policy
-reranker
-query representation
-multimodal policy
-model revisions
-source hashes
-configs
-```
-
-Only after this broader system is frozen should it be evaluated on an independent final evaluation source.
-
-#### Final outputs
-
-Produce:
-
-```text
-final development metrics
-Stage 1–5 holdout20 validation record
-independent final evaluation metrics
-final ablation
-runtime summary
-failure analysis
-frozen reproducibility manifest
-```
----
-
-## 6. Artifacts and Reproducibility
-
-### 6.1 Repository and Drive
-
-| Content | Git | Google Drive |
-|---|---|---|
-| Source code | Yes | Optional mirror |
-| Configs | Yes | Optional mirror |
-| Benchmark manifests | Yes | Yes |
-| Notebooks | Yes | Optional mirror |
-| Documentation | Yes | Optional mirror |
-| Generated reports | No | Yes |
-| ASR outputs | No | Yes |
-| Embedding caches | No | Yes |
-| Model weights | No | External / cache |
-| Audio and video | No | Yes |
-
-Large or generated artifacts remain outside Git. The repository should stay lightweight and focused on code, configs, benchmark definitions, notebooks, and compact documentation.
-
-### 6.2 Experiment manifests
-
-Every significant experiment should preserve:
-
-- exact model revisions
-- source hashes
-- benchmark identity
-- configuration identity
-- execution environment
-- cache identity
-- generated report paths
-
-This allows results to be reproduced without placing large generated artifacts in version control.
-
-### 6.3 Human-readable documentation
-
-The repository uses three main human-facing documents:
-
-```text
-docs/retrieval-v2.md
-Stable protocol, architecture, decisions, and roadmap.
-
-docs/asr-retrieval-system.md
-Implementation reference for the frozen ASR-text retrieval subsystem.
-
-docs/results/retrieval-v2-progress.md
-Current dated metrics, findings, selected components, failures, validation results, and next steps.
-```
-
-Detailed experiment tables, per-query outputs, hashes, and runtime manifests remain in generated reports rather than being duplicated in this document.
+Retrieval v2 stops here at Stage 7. The current work provides a well-tested ASR-text retrieval core, a clear candidate/reranker interface, measured quality/latency trade-offs, and a concrete list of scaling checks that should be completed before the same settings are used unchanged on the full competition corpus.

@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 
 
-RETRIEVAL_V2_EVALUATION_VERSION = "1.2.0"
+RETRIEVAL_V2_EVALUATION_VERSION = "1.3.0"
 SUCCESS_STATUSES = {"ok", "success"}
 
 
@@ -2350,3 +2350,683 @@ def compare_stage5_asr_pairs(
             })
 
     return pd.DataFrame(query_rows), pd.DataFrame(summary_rows)
+
+
+# -----------------------------------------------------------------------------
+# Stage 6 hierarchical candidate construction
+# -----------------------------------------------------------------------------
+
+
+def _stage67_video_scores(
+    row_scores : np.ndarray,
+    windows : pd.DataFrame,
+) -> pd.DataFrame :
+    frame = pd.DataFrame({
+        "video_id" : windows["video_id"].astype(str).to_numpy(),
+        "score"    : np.asarray(row_scores, dtype = np.float64),
+    }).groupby("video_id", as_index = False)["score"].max()
+
+    return frame.sort_values(
+        ["score", "video_id"],
+        ascending = [False, True],
+        kind = "mergesort",
+    ).reset_index(drop = True)
+
+
+def _stage67_window_order(
+    row_scores : np.ndarray,
+    windows : pd.DataFrame,
+    indices : Sequence[int],
+) -> list[int] :
+    physical = np.asarray(indices, dtype = np.int64)
+
+    if (len(physical) == 0) :
+        return []
+
+    frame = pd.DataFrame({
+        "_index"    : physical,
+        "score"     : np.asarray(row_scores, dtype = np.float64)[physical],
+        "start_s"   : pd.to_numeric(windows.iloc[physical]["start_s"], errors = "coerce").to_numpy(dtype = float),
+        "window_id" : windows.iloc[physical]["window_id"].astype(str).to_numpy(),
+    }).sort_values(
+        ["score", "start_s", "window_id"],
+        ascending = [False, True, True],
+        kind = "mergesort",
+    )
+    return frame["_index"].astype(int).tolist()
+
+
+def construct_stage6_candidate_policy(
+    first_stage_scores : np.ndarray,
+    queries : pd.DataFrame,
+    windows : pd.DataFrame,
+    eligibility_mask : np.ndarray,
+    video_k : int,
+    windows_per_video : int,
+    silver_radius_s : float,
+    minimum_overlap_s : float,
+    tie_tolerance : float,
+    policy_id : str,
+    text_field : str = "canonical_retrieval_text",
+) -> tuple[pd.DataFrame, pd.DataFrame] :
+    values      = np.asarray(first_stage_scores, dtype = np.float64)
+    eligibility = np.asarray(eligibility_mask, dtype = bool)
+
+    if (values.shape != (len(queries), len(windows))) :
+        raise ValueError("Stage 6 first-stage scores do not match query/window axes")
+
+    if (eligibility.shape != (len(windows),)) :
+        raise ValueError("Stage 6 eligibility mask does not match the window axis")
+
+    if (not np.isfinite(values).all()) :
+        raise ValueError("Stage 6 first-stage scores contain NaN or infinite values")
+
+    if (video_k <= 0 or windows_per_video <= 0) :
+        raise ValueError("Stage 6 K and M must be positive")
+
+    required = {"window_id", "video_id", "start_s", "end_s"}
+    missing = sorted(required - set(windows.columns))
+
+    if (missing) :
+        raise KeyError(f"Stage 6 windows are missing fields: {missing}")
+
+    if (windows["window_id"].astype(str).duplicated().any()) :
+        raise ValueError("Stage 6 physical window axis contains duplicate IDs")
+
+    physical_video_ids = windows["video_id"].astype(str).to_numpy()
+    physical_window_ids = windows["window_id"].astype(str).to_numpy()
+    starts = pd.to_numeric(windows["start_s"], errors = "coerce").to_numpy(dtype = float)
+    ends   = pd.to_numeric(windows["end_s"], errors = "coerce").to_numpy(dtype = float)
+    texts  = (
+        windows[text_field].fillna("").astype(str).to_numpy()
+        if text_field in windows.columns
+        else np.asarray([""] * len(windows), dtype = object)
+    )
+    all_video_ids = sorted(set(physical_video_ids.tolist()))
+
+    if (video_k > len(all_video_ids)) :
+        raise ValueError(f"Stage 6 K={video_k} exceeds the {len(all_video_ids)}-video corpus")
+
+    pool_rows = []
+    query_rows = []
+
+    for query_index, (_, query) in enumerate(queries.reset_index(drop = True).iterrows()) :
+        query_id     = str(query["query_id"])
+        correct_video = str(query["video_id"])
+        row_scores   = values[query_index]
+        relevant, overlap = silver_relevance_mask(
+            query,
+            windows,
+            silver_radius_s = silver_radius_s,
+            minimum_overlap_s = minimum_overlap_s,
+        )
+
+        video_frame = _stage67_video_scores(row_scores, windows)
+        metric_frame = video_frame.sort_values("video_id", kind = "mergesort").reset_index(drop = True)
+        metric_frame["metric_rank"] = worst_tied_ranks_array(
+            metric_frame["score"].to_numpy(dtype = float),
+            tolerance = tie_tolerance,
+        )
+        metric_rank_by_video = dict(zip(metric_frame["video_id"], metric_frame["metric_rank"].astype(int)))
+        selected_videos = video_frame.head(video_k).copy()
+        selected_video_ids = selected_videos["video_id"].astype(str).tolist()
+        correct_video_retained = correct_video in set(selected_video_ids)
+
+        correct_indices = np.flatnonzero((physical_video_ids == correct_video) & eligibility)
+        correct_order   = _stage67_window_order(row_scores, windows, correct_indices)
+        correct_top_m   = correct_order[ : min(windows_per_video, len(correct_order))]
+        relevant_window_in_top_m = bool(any(relevant[index] for index in correct_top_m))
+
+        pair_count = 0
+
+        for candidate_video_rank, (_, video_row) in enumerate(selected_videos.iterrows(), start = 1) :
+            video_id = str(video_row["video_id"])
+            video_indices = np.flatnonzero((physical_video_ids == video_id) & eligibility)
+            ordered_windows = _stage67_window_order(row_scores, windows, video_indices)
+            selected_windows = ordered_windows[ : min(windows_per_video, len(ordered_windows))]
+
+            for candidate_window_rank, index in enumerate(selected_windows, start = 1) :
+                pair_count += 1
+                pool_rows.append({
+                    "policy_id"                : policy_id,
+                    "video_k"                  : int(video_k),
+                    "windows_per_video_m"      : int(windows_per_video),
+                    "query_id"                 : query_id,
+                    "query_text"               : str(query["query_text"]),
+                    "historical_split"         : str(query.get("evaluation_split", "unspecified")),
+                    "task_type"                : str(query.get("task_type", "KIS")),
+                    "query_category"           : str(query.get("query_category", "other")),
+                    "difficulty"               : str(query.get("difficulty", "unknown")),
+                    "correct_video"            : correct_video,
+                    "video_id"                 : video_id,
+                    "candidate_video_rank"     : int(candidate_video_rank),
+                    "first_stage_video_metric_rank" : int(metric_rank_by_video[video_id]),
+                    "first_stage_video_score"  : float(video_row["score"]),
+                    "window_id"                : str(physical_window_ids[index]),
+                    "candidate_window_rank"    : int(candidate_window_rank),
+                    "window_start_s"           : float(starts[index]),
+                    "window_end_s"             : float(ends[index]),
+                    "window_text"              : str(texts[index]),
+                    "first_stage_window_score" : float(row_scores[index]),
+                    "eligible"                 : bool(eligibility[index]),
+                    "is_correct_video"         : bool(video_id == correct_video),
+                    "is_relevant_window"       : bool(relevant[index]),
+                    "silver_overlap_s"         : float(overlap[index]),
+                })
+
+        failure_type = None
+        if (not correct_video_retained) :
+            failure_type = "CANDIDATE_VIDEO_MISS"
+        elif (not relevant_window_in_top_m) :
+            failure_type = "CANDIDATE_WINDOW_MISS"
+
+        query_rows.append({
+            "policy_id"                   : policy_id,
+            "video_k"                     : int(video_k),
+            "windows_per_video_m"         : int(windows_per_video),
+            "query_id"                    : query_id,
+            "query_text"                  : str(query["query_text"]),
+            "historical_split"            : str(query.get("evaluation_split", "unspecified")),
+            "task_type"                   : str(query.get("task_type", "KIS")),
+            "query_category"              : str(query.get("query_category", "other")),
+            "difficulty"                  : str(query.get("difficulty", "unknown")),
+            "correct_video"               : correct_video,
+            "correct_video_rank"          : int(metric_rank_by_video[correct_video]),
+            "correct_video_retained"      : bool(correct_video_retained),
+            "relevant_window_retained"    : bool(relevant_window_in_top_m),
+            "joint_success"               : bool(correct_video_retained and relevant_window_in_top_m),
+            "candidate_pair_count"        : int(pair_count),
+            "candidate_video_count"       : int(len(selected_video_ids)),
+            "failure_type"                : failure_type,
+        })
+
+    pool = pd.DataFrame(pool_rows)
+    results = pd.DataFrame(query_rows)
+
+    if (not pool.empty and pool.duplicated(["policy_id", "query_id", "window_id"]).any()) :
+        raise ValueError("Stage 6 candidate pool contains duplicate query/window identities")
+
+    return pool, results
+
+
+def summarize_stage6_candidate_policies(
+    candidate_query_results : pd.DataFrame,
+) -> pd.DataFrame :
+    if (candidate_query_results.empty) :
+        return pd.DataFrame()
+
+    rows = []
+
+    for policy_id, group in candidate_query_results.groupby("policy_id", sort = True) :
+        video_success = group["correct_video_retained"].astype(bool)
+        temporal_success = group["relevant_window_retained"].astype(bool)
+        joint_success = group["joint_success"].astype(bool)
+        retained = group[video_success]
+        conditional_temporal = (
+            float(retained["relevant_window_retained"].astype(bool).mean())
+            if len(retained)
+            else 0.0
+        )
+
+        rows.append({
+            "policy_id"                       : str(policy_id),
+            "video_k"                         : int(group["video_k"].iloc[0]),
+            "windows_per_video_m"             : int(group["windows_per_video_m"].iloc[0]),
+            "query_count"                     : int(len(group)),
+            "candidate_pairs_mean"            : float(group["candidate_pair_count"].mean()),
+            "candidate_pairs_max"             : int(group["candidate_pair_count"].max()),
+            "video_candidate_recall"          : float(video_success.mean()),
+            "temporal_candidate_recall"       : float(temporal_success.mean()),
+            "conditional_temporal_recall"     : conditional_temporal,
+            "joint_candidate_recall"          : float(joint_success.mean()),
+            "video_miss_count"                : int((~video_success).sum()),
+            "temporal_miss_count"             : int((~temporal_success).sum()),
+            "joint_miss_count"                : int((~joint_success).sum()),
+            "video_oracle_recall"             : float(video_success.mean()),
+            "temporal_oracle_recall"          : float(temporal_success.mean()),
+            "joint_oracle_recall"             : float(joint_success.mean()),
+        })
+
+    return pd.DataFrame(rows)
+
+
+def recommend_stage6_policy(
+    policy_summary : pd.DataFrame,
+    target_joint_recall : float = 1.0,
+    tolerance : float = 1e-12,
+) -> tuple[pd.DataFrame, str | None] :
+    if (policy_summary.empty) :
+        return policy_summary.copy(), None
+
+    frame = policy_summary.copy()
+    target = float(target_joint_recall)
+    qualifying = frame[
+        frame["joint_candidate_recall"] >= target - float(tolerance)
+    ].copy()
+
+    if (qualifying.empty) :
+        best = float(frame["joint_candidate_recall"].max())
+        qualifying = frame[
+            frame["joint_candidate_recall"] >= best - float(tolerance)
+        ].copy()
+
+    qualifying = qualifying.sort_values(
+        ["candidate_pairs_max", "video_k", "windows_per_video_m", "policy_id"],
+        ascending = [True, True, True, True],
+        kind = "mergesort",
+    )
+    recommended = str(qualifying.iloc[0]["policy_id"])
+    frame["recommended"] = frame["policy_id"].astype(str) == recommended
+    return frame, recommended
+
+
+def stage6_candidate_failures(
+    candidate_query_results : pd.DataFrame,
+) -> pd.DataFrame :
+    if (candidate_query_results.empty) :
+        return pd.DataFrame()
+
+    return candidate_query_results[
+        candidate_query_results["failure_type"].notna()
+    ].copy().sort_values(
+        ["policy_id", "failure_type", "correct_video_rank", "query_id"],
+        kind = "mergesort",
+    ).reset_index(drop = True)
+
+
+# -----------------------------------------------------------------------------
+# Stage 7 candidate reranking
+# -----------------------------------------------------------------------------
+
+
+def evaluate_stage7_candidate_scores(
+    candidate_pool : pd.DataFrame,
+    candidate_scores : Sequence[float] | np.ndarray,
+    first_stage_scores : np.ndarray,
+    queries : pd.DataFrame,
+    windows : pd.DataFrame,
+    eligibility_mask : np.ndarray,
+    method_id : str,
+    model_id : str,
+    view : str,
+    query_set : str,
+    corpus_id : str,
+    silver_radius_s : float,
+    minimum_overlap_s : float,
+    tie_tolerance : float,
+    catastrophic_failure : dict[str, Any] | None = None,
+) -> pd.DataFrame :
+    pool = candidate_pool.reset_index(drop = True).copy()
+    reranked = np.asarray(candidate_scores, dtype = np.float64).reshape(-1)
+    first_stage = np.asarray(first_stage_scores, dtype = np.float64)
+    eligibility = np.asarray(eligibility_mask, dtype = bool)
+
+    if (len(pool) != len(reranked)) :
+        raise ValueError("Stage 7 candidate score count does not match candidate pool")
+
+    if (not np.isfinite(reranked).all()) :
+        raise ValueError("Stage 7 candidate scores contain NaN or infinite values")
+
+    if (first_stage.shape != (len(queries), len(windows))) :
+        raise ValueError("Stage 7 first-stage score matrix does not match query/window axes")
+
+    if (eligibility.shape != (len(windows),)) :
+        raise ValueError("Stage 7 eligibility mask does not match window axis")
+
+    required_pool = {
+        "query_id", "video_id", "window_id", "candidate_video_rank",
+        "candidate_window_rank", "first_stage_window_score", "is_relevant_window",
+    }
+    missing_pool = sorted(required_pool - set(pool.columns))
+
+    if (missing_pool) :
+        raise KeyError(f"Stage 7 candidate pool is missing fields: {missing_pool}")
+
+    pool["_reranker_score"] = reranked
+    window_ids = windows["window_id"].astype(str).to_numpy()
+    video_ids  = windows["video_id"].astype(str).to_numpy()
+    starts     = pd.to_numeric(windows["start_s"], errors = "coerce").to_numpy(dtype = float)
+    ends       = pd.to_numeric(windows["end_s"], errors = "coerce").to_numpy(dtype = float)
+    window_lookup = {window_id : index for index, window_id in enumerate(window_ids)}
+
+    if (len(window_lookup) != len(window_ids)) :
+        raise ValueError("Stage 7 physical window axis contains duplicate IDs")
+
+    query_lookup = {
+        str(row["query_id"]) : (index, row)
+        for index, (_, row) in enumerate(queries.reset_index(drop = True).iterrows())
+    }
+    rows = []
+    catastrophic = catastrophic_failure or {}
+    minimum_drop = int(catastrophic.get("minimum_rank_drop", 10))
+    result_above = int(catastrophic.get("result_rank_above", 10))
+    top1_above   = int(catastrophic.get("flag_reference_rank_1_candidate_above", 5))
+
+    for query_id, (query_index, query) in query_lookup.items() :
+        subset = pool[pool["query_id"].astype(str) == query_id].copy()
+
+        if (subset.empty) :
+            raise ValueError(f"Stage 7 candidate pool contains no rows for {query_id!r}")
+
+        row_first = first_stage[query_index]
+        relevant, _ = silver_relevance_mask(
+            query,
+            windows,
+            silver_radius_s = silver_radius_s,
+            minimum_overlap_s = minimum_overlap_s,
+        )
+        correct_video = str(query["video_id"])
+
+        first_video_frame = _stage67_video_scores(row_first, windows)
+        first_video_metric = first_video_frame.sort_values("video_id", kind = "mergesort").reset_index(drop = True)
+        first_video_metric["metric_rank"] = worst_tied_ranks_array(
+            first_video_metric["score"].to_numpy(dtype = float),
+            tolerance = tie_tolerance,
+        )
+        first_metric_by_video = dict(zip(first_video_metric["video_id"], first_video_metric["metric_rank"].astype(int)))
+        first_display_video_ids = first_video_frame["video_id"].astype(str).tolist()
+        first_score_by_video = dict(zip(first_video_frame["video_id"], first_video_frame["score"].astype(float)))
+        first_video_rank = int(first_metric_by_video[correct_video])
+
+        candidate_video_order = (
+            subset[["video_id", "candidate_video_rank"]]
+            .drop_duplicates("video_id")
+            .sort_values("candidate_video_rank", kind = "mergesort")
+        )
+        original_candidate_video_ids = candidate_video_order["video_id"].astype(str).tolist()
+        candidate_set = set(original_candidate_video_ids)
+        expected_prefix = first_display_video_ids[ : len(original_candidate_video_ids)]
+
+        if (original_candidate_video_ids != expected_prefix) :
+            raise ValueError(f"Stage 7 candidate video prefix mismatch for {query_id!r}")
+
+        candidate_video_scores = (
+            subset.groupby("video_id", as_index = False)["_reranker_score"]
+            .max()
+            .sort_values(["_reranker_score", "video_id"], ascending = [False, True], kind = "mergesort")
+            .reset_index(drop = True)
+        )
+        candidate_metric = candidate_video_scores.sort_values("video_id", kind = "mergesort").reset_index(drop = True)
+        candidate_metric["metric_rank"] = worst_tied_ranks_array(
+            candidate_metric["_reranker_score"].to_numpy(dtype = float),
+            tolerance = tie_tolerance,
+        )
+        candidate_metric_by_video = dict(zip(candidate_metric["video_id"], candidate_metric["metric_rank"].astype(int)))
+        final_candidate_video_ids = candidate_video_scores["video_id"].astype(str).tolist()
+        non_candidate_video_ids = [video_id for video_id in first_display_video_ids if video_id not in candidate_set]
+        final_display_video_ids = final_candidate_video_ids + non_candidate_video_ids
+
+        if (len(final_display_video_ids) != len(first_display_video_ids) or len(set(final_display_video_ids)) != len(final_display_video_ids)) :
+            raise ValueError(f"Stage 7 reconstructed video ranking is invalid for {query_id!r}")
+
+        if (correct_video in candidate_set) :
+            video_rank = int(candidate_metric_by_video[correct_video])
+            correct_video_score = float(candidate_video_scores.loc[candidate_video_scores["video_id"] == correct_video, "_reranker_score"].iloc[0])
+            wrong = candidate_video_scores[candidate_video_scores["video_id"] != correct_video]
+            best_wrong_score = float(wrong["_reranker_score"].max()) if not wrong.empty else None
+            video_margin = correct_video_score - best_wrong_score if best_wrong_score is not None else None
+        else :
+            video_rank = int(final_display_video_ids.index(correct_video) + 1)
+            correct_video_score = float(first_score_by_video[correct_video])
+            best_wrong_score = None
+            video_margin = None
+
+        correct_physical = np.flatnonzero(video_ids == correct_video)
+        first_story_scores = row_first[correct_physical]
+        first_story_ranks = worst_tied_ranks_array(first_story_scores, tolerance = tie_tolerance)
+        first_story_relevant = relevant[correct_physical]
+        first_relevant_local = np.flatnonzero(first_story_relevant)
+        first_stage_story_rank = int(first_story_ranks[first_relevant_local].min()) if len(first_relevant_local) else None
+
+        correct_selected = subset[subset["video_id"].astype(str) == correct_video].copy()
+        selected_count = len(correct_selected)
+        selected_ids = correct_selected["window_id"].astype(str).tolist()
+        selected_index_set = {window_lookup[window_id] for window_id in selected_ids}
+
+        if (correct_video in candidate_set and selected_count) :
+            selected_order = correct_selected.sort_values(
+                ["_reranker_score", "window_start_s", "window_id"],
+                ascending = [False, True, True],
+                kind = "mergesort",
+            ).reset_index(drop = True)
+            selected_metric = correct_selected.sort_values("window_id", kind = "mergesort").reset_index(drop = True)
+            selected_metric["metric_rank"] = worst_tied_ranks_array(
+                selected_metric["_reranker_score"].to_numpy(dtype = float),
+                tolerance = tie_tolerance,
+            )
+            selected_rank_by_window = dict(zip(selected_metric["window_id"].astype(str), selected_metric["metric_rank"].astype(int)))
+            selected_relevant_ranks = [
+                selected_rank_by_window[str(row["window_id"])]
+                for _, row in correct_selected.iterrows()
+                if bool(row["is_relevant_window"])
+            ]
+
+            remaining = [index for index in correct_physical if index not in selected_index_set]
+            remaining_order = _stage67_window_order(row_first, windows, remaining)
+
+            if (selected_relevant_ranks) :
+                story_rank = int(min(selected_relevant_ranks))
+            else :
+                remaining_scores = np.asarray([row_first[index] for index in remaining], dtype = float)
+                remaining_ranks = worst_tied_ranks_array(remaining_scores, tolerance = tie_tolerance) if len(remaining) else np.asarray([], dtype = np.int64)
+                remaining_rank_by_index = {index : int(rank) for index, rank in zip(remaining, remaining_ranks)}
+                relevant_remaining = [remaining_rank_by_index[index] for index in remaining if relevant[index]]
+                story_rank = int(selected_count + min(relevant_remaining)) if relevant_remaining else None
+
+            top_story_window_id = str(selected_order.iloc[0]["window_id"])
+            top_story_index = window_lookup[top_story_window_id]
+            top_story_score = float(selected_order.iloc[0]["_reranker_score"])
+        else :
+            story_rank = first_stage_story_rank
+            first_story_order = _stage67_window_order(row_first, windows, correct_physical)
+            top_story_index = first_story_order[0] if first_story_order else None
+            top_story_window_id = str(window_ids[top_story_index]) if top_story_index is not None else None
+            top_story_score = float(row_first[top_story_index]) if top_story_index is not None else None
+
+        correct_video_retained = correct_video in candidate_set
+        relevant_window_retained = bool(correct_selected["is_relevant_window"].astype(bool).any()) if correct_video_retained else False
+        joint_success = bool(correct_video_retained and relevant_window_retained)
+        rank_delta = int(video_rank - first_video_rank)
+        large_regression = bool(rank_delta >= minimum_drop and video_rank > result_above)
+        hard_top1_regression = bool(first_video_rank == 1 and video_rank > top1_above)
+
+        if (not correct_video_retained) :
+            failure_type = "CANDIDATE_VIDEO_MISS"
+        elif (not relevant_window_retained) :
+            failure_type = "CANDIDATE_WINDOW_MISS"
+        elif (video_rank > 1) :
+            failure_type = "RERANKER_FAILURE"
+        else :
+            failure_type = None
+
+        if ((large_regression or hard_top1_regression) and failure_type is None) :
+            failure_type = "RERANKER_REGRESSION"
+
+        top_video_id = str(final_display_video_ids[0])
+        top_video_score = (
+            float(candidate_video_scores.iloc[0]["_reranker_score"])
+            if len(candidate_video_scores)
+            else None
+        )
+        positive_window_mask = (row_first > 0) & eligibility
+
+        rows.append({
+            "query_set"                  : query_set,
+            "corpus_id"                  : corpus_id,
+            "method_id"                  : method_id,
+            "model_id"                   : model_id,
+            "view"                       : view,
+            "query_id"                   : query_id,
+            "query_text"                 : str(query["query_text"]),
+            "query_category"             : query.get("query_category", "other"),
+            "task_type"                  : query.get("task_type", "KIS"),
+            "difficulty"                 : query.get("difficulty", "unknown"),
+            "evaluation_split"           : query.get("evaluation_split", "unspecified"),
+            "answer_text"                : query.get("answer_text"),
+            "correct_video"              : correct_video,
+            "frame_id"                   : query.get("frame_id"),
+            "answer_time_s"              : query["answer_time_s"],
+            "first_relevant_rank"        : story_rank,
+            "story_recall_at_1"          : int(story_rank is not None and story_rank <= 1),
+            "story_recall_at_3"          : int(story_rank is not None and story_rank <= 3),
+            "story_recall_at_5"          : int(story_rank is not None and story_rank <= 5),
+            "story_recall_at_10"         : int(story_rank is not None and story_rank <= 10),
+            "story_rr"                   : 1.0 / story_rank if story_rank else 0.0,
+            "best_relevant_score"        : None,
+            "best_irrelevant_score"      : None,
+            "story_score_margin"         : None,
+            "video_rank"                 : int(video_rank),
+            "video_recall_at_1"          : int(video_rank <= 1),
+            "video_recall_at_3"          : int(video_rank <= 3),
+            "video_recall_at_5"          : int(video_rank <= 5),
+            "video_recall_at_10"         : int(video_rank <= 10),
+            "video_recall_at_20"         : int(video_rank <= 20),
+            "video_rr"                   : 1.0 / video_rank,
+            "correct_video_score"        : correct_video_score,
+            "best_wrong_video_score"     : best_wrong_score,
+            "video_score_margin"         : video_margin,
+            "top_story_window_id"        : top_story_window_id,
+            "top_story_start_s"          : float(starts[top_story_index]) if top_story_index is not None else None,
+            "top_story_end_s"            : float(ends[top_story_index]) if top_story_index is not None else None,
+            "top_story_score"            : top_story_score,
+            "top_video_id"               : top_video_id,
+            "top_video_score"            : top_video_score,
+            "physical_window_count"      : len(windows),
+            "eligible_window_count"      : int(eligibility.sum()),
+            "positive_window_count"      : int(positive_window_mask.sum()),
+            "positive_window_fraction"   : float(positive_window_mask.mean()),
+            "positive_video_count"       : int(len(set(video_ids[positive_window_mask].tolist()))),
+            "correct_video_positive_windows" : int(((video_ids == correct_video) & positive_window_mask).sum()),
+            "query_coverage"             : None,
+            "zero_evidence"              : bool(not positive_window_mask.any()),
+            "first_stage_video_rank"     : int(first_video_rank),
+            "first_stage_story_rank"     : first_stage_story_rank,
+            "video_rank_delta"           : int(rank_delta),
+            "correct_video_retained"     : bool(correct_video_retained),
+            "relevant_window_retained"   : bool(relevant_window_retained),
+            "joint_candidate_success"    : bool(joint_success),
+            "candidate_video_count"      : int(len(candidate_set)),
+            "candidate_pair_count"       : int(len(subset)),
+            "large_regression"           : bool(large_regression),
+            "hard_top1_regression"       : bool(hard_top1_regression),
+            "failure_type"               : failure_type,
+        })
+
+    return pd.DataFrame(rows)
+
+
+def compare_stage7_methods(
+    query_results : pd.DataFrame,
+    reference_method : str = "S0_first_stage",
+) -> pd.DataFrame :
+    if (query_results.empty) :
+        return pd.DataFrame()
+
+    reference = query_results[
+        query_results["method_id"].astype(str) == str(reference_method)
+    ].copy()
+
+    if (reference["query_id"].astype(str).duplicated().any()) :
+        raise ValueError("Stage 7 reference method contains duplicate query IDs")
+
+    reference = reference[
+        ["query_id", "video_rank", "first_relevant_rank", "video_rr", "story_rr", "top_video_id", "top_story_window_id"]
+    ].rename(columns={
+        "video_rank"          : "reference_video_rank",
+        "first_relevant_rank" : "reference_story_rank",
+        "video_rr"            : "reference_video_rr",
+        "story_rr"            : "reference_story_rr",
+        "top_video_id"        : "reference_top_video_id",
+        "top_story_window_id" : "reference_top_story_window_id",
+    })
+
+    rows = []
+
+    for method_id, group in query_results.groupby("method_id", sort = True) :
+        if (str(method_id) == str(reference_method)) :
+            continue
+
+        merged = group.merge(reference, on = "query_id", how = "inner")
+
+        for _, item in merged.iterrows() :
+            rows.append({
+                "method_id"              : str(method_id),
+                "model_id"               : str(item["model_id"]),
+                "view"                   : str(item["view"]),
+                "query_id"               : str(item["query_id"]),
+                "reference_method"       : str(reference_method),
+                "video_relation"         : rank_relation(item["video_rank"], item["reference_video_rank"]),
+                "story_relation"         : rank_relation(item["first_relevant_rank"], item["reference_story_rank"]),
+                "video_rank"             : int(item["video_rank"]),
+                "reference_video_rank"   : int(item["reference_video_rank"]),
+                "video_rank_delta"       : int(item["video_rank"] - item["reference_video_rank"]),
+                "story_rank"             : item["first_relevant_rank"],
+                "reference_story_rank"   : item["reference_story_rank"],
+                "video_rr_delta"         : float(item["video_rr"] - item["reference_video_rr"]),
+                "story_rr_delta"         : float(item["story_rr"] - item["reference_story_rr"]),
+                "rank1_recovery"         : bool(item["reference_video_rank"] > 1 and item["video_rank"] == 1),
+                "rank1_loss"             : bool(item["reference_video_rank"] == 1 and item["video_rank"] > 1),
+                "top_video_changed"      : bool(item["top_video_id"] != item["reference_top_video_id"]),
+                "top_story_changed"      : bool(item["top_story_window_id"] != item["reference_top_story_window_id"]),
+                "correct_video_retained" : bool(item.get("correct_video_retained", False)),
+                "relevant_window_retained": bool(item.get("relevant_window_retained", False)),
+                "failure_type"           : item.get("failure_type"),
+                "large_regression"       : bool(item.get("large_regression", False)),
+                "hard_top1_regression"   : bool(item.get("hard_top1_regression", False)),
+            })
+
+    return pd.DataFrame(rows)
+
+
+def summarize_stage7_methods(
+    query_results : pd.DataFrame,
+    reference_method : str,
+    bootstrap_samples : int,
+    confidence : float,
+    seed : int,
+) -> pd.DataFrame :
+    if (query_results.empty) :
+        return pd.DataFrame()
+
+    reference = query_results[
+        query_results["method_id"].astype(str) == str(reference_method)
+    ][["query_id", "video_rr", "story_rr", "video_rank"]].rename(columns={
+        "video_rr"   : "reference_video_rr",
+        "story_rr"   : "reference_story_rr",
+        "video_rank" : "reference_video_rank",
+    })
+
+    rows = []
+
+    for method_id, group in query_results.groupby("method_id", sort = True) :
+        merged = group.merge(reference, on = "query_id", how = "inner")
+        video_delta = (merged["video_rr"] - merged["reference_video_rr"]).to_numpy(dtype = float)
+        story_delta = (merged["story_rr"] - merged["reference_story_rr"]).to_numpy(dtype = float)
+        low, high = _bootstrap_interval(video_delta, confidence, bootstrap_samples, seed)
+        relations = ["better" if value > 0 else "worse" if value < 0 else "tie" for value in video_delta]
+        counts = Counter(relations)
+
+        rows.append({
+            "method_id"                       : str(method_id),
+            "model_id"                        : str(group["model_id"].iloc[0]),
+            "view"                            : str(group["view"].iloc[0]),
+            "query_count"                     : int(len(group)),
+            "video_rr_mean"                   : float(group["video_rr"].mean()),
+            "story_rr_mean"                   : float(group["story_rr"].mean()),
+            "video_rr_delta_mean_vs_control"  : float(video_delta.mean()),
+            "story_rr_delta_mean_vs_control"  : float(story_delta.mean()),
+            "video_better_count"              : int(counts.get("better", 0)),
+            "video_tie_count"                 : int(counts.get("tie", 0)),
+            "video_worse_count"               : int(counts.get("worse", 0)),
+            "rank1_recovery_count"            : int(((merged["reference_video_rank"] > 1) & (merged["video_rank"] == 1)).sum()),
+            "rank1_loss_count"                : int(((merged["reference_video_rank"] == 1) & (merged["video_rank"] > 1)).sum()),
+            "video_rr_delta_bootstrap_90_low" : low,
+            "video_rr_delta_bootstrap_90_high": high,
+            "candidate_video_miss_count"      : int((group.get("failure_type", pd.Series(dtype = object)) == "CANDIDATE_VIDEO_MISS").sum()),
+            "candidate_window_miss_count"     : int((group.get("failure_type", pd.Series(dtype = object)) == "CANDIDATE_WINDOW_MISS").sum()),
+            "reranker_failure_count"          : int((group.get("failure_type", pd.Series(dtype = object)) == "RERANKER_FAILURE").sum()),
+            "large_regression_count"          : int(group.get("large_regression", pd.Series(dtype = bool)).fillna(False).astype(bool).sum()),
+            "hard_top1_regression_count"      : int(group.get("hard_top1_regression", pd.Series(dtype = bool)).fillna(False).astype(bool).sum()),
+        })
+
+    return pd.DataFrame(rows)

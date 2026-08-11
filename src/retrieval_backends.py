@@ -1,18 +1,19 @@
 # Relative path: src/retrieval_backends.py
-# Purpose: Dense embedding backends for Retrieval v2 Stage 2.
+# Purpose: Dense embedding backends for Stage 2 and local reranker backends for Stage 7.
 
 from __future__ import annotations
 
 import gc
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Callable, Sequence
 
 import numpy as np
 
 
-DENSE_BACKENDS_VERSION = "1.1.0"
-ProgressCallback = Callable[[str], None]
+DENSE_BACKENDS_VERSION      = "1.1.0"
+RERANKER_BACKENDS_VERSION   = "1.1.0"
+ProgressCallback            = Callable[[str], None]
 
 
 @dataclass(frozen = True)
@@ -187,3 +188,418 @@ class SentenceTransformerDenseBackend :
         self.encoder = None
         gc.collect()
         self._clear_cuda()
+
+# -----------------------------------------------------------------------------
+# Stage 7 pairwise reranker backends
+# -----------------------------------------------------------------------------
+
+
+@dataclass(frozen = True)
+class RerankerBackendSpec :
+    backend_id          : str
+    model_name          : str
+    revision            : str
+    family              : str = "encoder"
+    max_length          : int = 512
+    dtype               : str = "float16"
+    trust_remote_code   : bool = False
+    instruction         : str | None = None
+    prompt_name         : str | None = None
+    model_kwargs        : dict[str, Any] = field(default_factory = dict)
+
+    def __post_init__(self) -> None :
+        if (not self.backend_id.strip()) : raise ValueError("Reranker backend_id must be nonempty")
+        if (not self.model_name.strip()) : raise ValueError("Reranker model_name must be nonempty")
+        if (len(self.revision.strip()) != 40) : raise ValueError(f"{self.backend_id}: reranker revision must be an exact 40-character commit SHA")
+        if (self.family not in {"encoder", "causal_logit"}) : raise ValueError(f"{self.backend_id}: unsupported reranker family {self.family!r}")
+        if (self.max_length <= 0) : raise ValueError("Reranker max_length must be positive")
+        if (self.dtype not in {"float16", "float32", "bfloat16"}) : raise ValueError(f"Unsupported reranker dtype: {self.dtype!r}")
+        if ((self.instruction is None) != (self.prompt_name is None)) :
+            raise ValueError(f"{self.backend_id}: instruction and prompt_name must either both be set or both be null")
+
+    @classmethod
+    def from_config(
+        cls,
+        backend_id : str,
+        config : dict[str, Any],
+        max_length : int,
+        dtype : str,
+    ) -> "RerankerBackendSpec" :
+        return cls(
+            backend_id = backend_id,
+            model_name = str(config["model_name"]),
+            revision = str(config["revision"]),
+            family = str(config.get("family", "encoder")),
+            max_length = int(max_length),
+            dtype = str(dtype),
+            trust_remote_code = bool(config.get("trust_remote_code", False)),
+            instruction = config.get("instruction"),
+            prompt_name = config.get("prompt_name"),
+            model_kwargs = dict(config.get("model_kwargs", {})),
+        )
+
+    def identity(self) -> dict[str, Any] :
+        return {
+            "backend_id"        : self.backend_id,
+            "model_name"        : self.model_name,
+            "revision"          : self.revision,
+            "family"            : self.family,
+            "max_length"        : self.max_length,
+            "dtype"             : self.dtype,
+            "trust_remote_code" : self.trust_remote_code,
+            "instruction"       : self.instruction,
+            "prompt_name"       : self.prompt_name,
+            "model_kwargs"      : dict(self.model_kwargs),
+        }
+
+
+@dataclass
+class RerankerScoreOutput :
+    scores : np.ndarray
+    runtime_s : float
+    pair_count : int
+    effective_batch_size : int
+
+    def __post_init__(self) -> None :
+        self.scores = np.asarray(self.scores, dtype = np.float32).reshape(-1)
+        if (self.scores.shape != (int(self.pair_count),)) : raise ValueError("Reranker score count mismatch")
+        if (not np.isfinite(self.scores).all()) : raise ValueError("Reranker produced NaN or infinite scores")
+        if (self.runtime_s < 0) : raise ValueError("Reranker runtime must be nonnegative")
+        if (self.effective_batch_size <= 0) : raise ValueError("Reranker batch size must be positive")
+
+    @property
+    def pairs_per_second(self) -> float | None :
+        return float(self.pair_count / self.runtime_s) if self.runtime_s > 0 else None
+
+
+class SentenceTransformerCrossEncoderReranker :
+    def __init__(
+        self,
+        specification : RerankerBackendSpec,
+        device : str | None = None,
+        progress_callback : ProgressCallback | None = None,
+    ) :
+        self.specification     = specification
+        self.device            = device or SentenceTransformerDenseBackend._default_device()
+        self.progress_callback = progress_callback
+        self.model             = None
+        self.resolved_revision = None
+        self.load_runtime_s    = 0.0
+        self.last_batch_size   = None
+        self.oom_count         = 0
+
+    def _emit(self, message : str) -> None :
+        if (self.progress_callback is not None) : self.progress_callback(message)
+
+    @staticmethod
+    def _is_oom(error : RuntimeError) -> bool :
+        return SentenceTransformerDenseBackend._is_oom(error)
+    
+    @staticmethod
+    def _is_fatal_cuda(error : BaseException) -> bool :
+        message = str(error).lower()
+
+        markers = (
+            "device-side assert",
+            "index out of bounds",
+            "illegal memory access",
+            "unspecified launch failure",
+            "cudaerrorassert",
+        )
+
+        return any(marker in message for marker in markers)
+
+    @staticmethod
+    def _clear_cuda() -> None :
+        SentenceTransformerDenseBackend._clear_cuda()
+
+    @staticmethod
+    def _synchronize_cuda() -> None :
+        try :
+            import torch
+        except Exception :
+            return
+
+        if (torch.cuda.is_available()) :
+            torch.cuda.synchronize()
+
+    def _torch_dtype(self) :
+        import torch
+        if (self.device != "cuda") : return torch.float32
+        if (self.specification.dtype == "float16") : return torch.float16
+        if (self.specification.dtype == "bfloat16") : return torch.bfloat16
+        return torch.float32
+
+    def _load(self) -> None :
+        if (self.model is not None) : return
+        from sentence_transformers import CrossEncoder
+
+        import torch
+        
+        model_kwargs = {
+            "torch_dtype" : self._torch_dtype(),
+            **self.specification.model_kwargs,
+        }
+        
+        kwargs : dict[str, Any] = {
+            "revision"          : self.specification.revision,
+            "device"            : self.device,
+            "max_length"        : self.specification.max_length,
+            "trust_remote_code" : self.specification.trust_remote_code,
+            "model_kwargs"      : model_kwargs,
+            "activation_fn"     : torch.nn.Identity(),
+        }
+        if (self.specification.instruction is not None) :
+            kwargs["prompts"] = {self.specification.prompt_name : self.specification.instruction}
+            kwargs["default_prompt_name"] = self.specification.prompt_name
+
+        self._emit(
+            f"{self.specification.backend_id}: loading "
+            f"{self.specification.model_name}@{self.specification.revision} on {self.device}"
+        )
+        started = time.perf_counter()
+        self.model = CrossEncoder(self.specification.model_name, **kwargs)
+        self.load_runtime_s = time.perf_counter() - started
+        self.resolved_revision = self._resolve_revision()
+
+        if (self.resolved_revision != self.specification.revision) :
+            raise RuntimeError(
+                f"{self.specification.backend_id}: resolved revision "
+                f"{self.resolved_revision!r} != pinned {self.specification.revision!r}"
+            )
+
+        self._emit(
+            f"{self.specification.backend_id}: model ready in {self.load_runtime_s:.1f}s; "
+            f"resolved revision {self.resolved_revision}"
+        )
+
+    def _resolve_revision(self) -> str :
+        if (self.resolved_revision is not None) : return self.resolved_revision
+        try :
+            from huggingface_hub import HfApi
+            info = HfApi().model_info(
+                self.specification.model_name,
+                revision = self.specification.revision,
+            )
+            self.resolved_revision = str(info.sha or self.specification.revision)
+        except Exception :
+            self.resolved_revision = self.specification.revision
+        return self.resolved_revision
+
+    def tokenizer(self) :
+        self._load()
+        tokenizer = getattr(self.model, "tokenizer", None)
+        if (tokenizer is None) : raise RuntimeError(f"{self.specification.backend_id}: CrossEncoder tokenizer is unavailable")
+        return tokenizer
+
+
+    def smoke_test(self) -> dict[str, Any] :
+        pairs = [
+            (
+                "Which planet is known as the Red Planet?",
+                "Mars is known as the Red Planet.",
+            )
+        ]
+
+        output = self.score_pairs(pairs, batch_size = 1, show_progress_bar = False)
+
+        if (output.scores.shape != (1,)) :
+            raise RuntimeError(f"{self.specification.backend_id}: smoke test returned unexpected score shape {output.scores.shape}")
+
+        score = float(output.scores[0])
+
+        if (not np.isfinite(score)) :
+            raise RuntimeError(f"{self.specification.backend_id}: smoke test produced a non-finite score")
+
+        return {
+            "passed" : True,
+            "score"  : score,
+        }
+
+    def token_length_audit(
+        self,
+        pairs : Sequence[tuple[str, str]],
+        batch_size : int = 64,
+    ) -> dict[str, Any] :
+        values = [(str(query), str(document)) for query, document in pairs]
+        if (not values) :
+            return {
+                "pair_count" : 0,
+                "total_input_tokens" : 0,
+                "mean_input_tokens" : None,
+                "p50_input_tokens" : None,
+                "p90_input_tokens" : None,
+                "p95_input_tokens" : None,
+                "max_input_tokens" : None,
+                "max_length" : int(self.specification.max_length),
+                "truncated_count" : 0,
+                "truncated_fraction" : 0.0,
+                "audit_policy" : "cross_encoder_preprocess_untruncated_v1",
+            }
+
+        self._load()
+        lengths = []
+
+        for start in range(0, len(values), max(1, int(batch_size))) :
+            batch = values[start : start + max(1, int(batch_size))]
+            encoded = None
+
+            # Prefer the CrossEncoder preprocessing path so prompt/chat-template
+            # formatting matches inference. Support both current modular and
+            # legacy processing_kwargs shapes before falling back to tokenizer.
+            for processing_kwargs in [
+                {"text" : {"truncation" : False, "padding" : True}},
+                {"truncation" : False, "padding" : True},
+            ] :
+                try :
+                    encoded = self.model.preprocess(batch, processing_kwargs = processing_kwargs)
+                    break
+                except Exception :
+                    encoded = None
+
+            if (encoded is not None) :
+                attention = encoded.get("attention_mask") if isinstance(encoded, dict) else None
+                input_ids = encoded.get("input_ids") if isinstance(encoded, dict) else None
+
+                if (attention is not None) :
+                    array = attention.detach().cpu().numpy() if hasattr(attention, "detach") else np.asarray(attention)
+                    lengths.extend(np.asarray(array).sum(axis = 1).astype(int).tolist())
+                    continue
+
+                if (input_ids is not None) :
+                    array = input_ids.detach().cpu().numpy() if hasattr(input_ids, "detach") else np.asarray(input_ids)
+                    pad_token_id = getattr(self.tokenizer(), "pad_token_id", None)
+                    if (pad_token_id is None) :
+                        lengths.extend([int(array.shape[1])] * int(array.shape[0]))
+                    else :
+                        lengths.extend((array != int(pad_token_id)).sum(axis = 1).astype(int).tolist())
+                    continue
+
+            tokenizer = self.tokenizer()
+            for query, document in batch :
+                query_text = (self.specification.instruction + " " + query) if self.specification.instruction else query
+                encoded = tokenizer(
+                    query_text,
+                    document,
+                    add_special_tokens = True,
+                    truncation = False,
+                )
+                lengths.append(len(encoded["input_ids"]))
+
+        values_array = np.asarray(lengths, dtype = np.int64)
+        above = values_array > int(self.specification.max_length)
+        return {
+            "pair_count"          : int(len(values_array)),
+            "total_input_tokens"  : int(values_array.sum()) if len(values_array) else 0,
+            "mean_input_tokens"   : float(values_array.mean()) if len(values_array) else None,
+            "p50_input_tokens"    : float(np.percentile(values_array, 50)) if len(values_array) else None,
+            "p90_input_tokens"    : float(np.percentile(values_array, 90)) if len(values_array) else None,
+            "p95_input_tokens"    : float(np.percentile(values_array, 95)) if len(values_array) else None,
+            "max_input_tokens"    : int(values_array.max()) if len(values_array) else None,
+            "max_length"          : int(self.specification.max_length),
+            "truncated_count"     : int(above.sum()),
+            "truncated_fraction"  : float(above.mean()) if len(values_array) else 0.0,
+            "audit_policy"        : "cross_encoder_preprocess_untruncated_v1",
+        }
+
+    def score_pairs(
+        self,
+        pairs : Sequence[tuple[str, str]],
+        batch_size : int,
+        show_progress_bar : bool = False,
+    ) -> RerankerScoreOutput :
+        values = [(str(query), str(document)) for query, document in pairs]
+        if (not values) : raise ValueError(f"{self.specification.backend_id}: cannot score an empty pair list")
+        self._load()
+        self._synchronize_cuda()
+        started = time.perf_counter()
+        try :
+            scores = self.model.predict(
+                values,
+                batch_size = int(batch_size),
+                show_progress_bar = show_progress_bar,
+                convert_to_numpy = True,
+            )
+        except RuntimeError as error :
+            if (self._is_oom(error)) : self.oom_count += 1
+            raise
+        self._synchronize_cuda()
+        runtime_s = time.perf_counter() - started
+        array = np.asarray(scores, dtype = np.float32)
+        if (array.ndim == 2 and array.shape[1] == 1) : array = array[:, 0]
+        if (array.ndim != 1) : raise ValueError(f"{self.specification.backend_id}: expected one scalar score per pair, received shape {array.shape}")
+        self.last_batch_size = int(batch_size)
+        return RerankerScoreOutput(
+            scores = array,
+            runtime_s = runtime_s,
+            pair_count = len(values),
+            effective_batch_size = int(batch_size),
+        )
+
+    def select_batch_size(
+        self,
+        pairs : Sequence[tuple[str, str]],
+        candidates : Sequence[int],
+        minimum_batch_size : int,
+    ) -> tuple[int, list[dict[str, Any]]] :
+        values = [(str(query), str(document)) for query, document in pairs]
+        if (not values) : raise ValueError("Batch-size preflight requires at least one pair")
+        attempts = []
+        self._load()
+
+        for batch_size in [int(value) for value in candidates] :
+            if (batch_size < int(minimum_batch_size)) : continue
+            sample = values[:min(len(values), batch_size)]
+            try :
+                output = self.score_pairs(sample, batch_size = batch_size, show_progress_bar = False)
+                attempts.append({
+                    "batch_size" : batch_size,
+                    "passed"     : True,
+                    "runtime_s"  : output.runtime_s,
+                    "pair_count" : output.pair_count,
+                    "error"      : None,
+                })
+                return batch_size, attempts
+            except RuntimeError as error :
+                if (not self._is_oom(error)) : raise
+                attempts.append({
+                    "batch_size" : batch_size,
+                    "passed"     : False,
+                    "runtime_s"  : None,
+                    "pair_count" : len(sample),
+                    "error"      : "CUDA_OOM",
+                })
+                self._clear_cuda()
+
+        raise RuntimeError(
+            f"{self.specification.backend_id}: no configured batch size >= "
+            f"{minimum_batch_size} completed without OOM"
+        )
+
+    def warmup(
+        self,
+        pairs : Sequence[tuple[str, str]],
+        batch_size : int,
+        pair_count : int,
+    ) -> float :
+        values = list(pairs)[:max(1, int(pair_count))]
+        output = self.score_pairs(values, batch_size = min(int(batch_size), len(values)))
+        return float(output.runtime_s)
+
+    def metadata(self) -> dict[str, Any] :
+        return {
+            **self.specification.identity(),
+            "backend_version"     : RERANKER_BACKENDS_VERSION,
+            "resolved_revision"   : self._resolve_revision(),
+            "device"              : self.device,
+            "load_runtime_s"      : float(self.load_runtime_s),
+            "last_batch_size"     : self.last_batch_size,
+            "oom_count"           : int(self.oom_count),
+            "score_activation"    : "identity_raw_logit",
+        }
+
+    def release(self) -> None :
+        self.model = None
+        gc.collect()
+        self._clear_cuda()
+

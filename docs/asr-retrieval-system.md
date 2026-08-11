@@ -1,69 +1,74 @@
 # ASR Retrieval System
 
-## 1. Overview
+This document describes the current ASR-based text retrieval system from audio preparation to final ranking. It is an implementation reference: the experiments that led to these choices are documented separately in [`retrieval-v2.md`](retrieval-v2.md).
 
-The ASR retrieval subsystem makes spoken video content searchable.
+The system is designed around a simple idea. Cheap retrieval methods search the whole transcript corpus, while an expensive cross-encoder is only allowed to inspect a small candidate set.
 
-Each video is transcribed, divided into overlapping transcript windows, and indexed in two complementary ways:
+## 1. System Overview
 
-- **BM25** finds windows that share important words with the query.
-- **Multilingual E5-large** finds windows that are semantically similar to the query even when the wording is different.
+Many competition queries contain information that is spoken rather than visible: names, places, measurements, news topics, descriptions from a presenter, or other details that may never appear clearly in a frame. The ASR retrieval subsystem converts that speech into local searchable passages and uses those passages to rank both videos and approximate moments.
 
-The two score sets are normalized and combined. Each video is then represented by its strongest matching transcript window.
+The pipeline separates **offline corpus preparation** from **online query processing**.
 
 ```text
-Video audio
-    ↓
+OFFLINE CORPUS PREPARATION
+
+source video/audio
+        ↓
+fixed 60 s audio windows
+45 s stride / 15 s overlap
+        ↓
 Parakeet CTC 0.6B Vietnamese
-    ↓
-canonical processed transcript
-    ↓
-60-second overlapping transcript windows
-    ↓
-┌──────────────────────┐
-│ BM25 lexical scores  │
-└──────────┬───────────┘
-           │
-           ├──────────────┐
-           │              │
-┌──────────▼───────────┐  │
-│ E5 semantic scores   │  │
-└──────────┬───────────┘  │
-           │              │
-           └──────┬───────┘
-                  ↓
-       per-query score normalization
-                  ↓
-       25% BM25 + 75% E5
-                  ↓
-          hybrid window scores
-                  ↓
-      maximum window score per video
-                  ↓
-      ranked videos + supporting windows
+        ↓
+raw ASR result
+        ↓
+conservative post-processing
+        ↓
+processed retrieval text
+        ↓
+┌─────────────────────┬─────────────────────────┐
+│ BM25 corpus index   │ E5 document embeddings  │
+└─────────────────────┴─────────────────────────┘
+
+
+ONLINE QUERY PROCESSING
+
+natural-language query
+        ↓
+┌─────────────────────┬─────────────────────────┐
+│ BM25 lexical score  │ E5 semantic score       │
+└─────────────────────┴─────────────────────────┘
+        ↓
+normalize each score source per query
+        ↓
+25% BM25 + 75% E5
+        ↓
+hybrid score for each transcript window
+        ↓
+best window score for each video
+        ↓
+first-stage video ranking
+        ↓
+candidate videos + candidate windows
+        ↓
+cross-encoder reranking
+        ↓
+50% first-stage + 50% reranker score
+        ↓
+final ranked videos + supporting moments
 ```
 
-This document explains the current system directly. It does not describe the experiments or internal development labels that were used to choose these components.
+The first stage is the stable core of the system. It uses Parakeet processed transcripts, accent-preserving BM25, multilingual E5-large-instruct, normalized 25/75 fusion, and maximum-window video scoring.
 
----
+Stage 6 adds candidate selection for expensive reranking. Stage 7 has been fully evaluated; BGE reranker v2 M3 with 50/50 first-stage/reranker fusion is the current operational recommendation, although the final Stage 7 decision remains `pending_review` in the configuration.
 
-## 2. Transcript Preparation
+## 2. Preparing the Searchable Transcript Corpus
 
-### 2.1 Speech recognition
+### 2.1 Audio windows are created before ASR
 
-The system uses:
+The ASR runner does not transcribe an entire video first and then cut the transcript into text windows. The benchmark manifest already defines physical audio windows. For each window, the runner uses the stored sample indices to read the exact section of the source WAV.
 
-```text
-nvidia/parakeet-ctc-0.6b-Vietnamese
-```
-
-to transcribe Vietnamese speech.
-
-The retrieval input is the **processed transcript view** produced by the canonical transcript-processing pipeline. Raw ASR output is not used as a second retrieval channel in the current system.
-
-### 2.2 Transcript windows
-
-A full video transcript is not indexed as one document. Instead, each video is divided into overlapping temporal windows:
+The current policy is:
 
 | Setting | Value |
 |---|---:|
@@ -71,49 +76,89 @@ A full video transcript is not indexed as one document. Instead, each video is d
 | Stride | 45 s |
 | Overlap | 15 s |
 
-The overlap helps preserve spoken evidence that crosses a window boundary.
+Using local windows solves two problems. First, a long video may contain only one short passage related to the query, so indexing the whole transcript as one document would mix relevant and unrelated speech. Second, the 15-second overlap reduces boundary errors when useful speech starts near the end of one window and continues into the next.
 
-Window-level indexing also gives the retriever a local unit of evidence. A query can match one relevant minute of a long video without requiring the rest of the transcript to be related.
+The overlap also has an important consequence: adjacent windows are correlated and can contain repeated speech. Two neighboring high scores therefore represent nearby support, not two independent observations.
 
-### 2.3 Eligible retrieval windows
+The inference runner makes window extraction deterministic. It verifies the expected sample rate, seeks to the exact `sample_start`, reads the requested number of `int16` samples, and converts stereo audio to mono by averaging channels when necessary. It writes a temporary mono PCM-16 WAV for inference and stores a SHA-256 hash of the resulting PCM samples.
 
-A processed transcript window is eligible for retrieval when:
+This is more than bookkeeping. It guarantees that different ASR models are compared on the same audio and allows a completed window to be reused safely when the audio, model, code, and benchmark identities have not changed.
 
-- the ASR record completed successfully;
-- the processed text is nonempty; and
-- the processed view has no canonical rejection reason.
+### 2.2 Parakeet transcription
 
-Ineligible windows remain in the physical window list so IDs and timestamps stay aligned with the rest of the system, but they do not contribute retrieval evidence.
+The selected ASR is NVIDIA Parakeet CTC 0.6B Vietnamese. The implementation loads the NeMo model from its pinned Hugging Face revision and transcribes each prepared window independently.
 
----
+Each saved window contains enough information to reproduce or diagnose the inference:
 
-## 3. Text Retrieval
+- window and video identity;
+- sample and timing information;
+- source-WAV and window-PCM hashes;
+- model and adapter identity;
+- raw transcript text;
+- native timestamp segments when available;
+- inference runtime and peak GPU memory;
+- warnings, rejections, and any inference error.
 
-For every natural-language query, the same eligible transcript windows are scored by both BM25 and multilingual E5-large.
+The runner is resume-safe. A previous window can only be reused when its window identity, audio hashes, windowing policy, model configuration, adapter code, and model revision match the current run. Failed or empty windows can also be retried explicitly.
 
-### 3.1 BM25 lexical retrieval
+### 2.3 Transcript post-processing
 
-BM25 is the lexical component of the system. It is useful when the query and transcript share distinctive words such as names, locations, numbers, or topic-specific terms.
+The processed transcript is **not** a corrected or rewritten transcript. Post-processing is deliberately conservative and query-independent. Its purpose is to make the ASR output safer for retrieval without inventing information that the model did not produce.
 
-The current BM25 configuration preserves Vietnamese accents.
+Version 1.1 currently performs the following operations:
+
+- normalize whitespace and Unicode to NFC;
+- create a lowercased matching representation with punctuation removed while preserving Vietnamese letters;
+- create an auxiliary accent-folded representation;
+- remove immediately repeated native ASR segments;
+- normalize a small set of kilogram expressions to `kg`;
+- detect a short list of known subscription-style boilerplate phrases;
+- reject a window when known boilerplate dominates at least 80% of its non-space characters;
+- remove known boilerplate when it appears only as part of a longer transcript;
+- warn on empty ASR output; and
+- reject consecutive windows whose processed retrieval text is effectively identical.
+
+The last rule helps prevent repeated ASR artifacts from creating duplicate retrieval evidence across neighboring windows.
+
+The main stored representations have different purposes:
+
+| Representation | Purpose |
+|---|---|
+| Raw ASR text | Preserve the original model output for inspection and comparison |
+| Normalized text | Lowercase/punctuation-normalized matching form with Vietnamese accents preserved |
+| Accent-folded text | Auxiliary form used for diagnostics and experiments |
+| Processed retrieval text | Conservative retrieval representation after duplicate/boilerplate handling and limited unit aliases |
+
+A **warning** records a suspicious condition but does not necessarily exclude the window. A **rejection** means the processed transcript should not contribute evidence to the processed retrieval channel.
+
+For the selected processed channel, a window is eligible only when ASR completed successfully, the processed text is nonempty, and the window has no active rejection reason. Ineligible windows remain on the physical window axis so IDs and timestamps stay aligned, but their retrieval contribution is disabled.
+
+## 3. First-Stage Retrieval
+
+The first-stage retriever scores every eligible transcript window using two complementary methods. BM25 rewards exact lexical evidence, while E5 captures semantic similarity when the query and transcript use different wording.
+
+### 3.1 BM25 for exact lexical evidence
+
+The selected lexical method is accent-preserving BM25 (`L2_bm25_preserving`).
+
+BM25 is useful for words that should match literally, such as person names, locations, numbers, organizations, and uncommon topic terms. Vietnamese accents are preserved because the Stage 1 experiment showed that accent folding removed useful distinctions and substantially reduced retrieval quality.
+
+The current implementation uses:
 
 | Setting | Value |
 |---|---|
-| Text normalization | `normalize_for_matching` |
-| Accent handling | Preserve Vietnamese accents |
+| Text normalization | Lowercase matching form with Vietnamese accents preserved |
 | Tokenization | Normalized whitespace tokens |
 | `k1` | 1.5 |
 | `b` | 0.75 |
-| IDF | Positive Okapi-style IDF |
 | Query term frequency | Unique query terms |
+| Indexed documents | Eligible, nonempty processed windows only |
 
-Only eligible, nonempty transcript windows contribute to the BM25 index.
+The BM25 index is conceptually corpus-side state. In a deployment implementation it should be built or loaded once and kept in memory rather than reconstructed for every user query.
 
-For each query, BM25 produces one lexical relevance score for every physical transcript window.
+### 3.2 E5 for semantic retrieval
 
-### 3.2 Multilingual semantic retrieval
-
-The semantic component uses:
+The selected dense model is:
 
 ```text
 intfloat/multilingual-e5-large-instruct
@@ -125,252 +170,233 @@ Pinned revision:
 274baa43b0e13e37fafa6428dbc7938e62e5c439
 ```
 
-Queries are encoded with the instruction:
+The query is encoded with the instruction:
 
 ```text
 Instruct: Given a detailed description of a target video moment, retrieve transcript passages that are relevant to the described event.
 Query: <query>
 ```
 
-Transcript windows are encoded directly from their processed text without an additional document prefix.
+Transcript windows are encoded from their processed text without an additional document prefix.
 
-Query and document embeddings are:
+The backend converts embeddings to `float32`, checks that they are finite and nonzero, and explicitly L2-normalizes them. Query-document similarity is then the dot product of normalized vectors, equivalent to cosine similarity.
 
-1. converted to `float32`;
-2. checked for finite values and nonzero norms;
-3. explicitly L2-normalized; and
-4. compared using normalized dot-product cosine similarity.
-
-Document embeddings can be computed offline and reused. At query time, only the query embedding needs to be generated before similarity scores are calculated against the cached transcript-window embeddings.
-
-### 3.3 Why both retrievers are used
-
-BM25 and E5 solve different parts of the retrieval problem.
-
-BM25 is strong when exact wording matters. E5 is stronger when the query describes the same event using different words from the transcript.
-
-The system therefore treats E5 as the main retrieval signal and BM25 as a smaller lexical correction rather than giving both sources equal influence.
-
----
-
-## 4. Score Fusion and Video Ranking
-
-### 4.1 Why scores are normalized
-
-Raw BM25 scores and cosine-similarity scores are on different numeric scales, so they cannot be combined directly.
-
-For each query, BM25 scores and E5 scores are normalized **independently** using only eligible windows.
-
-For one score source:
+The expensive document side is reusable:
 
 ```text
-normalized_score = (score - minimum) / (maximum - minimum)
+offline:
+encode all transcript windows once
+
+online:
+encode only the new query
+→ compare against cached document vectors
 ```
 
-where `minimum` and `maximum` are calculated across that source's eligible windows for the current query.
+This is why a much larger video corpus does not imply rerunning E5 over every transcript for every search.
 
-If all eligible scores from a source are effectively identical, their normalized values are set to zero.
+### 3.3 Combining BM25 and E5
 
-Ineligible windows are assigned a final normalized score of zero.
+BM25 scores and E5 cosine scores have different numeric scales, so the system does not average their raw values directly.
 
-This makes the two retrieval sources comparable while preserving their relative ordering for the current query.
-
-### 4.2 Hybrid window score
-
-Each transcript window receives one final retrieval score:
+For each query, each source is normalized independently over **eligible windows only**:
 
 ```text
-hybrid_score =
+normalized = (score - min) / (max - min)
+```
+
+If all eligible scores from one source are effectively constant, that normalized source is set to zero for the query. Ineligible windows receive zero after normalization.
+
+The final first-stage window score is:
+
+```text
+hybrid_window_score
+=
 0.25 × normalized_BM25
 +
 0.75 × normalized_E5
 ```
 
-The weighting intentionally gives semantic retrieval most of the influence while still allowing exact lexical evidence to adjust the ranking.
+Dense retrieval is therefore the main signal. BM25 acts as a smaller lexical correction when exact wording contains information that semantic retrieval may underweight.
 
-There is no fusion between different ASR models and no fusion between raw and processed transcript views.
+No Whisper+Parakeet fusion and no raw+processed transcript fusion are used in the selected pipeline.
 
-### 4.3 From windows to videos
+### 3.4 Turning window scores into video scores
 
-A video can contain many transcript windows, but a query may only describe one short part of that video.
+A query may describe only a small part of a long video. Requiring several windows to score highly can therefore penalize a correct video whose relevant speech is brief.
 
-The system therefore scores each video using its strongest matching window:
+The selected video score is simply the strongest hybrid window:
 
 ```text
-video_score = max(hybrid_score of all windows in the video)
+video_score(video)
+=
+max(hybrid_window_score for windows in video)
 ```
 
-Videos are ranked in descending order by this score.
+This is the Stage 3 `P0_max` policy.
 
-This policy preserves **partial relevance**: one highly relevant transcript window is enough for a video to rank strongly even when most of the video discusses something else.
+The video ranking is produced from these maximum scores. The strongest window also provides an initial temporal clue for that video.
 
-### 4.4 Supporting temporal evidence
+Evaluation keeps ranking deterministic. Scores within `1e-12` are treated as tied for metrics and assigned the worst rank in the tie group; stable secondary identifiers are used when a display order is needed.
 
-The window that produces the highest hybrid score for a video is also its strongest ASR evidence.
+## 4. Candidate Selection and Reranking
 
-Its `start_s` and `end_s` values provide an initial temporal location that can be passed to later candidate selection, reranking, or multimodal stages.
+### 4.1 Why candidate selection is necessary
 
-The current subsystem therefore produces both:
+BM25 and E5 are cheap enough to search the whole transcript corpus. A cross-encoder is different: it reads the query and candidate passage together, so its cost grows roughly with the number of query-window pairs it must process.
+
+Stage 6 therefore introduces a candidate-selection layer before cross-encoding.
+
+For the All50 research benchmark, the selected policy is `K30_M5`:
 
 ```text
-ranked videos
+first-stage scores for all 994 windows
+        ↓
+rank all 50 videos by their best window
+        ↓
+keep top 30 videos
+        ↓
+within each retained video,
+keep up to 5 highest-scoring windows
+        ↓
+mean 149.275 pairs/query
+maximum 150 pairs/query
+```
+
+This stage does not try to improve MRR. Its job is to reduce expensive reranker work while preserving recoverable evidence.
+
+On the 40-query Full40 evaluation:
+
+| Candidate measure | `K30_M5` |
+|---|---:|
+| Correct-video recall | 1.000 (40/40) |
+| Relevant-window recall | 0.975 (39/40) |
+| Joint recall | 0.975 (39/40) |
+| Mean pairs/query | 149.275 |
+| Maximum pairs/query | 150 |
+
+The only remaining Stage 6 temporal miss is `R2-8`: its correct video is retained, but none of the five selected windows from that video satisfies the benchmark temporal relevance rule.
+
+`K30_M5` should be understood as a **research-benchmark setting**, not a universal production constant. On All50, keeping 30 videos means retaining 60% of the video corpus. On a corpus of roughly 1,490 videos, the same K would retain only about 2%. Full-scale deployment must therefore remeasure first-stage Video Recall@K and candidate recall before deciding how many videos to expose to the reranker.
+
+A sensible production design may keep a fixed reranker pair budget while spreading those pairs across more videos, but that has not been evaluated in the current Stage 1–7 experiments and should not be presented as a measured result.
+
+### 4.2 Cross-encoder reranking
+
+E5 embeds the query and transcript separately. A cross-encoder instead reads the query and candidate transcript together. This allows richer token-level interaction, but it is much more expensive.
+
+Stage 7 evaluated six zero-shot local multilingual rerankers on the exact same frozen `K30_M5` candidate pool and Tesla T4 environment:
+
+- mMARCO MiniLM;
+- GTE multilingual reranker;
+- BGE reranker v2 M3;
+- Qwen3-Reranker-0.6B;
+- Mixedbread mxbai-rerank-base-v2; and
+- Jina reranker v2 multilingual.
+
+The maximum input length was 512 tokens. All six models passed the compatibility/runtime preflight and used batch size 32 without OOM retries in the final valid run.
+
+Stage 7 tested two reranking uses:
+
+```text
+S1:
+reranker score only
+
+S2:
+50% normalized first-stage candidate score
 +
-supporting transcript windows
+50% normalized reranker score
 ```
 
-rather than only a video-level score.
+There was no weight sweep.
 
-### 4.5 Deterministic ranking
+The important result is that **every S1 reranker-only system produced lower Video MRR than the first-stage control**. The reranker is therefore useful as a refinement signal, not as a replacement for BM25+E5 retrieval.
 
-Evaluation treats scores within `1e-12` as tied and assigns the worst rank within that tie group.
+For S2, the main Full40 results were:
 
-When an explicit display order is needed for equal scores, stable secondary identifiers are used so repeated runs remain deterministic.
+| Reranker | Video R@1 | Video MRR | Story MRR | p90 | Meets 5 s limit |
+|---|---:|---:|---:|---:|---|
+| No reranker | 0.725 | 0.8110 | 0.9042 | — | Yes |
+| MiniLM | 0.625 | 0.7154 | 0.8729 | 0.34 s | Yes |
+| GTE | 0.700 | 0.7972 | 0.8988 | 1.04 s | Yes |
+| **BGE v2 M3** | **0.750** | **0.8205** | **0.9125** | **2.54 s** | **Yes** |
+| Qwen3-0.6B | **0.825** | **0.8642** | 0.8625 | 7.31 s | No |
+| Mixedbread | 0.725 | 0.7955 | 0.8896 | 4.57 s | Yes |
+| Jina v2 | 0.675 | 0.7543 | 0.9113 | 1.02 s | Yes |
 
----
+Qwen produced the strongest video result, but it exceeded the 5-second p90 limit that was fixed before the experiment and reduced Story MRR. BGE produced a much smaller improvement, but it improved both Video and Story MRR and remained within the latency limit.
 
-## 5. Data Flow and Caching
+For this reason, **BGE v2 M3 with S2 is the current operational recommendation**. The Stage 7 run itself passed, but the current configuration still marks `selection.stage07_decision` as `pending_review`; the documentation therefore does not call BGE formally frozen yet.
 
-### 5.1 Offline work
+## 5. Runtime and Scaling
 
-The expensive corpus-side work is performed before online querying:
+Runtime measurements in this project have different scopes and should not be added together as though they were one directly measured end-to-end latency.
+
+For the selected E5-large model on `parakeet_processed`, the measured Stage 2 query-encoding latency was about 24.4 ms p50 and 29.6 ms p90. Dense similarity search over the 994-window All50 corpus was much smaller than the encoding cost.
+
+Stage 7 reranking is much more expensive. With `K30_M5`, each query contains about 149 candidate pairs. On the same T4:
+
+| Reranker | Mean/query | p90/query | Pairs/s |
+|---|---:|---:|---:|
+| MiniLM | 0.278 s | 0.336 s | 536.7 |
+| GTE | 0.913 s | 1.042 s | 163.5 |
+| BGE v2 M3 | 2.127 s | 2.539 s | 70.2 |
+| Qwen3-0.6B | 6.688 s | 7.308 s | 22.3 |
+| Mixedbread | 4.128 s | 4.566 s | 36.2 |
+| Jina v2 | 0.840 s | 1.017 s | 177.6 |
+
+These are reranking-stage measurements, not complete application latency.
+
+The online and offline responsibilities should remain separate:
 
 ```text
-video/audio
-    ↓
-ASR transcription
-    ↓
-processed transcript windows
-    ↓
-BM25 corpus statistics
-    ↓
-E5 document embeddings
-    ↓
-cached retrieval artifacts
+OFFLINE
+- extract / prepare audio
+- run ASR
+- post-process transcripts
+- construct/load BM25 corpus state
+- encode E5 documents
+- store compact window/video metadata
+
+ONLINE
+- tokenize the query for BM25
+- encode the query with E5
+- score transcript windows
+- combine BM25 and E5
+- aggregate to videos
+- select candidate pairs
+- optionally run the cross-encoder
+- reconstruct the final ranking
 ```
 
-Dense document embeddings are reusable across queries because the transcript corpus does not change between searches.
+For a much larger corpus, the first-stage index grows with the number of transcript windows. Reranking does **not** have to grow in the same way if the number of reranker pairs is explicitly capped.
 
-### 5.2 Online work
+The larger risk is candidate recall. A K value that works against 50 videos can become too narrow against roughly 1,490 distractor videos even if first-stage search itself remains fast. Full-corpus validation should therefore focus first on Video Recall@K, candidate recall, reranker pair budget, and warm query latency.
 
-For a new query:
+Models and indexes should stay resident during interactive use. Loading E5 or BGE from disk for each query would turn model startup into the dominant latency and does not reflect the intended retrieval design.
 
-```text
-query
-  ├─ tokenize and score with BM25
-  └─ encode once with E5
-            ↓
-      score all transcript windows
-            ↓
-      normalize both score sets
-            ↓
-      weighted score fusion
-            ↓
-      maximum score per video
-            ↓
-      ranked videos
-```
+## 6. Implementation and Reproducibility
 
-The dense query encoder is the main online neural cost. Score fusion itself is lightweight.
+The source modules have intentionally separate responsibilities:
 
-### 5.3 Score caches
+| File | Responsibility |
+|---|---|
+| `configs/retrieval_v2.json` | Frozen method definitions, model revisions, evaluation policy, stage configuration, and manual decisions |
+| `src/03_run_stage1_full_inference.py` | Resume-safe window-level ASR inference and output validation |
+| `src/model_adapters.py` | Common ASR interface and model-specific loading/transcription |
+| `src/postprocess.py` | Conservative query-independent transcript normalization, warnings, and rejections |
+| `src/retrieval_v2.py` | BM25, dense score bundles, normalization, first-stage fusion, and candidate-score blending |
+| `src/retrieval_backends.py` | Dense and reranker model loading/inference |
+| `src/retrieval_v2_evaluation.py` | Eligibility, temporal relevance, ranking, metrics, Stage 6 candidates, and Stage 7 ranking policy |
+| `src/07_evaluate_retrieval_v2.py` | Contract validation, stage orchestration, cache/report management, and reproducibility checks |
 
-Retrieval experiments and validation use two important cache files:
-
-```text
-window_scores.npz
-score_axes.json
-```
-
-`window_scores.npz` stores numeric score matrices.
-
-`score_axes.json` stores the identities needed to interpret those matrices, such as:
-
-- query set;
-- retrieval source;
-- ASR model;
-- transcript view;
-- query IDs; and
-- window IDs.
-
-A cached score matrix must only be reused when its identity and axes match exactly. The system should never silently repair a mismatch by sorting IDs independently, intersecting two axes, or dropping unmatched windows.
-
-### 5.4 Code and artifact locations
-
-The project separates source code from large generated artifacts.
-
-`CODE_ROOT` refers to the Git repository containing source, configuration, notebooks, and documentation.
-
-`ARTIFACT_ROOT` refers to the external experiment workspace containing large ASR outputs, embeddings, score caches, and generated reports.
-
-The artifact root can be configured through:
+Large artifacts are kept outside Git. `CODE_ROOT` points to source/configuration/documentation, while `ARTIFACT_ROOT` points to ASR outputs, embeddings, score caches, candidate pools, and reports. The artifact root can be configured with:
 
 ```text
 AIC_RETRIEVAL_ARTIFACT_ROOT
 ```
 
-This separation keeps large generated data out of Git while allowing the same source code to run against the shared experiment workspace.
+Caches are treated as typed artifacts rather than anonymous arrays. A cached score or embedding is reused only when its model/config identity and query/window axes match the expected contract. The runner also stores hashes and manifests so a later stage can detect when an earlier-stage configuration changed and must be rerun.
 
----
+The main principle is simple: **never silently realign or reinterpret cached scores**. If query IDs, window IDs, method identity, or source provenance differ, the cache should be rejected rather than “fixed” by sorting or intersecting axes.
 
-## 6. Implementation Map and Current Scope
-
-### 6.1 Core implementation files
-
-| File | Responsibility |
-|---|---|
-| `configs/retrieval_v2.json` | Model revisions, transcript settings, retrieval parameters, score policies, fusion weights, and artifact paths |
-| `src/retrieval_v2.py` | BM25 scoring, dense score bundles, score normalization, and sparse+dense fusion |
-| `src/retrieval_backends.py` | Dense model loading, query/document formatting, embedding, normalization, and runtime metadata |
-| `src/retrieval_v2_evaluation.py` | Temporal relevance, video ranking, tie handling, and retrieval metrics |
-| `src/07_evaluate_retrieval_v2.py` | Configuration validation, cache loading, artifact validation, experiment execution, and report generation |
-
-The modules intentionally separate model inference, retrieval scoring, evaluation policy, and experiment orchestration.
-
-### 6.2 Current system configuration
-
-| Component | Current setting |
-|---|---|
-| ASR | Parakeet CTC 0.6B Vietnamese |
-| Transcript representation | Canonical processed transcript |
-| Window length | 60 s |
-| Window stride | 45 s |
-| Window overlap | 15 s |
-| Lexical retrieval | Accent-preserving BM25 |
-| Semantic retrieval | Multilingual E5-large-instruct |
-| Score normalization | Per-query, eligible-window min-max |
-| BM25 contribution | 25% |
-| E5 contribution | 75% |
-| Video score | Maximum hybrid window score |
-| Query representation | Original natural-language query |
-
-### 6.3 What this subsystem currently covers
-
-The ASR retrieval subsystem currently handles:
-
-- Vietnamese speech transcription;
-- processed transcript selection;
-- overlapping transcript-window construction;
-- lexical retrieval;
-- semantic retrieval;
-- score normalization;
-- lexical-semantic fusion;
-- global video ranking; and
-- retrieval of the strongest supporting transcript window.
-
-The broader video-search pipeline may later add:
-
-- hierarchical candidate retrieval;
-- second-stage reranking;
-- improved query or transcript representations;
-- visual retrieval;
-- OCR retrieval;
-- multimodal fusion; and
-- independent final evaluation of the broader retrieval system.
-
-Those later components can extend this subsystem, but the ASR-text pipeline described here is the current retrieval baseline they should start from.
-
-### 6.4 Holdout validation
-
-After the ASR-text subsystem was frozen, it was evaluated once on `holdout20`. The frozen system achieved **Video R@1 = 0.70**, **Video R@5 = 0.95**, **Video R@10 = 0.95**, **Video MRR = 0.8119**, **Story R@1 = 0.90**, and **Story MRR = 0.9500**.
-
-These results are validation evidence for the frozen subsystem, not a new tuning signal. `holdout20` is now considered exposed and must not be used to modify the ASR model, transcript representation, retrieval weights, or other Stage 1–5 settings. Detailed comparisons and failure analysis are maintained in `docs/results/retrieval-v2-progress.md`.
+For the research history, selection evidence, and per-stage results behind this implementation, see [`retrieval-v2.md`](retrieval-v2.md).
