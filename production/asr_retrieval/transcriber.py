@@ -307,6 +307,7 @@ class ParakeetTranscriber :
                 audio = [str(window_wav)],
                 batch_size = self.config.batch_size,
                 timestamps = self.config.timestamps,
+                verbose    = False,
             )
 
             if (torch.cuda.is_available() and self.config.device == "cuda") :
